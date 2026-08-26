@@ -58,6 +58,36 @@
         </div>
     </aside>
 
+    <!-- Modal Add Bed Type -->
+    <div id="bedTypeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 class="text-lg font-semibold text-slate-800">Add Bed Type</h3>
+                <button type="button" onclick="closeBedTypeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="bedTypeForm" onsubmit="handleSaveBedType(event)" class="space-y-4">
+                <!-- Name -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
+                    <input type="text" id="bedTypeName" required placeholder="e.g. King Bed" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeBedTypeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Add Room Category -->
     <div id="roomCategoryModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
@@ -68,26 +98,24 @@
                 </button>
             </div>
 
-            <form id="roomCategoryForm" onsubmit="event.preventDefault(); closeRoomCategoryModal();" class="space-y-4">
+            <form id="roomCategoryForm" onsubmit="handleSaveRoomCategory(event)" class="space-y-4">
                 <!-- Room Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Room Name</label>
-                    <input type="text" id="roomCategoryName" placeholder="e.g. Standard" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="roomCategoryName" required placeholder="e.g. Standard" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
                 </div>
 
                 <!-- Bed Type -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Bed Type</label>
-                    <select id="roomCategoryBedType" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
-                        <option value="Twin Bed">Twin Bed</option>
-                        <option value="King Bed">King Bed</option>
+                    <select id="roomCategoryBedType" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
                     </select>
                 </div>
 
                 <!-- Base Price -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Base Price</label>
-                    <input type="number" id="roomCategoryBasePrice" placeholder="500000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="number" id="roomCategoryBasePrice" required placeholder="500000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
                 </div>
 
                 <!-- Action Buttons -->
@@ -245,7 +273,7 @@
                         <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-base font-semibold text-slate-800">Bed Type Setting</h3>
-                                <button type="button" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                                <button type="button" onclick="openBedTypeModal()" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
                                     <i class="ph ph-plus text-sm"></i> Add Bed Type
                                 </button>
                             </div>
@@ -257,21 +285,7 @@
                                             <th class="py-3 px-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-slate-200 text-slate-700">
-                                        <tr class="hover:bg-slate-50/80 transition-colors">
-                                            <td class="py-3 px-4 font-medium">Twin Bed</td>
-                                            <td class="py-3 px-4 text-right space-x-2">
-                                                <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                                <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr class="hover:bg-slate-50/80 transition-colors">
-                                            <td class="py-3 px-4 font-medium">King Bed</td>
-                                            <td class="py-3 px-4 text-right space-x-2">
-                                                <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                                <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                            </td>
-                                        </tr>
+                                    <tbody id="bed-types-tbody" class="divide-y divide-slate-200 text-slate-700">
                                     </tbody>
                                 </table>
                             </div>
@@ -295,25 +309,7 @@
                                             <th class="py-3 px-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-slate-200 text-slate-700">
-                                        <tr class="hover:bg-slate-50/80 transition-colors">
-                                            <td class="py-3 px-4 font-medium">Standard</td>
-                                            <td class="py-3 px-4">Twin Bed</td>
-                                            <td class="py-3 px-4">Rp 500.000</td>
-                                            <td class="py-3 px-4 text-right space-x-2">
-                                                <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                                <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr class="hover:bg-slate-50/80 transition-colors">
-                                            <td class="py-3 px-4 font-medium">Deluxe</td>
-                                            <td class="py-3 px-4">King Bed</td>
-                                            <td class="py-3 px-4">Rp 750.000</td>
-                                            <td class="py-3 px-4 text-right space-x-2">
-                                                <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                                <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                            </td>
-                                        </tr>
+                                    <tbody id="room-types-tbody" class="divide-y divide-slate-200 text-slate-700">
                                     </tbody>
                                 </table>
                             </div>
@@ -703,6 +699,157 @@
             container.innerHTML = tableHTML;
         }
 
+        // --- Bed Types CRUD ---
+        async function fetchBedTypes() {
+            try {
+                const { data, error } = await supabaseClient.from('bed_types').select('*');
+                if (error) throw error;
+
+                const tbody = document.getElementById('bed-types-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(bt => `
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="py-3 px-4 font-medium">${bt.name}</td>
+                            <td class="py-3 px-4 text-right space-x-2">
+                                <button onclick="deleteBedType('${bt.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Populate dynamic select options for Room Category modal
+                const dropdown = document.getElementById('roomCategoryBedType');
+                if (dropdown) {
+                    if (data && data.length > 0) {
+                        dropdown.innerHTML = data.map(bt => `<option value="${bt.id}">${bt.name}</option>`).join('');
+                    } else {
+                        dropdown.innerHTML = `<option value="">-- No Bed Types --</option>`;
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching bed types:', err);
+            }
+        }
+
+        function openBedTypeModal() {
+            const modal = document.getElementById('bedTypeModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeBedTypeModal() {
+            const modal = document.getElementById('bedTypeModal');
+            if (modal) modal.classList.add('hidden');
+            const form = document.getElementById('bedTypeForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveBedType(event) {
+            event.preventDefault();
+            const nameVal = document.getElementById('bedTypeName').value.trim();
+            if (!nameVal) return;
+
+            try {
+                const { error } = await supabaseClient.from('bed_types').insert([{ name: nameVal }]);
+                if (error) throw error;
+                closeBedTypeModal();
+                fetchBedTypes();
+            } catch (err) {
+                console.error('Error saving bed type:', err);
+                alert('Gagal menyimpan bed type: ' + err.message);
+            }
+        }
+
+        async function deleteBedType(id) {
+            try {
+                const { error } = await supabaseClient.from('bed_types').delete().eq('id', id);
+                if (error) throw error;
+                fetchBedTypes();
+                fetchRoomTypes();
+            } catch (err) {
+                console.error('Error deleting bed type:', err);
+                alert('Gagal menghapus bed type: ' + err.message);
+            }
+        }
+
+        // --- Room Categories CRUD ---
+        async function fetchRoomTypes() {
+            try {
+                const { data, error } = await supabaseClient.from('room_types').select('id, name, base_price, bed_types(name)');
+                if (error) throw error;
+
+                const tbody = document.getElementById('room-types-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(rt => {
+                        const bedTypeName = rt.bed_types ? (Array.isArray(rt.bed_types) ? rt.bed_types[0]?.name : rt.bed_types.name) : '-';
+                        const priceFormatted = rt.base_price !== null && rt.base_price !== undefined
+                            ? `Rp ${Number(rt.base_price).toLocaleString('id-ID')}`
+                            : '-';
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${rt.name}</td>
+                                <td class="py-3 px-4">${bedTypeName || '-'}</td>
+                                <td class="py-3 px-4">${priceFormatted}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="deleteRoomType('${rt.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error fetching room types:', err);
+            }
+        }
+
+        function openRoomCategoryModal() {
+            const modal = document.getElementById('roomCategoryModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeRoomCategoryModal() {
+            const modal = document.getElementById('roomCategoryModal');
+            if (modal) modal.classList.add('hidden');
+            const form = document.getElementById('roomCategoryForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveRoomCategory(event) {
+            event.preventDefault();
+            const nameVal = document.getElementById('roomCategoryName').value.trim();
+            const bedTypeIdVal = document.getElementById('roomCategoryBedType').value;
+            const priceVal = parseFloat(document.getElementById('roomCategoryBasePrice').value);
+
+            if (!nameVal || !bedTypeIdVal) {
+                alert('Silakan lengkapi data form.');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.from('room_types').insert([{
+                    name: nameVal,
+                    base_price: priceVal,
+                    bed_type_id: bedTypeIdVal
+                }]);
+                if (error) throw error;
+                closeRoomCategoryModal();
+                fetchRoomTypes();
+            } catch (err) {
+                console.error('Error saving room category:', err);
+                alert('Gagal menyimpan room category: ' + err.message);
+            }
+        }
+
+        async function deleteRoomType(id) {
+            try {
+                const { error } = await supabaseClient.from('room_types').delete().eq('id', id);
+                if (error) throw error;
+                fetchRoomTypes();
+            } catch (err) {
+                console.error('Error deleting room category:', err);
+                alert('Gagal menghapus room category: ' + err.message);
+            }
+        }
+
         async function initApp() {
             const statusDiv = document.getElementById('supabase-status');
             const propNameSpan = document.getElementById('active-property-name');
@@ -721,6 +868,10 @@
 
                 // Langkah 3: Trigger Eksekusi Tape Chart
                 renderTapeChart();
+
+                // Fetch data master Bed Types & Room Categories
+                fetchBedTypes();
+                fetchRoomTypes();
             } catch (err) {
                 statusDiv.innerHTML = `<span class="text-red-600 font-semibold"><i class="ph ph-warning-circle"></i> Gagal terhubung database:</span> ${err.message}`;
                 statusDiv.className = "p-4 rounded-md bg-red-50 border border-red-200 text-sm mb-6";
@@ -854,6 +1005,10 @@
                         btn.classList.remove('border-transparent', 'text-slate-500', 'font-medium');
                         btn.classList.add('border-primary', 'text-primary', 'font-bold');
                         content.classList.remove('hidden');
+                        if (t === 'room-types') {
+                            fetchBedTypes();
+                            fetchRoomTypes();
+                        }
                     } else {
                         btn.classList.remove('border-primary', 'text-primary', 'font-bold');
                         btn.classList.add('border-transparent', 'text-slate-500', 'font-medium');
