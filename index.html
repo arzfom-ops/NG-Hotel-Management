@@ -38,19 +38,24 @@
             <h1 class="text-xl font-bold text-primary tracking-tight">NG Hotel Mgt.</h1>
         </div>
         <nav class="flex-1 px-4 space-y-2 mt-4 md:mt-0">
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="switchView('frontdesk')" id="nav-overview" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
                 <i class="ph ph-squares-four text-xl"></i> Overview
             </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors">
+            <a href="#" onclick="switchView('frontdesk')" id="nav-frontdesk" class="flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors">
                 <i class="ph ph-desktop-tower text-xl"></i> Frontdesk
             </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="switchView('frontdesk')" id="nav-reservations" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
                 <i class="ph ph-calendar-check text-xl"></i> Reservations
             </a>
-            <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+            <a href="#" onclick="switchView('frontdesk')" id="nav-housekeeping" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
                 <i class="ph ph-broom text-xl"></i> Housekeeping
             </a>
         </nav>
+        <div class="p-4 border-t border-slate-100 mt-auto">
+            <a href="#" onclick="switchView('settings')" id="nav-settings" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal">
+                <i class="ph ph-gear text-xl"></i> Settings
+            </a>
+        </div>
     </aside>
 
     <!-- Modal New Reservation -->
@@ -122,7 +127,7 @@
     <!-- Main Content -->
     <main class="flex-1 flex flex-col h-full mt-14 md:mt-0 w-full overflow-hidden">
         <!-- Topbar -->
-        <header class="bg-white border-b px-6 py-4 flex justify-between items-center">
+        <header id="frontdesk-topbar" class="bg-white border-b px-6 py-4 flex justify-between items-center">
             <h2 class="text-xl font-semibold hidden md:block">Frontdesk / Tape Chart</h2>
             <div class="flex items-center gap-4 ml-auto">
                 <div class="flex items-center gap-2 px-3 py-1.5 border rounded-md cursor-pointer hover:bg-slate-50">
@@ -133,8 +138,8 @@
             </div>
         </header>
 
-        <!-- Content Area -->
-        <div class="p-4 md:p-6 flex-1 overflow-y-auto">
+        <!-- Content Area: Frontdesk -->
+        <div id="frontdesk-view" class="p-4 md:p-6 flex-1 overflow-y-auto">
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px] flex flex-col">
                 
                 <!-- Status Koneksi -->
@@ -152,6 +157,313 @@
                 
                 <div id="tape-chart-wrapper" class="flex-1 border border-slate-200 rounded-lg overflow-x-auto bg-slate-50 relative min-h-[300px]">
                     <!-- Area kosong ini siap diisi kalender oleh Jules -->
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Content Area: Admin Settings -->
+        <div id="admin-settings-view" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px]">
+
+                <!-- Header -->
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Property Configuration</h2>
+                    <p class="text-sm text-slate-500 mt-1">Pengaturan data master dan konfigurasi properti hotel.</p>
+                </div>
+
+                <!-- 5 Tab Navigation -->
+                <div class="border-b border-slate-200 mb-6">
+                    <nav class="flex space-x-6 overflow-x-auto" aria-label="Tabs">
+                        <button type="button" onclick="switchSettingsTab('room-types')" id="tab-btn-room-types" class="settings-tab-btn border-b-2 border-primary text-primary font-bold py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Room Types
+                        </button>
+                        <button type="button" onclick="switchSettingsTab('rooms')" id="tab-btn-rooms" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Rooms
+                        </button>
+                        <button type="button" onclick="switchSettingsTab('meal-plans')" id="tab-btn-meal-plans" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Meal Plans
+                        </button>
+                        <button type="button" onclick="switchSettingsTab('rate-structure')" id="tab-btn-rate-structure" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Rate Structure
+                        </button>
+                        <button type="button" onclick="switchSettingsTab('tax-service')" id="tab-btn-tax-service" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Tax & Service
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Tab 1 Content: Room Types -->
+                <div id="tab-content-room-types" class="tab-content-panel">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-semibold text-slate-800">Daftar Tipe Kamar</h3>
+                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                            <i class="ph ph-plus text-base"></i> + Add New Room Type
+                        </button>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                <tr>
+                                    <th class="py-3 px-4">Name</th>
+                                    <th class="py-3 px-4">Base Price</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-700">
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Standard</td>
+                                    <td class="py-3 px-4">Rp 350.000</td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Deluxe</td>
+                                    <td class="py-3 px-4">Rp 500.000</td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Suite</td>
+                                    <td class="py-3 px-4">Rp 850.000</td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 2 Content: Rooms -->
+                <div id="tab-content-rooms" class="tab-content-panel hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-semibold text-slate-800">Daftar Kamar</h3>
+                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                            <i class="ph ph-plus text-base"></i> + Add New Room
+                        </button>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                <tr>
+                                    <th class="py-3 px-4">Room Number</th>
+                                    <th class="py-3 px-4">Room Type</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-700">
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">101</td>
+                                    <td class="py-3 px-4">Standard</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">102</td>
+                                    <td class="py-3 px-4">Standard</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">103</td>
+                                    <td class="py-3 px-4">Standard</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">201</td>
+                                    <td class="py-3 px-4">Deluxe</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium">Dirty</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">202</td>
+                                    <td class="py-3 px-4">Deluxe</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">301</td>
+                                    <td class="py-3 px-4">Suite</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 3 Content: Meal Plans -->
+                <div id="tab-content-meal-plans" class="tab-content-panel hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-semibold text-slate-800">Daftar Paket Makan (Meal Plans)</h3>
+                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                            <i class="ph ph-plus text-base"></i> + Add New Meal Plan
+                        </button>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                <tr>
+                                    <th class="py-3 px-4">Name</th>
+                                    <th class="py-3 px-4">Price per Pax</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-700">
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Room Only (RO)</td>
+                                    <td class="py-3 px-4">Rp 0</td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Bed & Breakfast (BB)</td>
+                                    <td class="py-3 px-4">Rp 75.000</td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Full Board (FB)</td>
+                                    <td class="py-3 px-4">Rp 200.000</td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 4 Content: Rate Structure -->
+                <div id="tab-content-rate-structure" class="tab-content-panel hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-semibold text-slate-800">Struktur Tarif (Rate Structure)</h3>
+                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                            <i class="ph ph-plus text-base"></i> + Add New Rate Structure
+                        </button>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                <tr>
+                                    <th class="py-3 px-4">Rate Name</th>
+                                    <th class="py-3 px-4">Room Type</th>
+                                    <th class="py-3 px-4">Meal Plan</th>
+                                    <th class="py-3 px-4">Base Price</th>
+                                    <th class="py-3 px-4">Active</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-700">
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Standard BAR</td>
+                                    <td class="py-3 px-4">Standard</td>
+                                    <td class="py-3 px-4">Room Only (RO)</td>
+                                    <td class="py-3 px-4">Rp 350.000</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Deluxe Breakfast Combo</td>
+                                    <td class="py-3 px-4">Deluxe</td>
+                                    <td class="py-3 px-4">Bed & Breakfast (BB)</td>
+                                    <td class="py-3 px-4">Rp 575.000</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Suite Package</td>
+                                    <td class="py-3 px-4">Suite</td>
+                                    <td class="py-3 px-4">Full Board (FB)</td>
+                                    <td class="py-3 px-4">Rp 1.050.000</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 5 Content: Tax & Service -->
+                <div id="tab-content-tax-service" class="tab-content-panel hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-semibold text-slate-800">Pajak & Layanan (Tax & Service)</h3>
+                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                            <i class="ph ph-plus text-base"></i> + Add New Tax & Service
+                        </button>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                <tr>
+                                    <th class="py-3 px-4">Name</th>
+                                    <th class="py-3 px-4">Percentage</th>
+                                    <th class="py-3 px-4">Active</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-700">
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Government Tax (PB1)</td>
+                                    <td class="py-3 px-4">10%</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-medium">Service Charge</td>
+                                    <td class="py-3 px-4">5%</td>
+                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>
@@ -226,7 +538,7 @@
             }
 
             // Gunakan CSS Grid
-            // Kolom 1: Kamar (width min 140px / auto), Kolom 2-15: Tanggal (width min 100px each)
+            // Kolom 1: Kamar (width min 130px, max 160px), Kolom 2-15: Tanggal (width min 100px each)
             let tableHTML = `
                 <div class="inline-block min-w-full align-middle">
                     <div class="grid border-collapse" style="grid-template-columns: minmax(130px, 160px) repeat(${daysCount}, minmax(100px, 1fr));">
@@ -243,7 +555,7 @@
                 const isToday = formatDateISO(d) === formatDateISO(todayDate);
 
                 tableHTML += `
-                    <div class="sticky top-0 bg-white z-40 p-2 text-center border-b border-r border-slate-200 shadow-sm ${isToday ? 'bg-blue-50/80 font-bold text-primary' : 'text-slate-700'}">
+                    <div class="sticky top-0 bg-white z-40 p-2 text-center border-b border-r border-slate-200 ${isToday ? 'bg-blue-50 font-bold text-primary' : 'text-slate-700'}">
                         <div class="text-[11px] uppercase tracking-wider text-slate-400">${dayStr}</div>
                         <div class="text-xs font-semibold mt-0.5">${dateNumStr}</div>
                     </div>
@@ -273,14 +585,10 @@
                         const colorClass = getSourceColorClass(res.source);
 
                         if (isStart) {
-                            // Calculate span length (number of nights visible in the 14-day window starting from dateISO)
                             const checkInDate = new Date(res.check_in + 'T00:00:00');
                             const checkOutDate = new Date(res.check_out + 'T00:00:00');
                             const diffDays = Math.round((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
-                            // Calculate percentage width spanning across grid columns if needed,
-                            // or absolute width based on diffDays.
-                            // In CSS grid cell, we can render a relative container with width: calc(diffDays * 100% + (diffDays - 1) * 1px) or z-index absolute block.
                             tableHTML += `
                                 <div class="relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}">
                                     <div class="absolute inset-y-1 left-1 z-10 ${colorClass} text-white rounded-md px-2.5 py-1 text-xs font-medium flex items-center shadow-sm overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-95 transition-opacity"
@@ -377,8 +685,83 @@
 
         function handleSaveReservation(event) {
             event.preventDefault();
-            // Belum perlu integrasi Supabase, fokus di UI/UX form-nya dulu.
+            const guestName = document.getElementById('guestName').value;
+            const bookingSource = document.getElementById('bookingSource').value;
+            const roomId = parseInt(document.getElementById('roomSelect').value, 10);
+            const checkIn = document.getElementById('checkInDate').value;
+            const checkOut = document.getElementById('checkOutDate').value;
+
+            if (guestName && roomId && checkIn && checkOut) {
+                mockReservations.push({
+                    room_id: roomId,
+                    guest_name: guestName,
+                    check_in: checkIn,
+                    check_out: checkOut,
+                    source: bookingSource
+                });
+                renderTapeChart();
+            }
             closeModal();
+        }
+
+        // Single Page Application (SPA) View Toggling
+        function switchView(viewName) {
+            const frontdeskTopbar = document.getElementById('frontdesk-topbar');
+            const frontdeskView = document.getElementById('frontdesk-view');
+            const adminSettingsView = document.getElementById('admin-settings-view');
+            const navFrontdesk = document.getElementById('nav-frontdesk');
+            const navSettings = document.getElementById('nav-settings');
+
+            if (viewName === 'settings') {
+                if (frontdeskTopbar) frontdeskTopbar.classList.add('hidden');
+                if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (adminSettingsView) adminSettingsView.classList.remove('hidden');
+
+                if (navFrontdesk) {
+                    navFrontdesk.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
+                }
+                if (navSettings) {
+                    navSettings.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+                }
+            } else {
+                if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+                if (frontdeskView) frontdeskView.classList.remove('hidden');
+                if (adminSettingsView) adminSettingsView.classList.add('hidden');
+
+                if (navFrontdesk) {
+                    navFrontdesk.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+                }
+                if (navSettings) {
+                    navSettings.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
+                }
+            }
+
+            // Toggle Mobile Menu closed if open
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+            }
+        }
+
+        // Admin Settings Tab Switcher
+        function switchSettingsTab(tabId) {
+            const tabs = ['room-types', 'rooms', 'meal-plans', 'rate-structure', 'tax-service'];
+
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const content = document.getElementById(`tab-content-${t}`);
+                if (btn && content) {
+                    if (t === tabId) {
+                        btn.classList.remove('border-transparent', 'text-slate-500', 'font-medium');
+                        btn.classList.add('border-primary', 'text-primary', 'font-bold');
+                        content.classList.remove('hidden');
+                    } else {
+                        btn.classList.remove('border-primary', 'text-primary', 'font-bold');
+                        btn.classList.add('border-transparent', 'text-slate-500', 'font-medium');
+                        content.classList.add('hidden');
+                    }
+                }
+            });
         }
 
         // Toggle Mobile Menu
