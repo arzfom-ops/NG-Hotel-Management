@@ -58,6 +58,51 @@
         </div>
     </aside>
 
+    <!-- Modal Add Room Category -->
+    <div id="roomCategoryModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 class="text-lg font-semibold text-slate-800">Add Room Category</h3>
+                <button type="button" onclick="closeRoomCategoryModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="roomCategoryForm" onsubmit="event.preventDefault(); closeRoomCategoryModal();" class="space-y-4">
+                <!-- Room Name -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Room Name</label>
+                    <input type="text" id="roomCategoryName" placeholder="e.g. Standard" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Bed Type -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Bed Type</label>
+                    <select id="roomCategoryBedType" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                        <option value="Twin Bed">Twin Bed</option>
+                        <option value="King Bed">King Bed</option>
+                    </select>
+                </div>
+
+                <!-- Base Price -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Base Price</label>
+                    <input type="number" id="roomCategoryBasePrice" placeholder="500000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeRoomCategoryModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal New Reservation -->
     <div id="reservationModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
@@ -195,48 +240,84 @@
 
                 <!-- Tab 1 Content: Room Types -->
                 <div id="tab-content-room-types" class="tab-content-panel">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-base font-semibold text-slate-800">Daftar Tipe Kamar</h3>
-                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
-                            <i class="ph ph-plus text-base"></i> + Add New Room Type
-                        </button>
-                    </div>
-                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
-                                <tr>
-                                    <th class="py-3 px-4">Name</th>
-                                    <th class="py-3 px-4">Base Price</th>
-                                    <th class="py-3 px-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200 text-slate-700">
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Standard</td>
-                                    <td class="py-3 px-4">Rp 350.000</td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Deluxe</td>
-                                    <td class="py-3 px-4">Rp 500.000</td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Suite</td>
-                                    <td class="py-3 px-4">Rp 850.000</td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Bagian 1: Bed Type Setting -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-base font-semibold text-slate-800">Bed Type Setting</h3>
+                                <button type="button" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                                    <i class="ph ph-plus text-sm"></i> Add Bed Type
+                                </button>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th class="py-3 px-4">Name</th>
+                                            <th class="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200 text-slate-700">
+                                        <tr class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="py-3 px-4 font-medium">Twin Bed</td>
+                                            <td class="py-3 px-4 text-right space-x-2">
+                                                <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                                <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                            </td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="py-3 px-4 font-medium">King Bed</td>
+                                            <td class="py-3 px-4 text-right space-x-2">
+                                                <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                                <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Bagian 2: Room Name / Category -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-base font-semibold text-slate-800">Room Categories</h3>
+                                <button type="button" onclick="openRoomCategoryModal()" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                                    <i class="ph ph-plus text-sm"></i> Add Room Category
+                                </button>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th class="py-3 px-4">Room Name</th>
+                                            <th class="py-3 px-4">Bed Type</th>
+                                            <th class="py-3 px-4">Base Price</th>
+                                            <th class="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200 text-slate-700">
+                                        <tr class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="py-3 px-4 font-medium">Standard</td>
+                                            <td class="py-3 px-4">Twin Bed</td>
+                                            <td class="py-3 px-4">Rp 500.000</td>
+                                            <td class="py-3 px-4 text-right space-x-2">
+                                                <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                                <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                            </td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="py-3 px-4 font-medium">Deluxe</td>
+                                            <td class="py-3 px-4">King Bed</td>
+                                            <td class="py-3 px-4">Rp 750.000</td>
+                                            <td class="py-3 px-4 text-right space-x-2">
+                                                <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                                <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -678,6 +759,24 @@
                 modal.classList.add('hidden');
             }
             const form = document.getElementById('reservationForm');
+            if (form) {
+                form.reset();
+            }
+        }
+
+        function openRoomCategoryModal() {
+            const modal = document.getElementById('roomCategoryModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeRoomCategoryModal() {
+            const modal = document.getElementById('roomCategoryModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+            const form = document.getElementById('roomCategoryForm');
             if (form) {
                 form.reset();
             }
