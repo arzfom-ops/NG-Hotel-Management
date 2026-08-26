@@ -98,6 +98,156 @@
         const SUPABASE_KEY = 'sb_publishable_9JNXq091DMUBkfsJhtdgcw_lWU54FXO';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // Helper Tanggal
+        function formatDateISO(dateObj) {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function addDays(dateObj, days) {
+            const res = new Date(dateObj);
+            res.setDate(res.getDate() + days);
+            return res;
+        }
+
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+
+        // Langkah 1: Mock Data
+        const mockRooms = [
+            { id: 1, number: '101', type: 'Standard' },
+            { id: 2, number: '102', type: 'Standard' },
+            { id: 3, number: '103', type: 'Standard' },
+            { id: 4, number: '201', type: 'Deluxe' },
+            { id: 5, number: '202', type: 'Deluxe' },
+            { id: 6, number: '301', type: 'Suite' }
+        ];
+
+        const mockReservations = [
+            { room_id: 1, guest_name: 'Budi Santoso', check_in: formatDateISO(todayDate), check_out: formatDateISO(addDays(todayDate, 2)), source: 'tiket.com' },
+            { room_id: 1, guest_name: 'Siti Rahma', check_in: formatDateISO(addDays(todayDate, 2)), check_out: formatDateISO(addDays(todayDate, 5)), source: 'Traveloka' },
+            { room_id: 2, guest_name: 'John Doe', check_in: formatDateISO(addDays(todayDate, 1)), check_out: formatDateISO(addDays(todayDate, 4)), source: 'Agoda' },
+            { room_id: 3, guest_name: 'Ahmad Dahlan', check_in: formatDateISO(todayDate), check_out: formatDateISO(addDays(todayDate, 3)), source: 'Walk-in' },
+            { room_id: 4, guest_name: 'Dewi Lestari', check_in: formatDateISO(addDays(todayDate, 3)), check_out: formatDateISO(addDays(todayDate, 7)), source: 'tiket.com' },
+            { room_id: 5, guest_name: 'Rudi Tabuti', check_in: formatDateISO(addDays(todayDate, 5)), check_out: formatDateISO(addDays(todayDate, 8)), source: 'Traveloka' }
+        ];
+
+        function getSourceColorClass(source) {
+            switch ((source || '').toLowerCase()) {
+                case 'tiket.com':
+                    return 'bg-blue-600';
+                case 'traveloka':
+                    return 'bg-sky-500';
+                case 'agoda':
+                    return 'bg-red-500';
+                case 'walk-in':
+                    return 'bg-slate-500';
+                default:
+                    return 'bg-blue-500';
+            }
+        }
+
+        function renderTapeChart() {
+            const container = document.getElementById('tape-chart-wrapper');
+            if (!container) return;
+
+            const daysCount = 14;
+            const datesList = [];
+            for (let i = 0; i < daysCount; i++) {
+                datesList.push(addDays(todayDate, i));
+            }
+
+            // Gunakan CSS Grid
+            // Kolom 1: Kamar (width min 140px / auto), Kolom 2-15: Tanggal (width min 100px each)
+            let tableHTML = `
+                <div class="inline-block min-w-full align-middle">
+                    <div class="grid border-collapse" style="grid-template-columns: minmax(130px, 160px) repeat(${daysCount}, minmax(100px, 1fr));">
+
+                        <!-- Header Baris 1: Kolom Kamar & Tanggal-tanggal -->
+                        <div class="sticky top-0 left-0 bg-white z-30 p-3 font-semibold text-xs text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 flex items-center shadow-sm">
+                            Kamar
+                        </div>
+            `;
+
+            datesList.forEach(d => {
+                const dayStr = d.toLocaleDateString('id-ID', { weekday: 'short' });
+                const dateNumStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                const isToday = formatDateISO(d) === formatDateISO(todayDate);
+
+                tableHTML += `
+                    <div class="sticky top-0 bg-white z-20 p-2 text-center border-b border-r border-slate-200 shadow-sm ${isToday ? 'bg-blue-50/80 font-bold text-primary' : 'text-slate-700'}">
+                        <div class="text-[11px] uppercase tracking-wider text-slate-400">${dayStr}</div>
+                        <div class="text-xs font-semibold mt-0.5">${dateNumStr}</div>
+                    </div>
+                `;
+            });
+
+            // Baris Kamar
+            mockRooms.forEach(room => {
+                // Sumbu Y Sticky Left
+                tableHTML += `
+                    <div class="sticky left-0 bg-white z-10 p-3 border-b border-r border-slate-200 flex flex-col justify-center">
+                        <div class="font-bold text-sm text-slate-800">Kamar ${room.number}</div>
+                        <div class="text-xs text-slate-400 font-medium">${room.type}</div>
+                    </div>
+                `;
+
+                // Sel untuk setiap tanggal
+                datesList.forEach(d => {
+                    const dateISO = formatDateISO(d);
+                    const isToday = dateISO === formatDateISO(todayDate);
+
+                    // Cari reservasi yang menyangkut kamar & tanggal ini (Room Night: check_in <= dateISO < check_out)
+                    const res = mockReservations.find(r => r.room_id === room.id && r.check_in <= dateISO && dateISO < r.check_out);
+
+                    if (res) {
+                        const isStart = res.check_in === dateISO;
+                        const colorClass = getSourceColorClass(res.source);
+
+                        if (isStart) {
+                            // Calculate span length (number of nights visible in the 14-day window starting from dateISO)
+                            const checkInDate = new Date(res.check_in + 'T00:00:00');
+                            const checkOutDate = new Date(res.check_out + 'T00:00:00');
+                            const diffDays = Math.round((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+
+                            // Calculate percentage width spanning across grid columns if needed,
+                            // or absolute width based on diffDays.
+                            // In CSS grid cell, we can render a relative container with width: calc(diffDays * 100% + (diffDays - 1) * 1px) or z-index absolute block.
+                            tableHTML += `
+                                <div class="relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}">
+                                    <div class="absolute inset-y-1 left-1 z-10 ${colorClass} text-white rounded-md px-2.5 py-1 text-xs font-medium flex items-center shadow-sm overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-95 transition-opacity"
+                                         style="width: calc(${diffDays * 100}% + ${(diffDays - 1)}px - 0.5rem);"
+                                         title="${res.guest_name} (${res.source}) - ${res.check_in} s/d ${res.check_out}">
+                                        <i class="ph ph-user text-xs mr-1 opacity-80"></i>
+                                        <span class="truncate">${res.guest_name} (${res.source})</span>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // Middle or end nights of reservation: rendered empty cell since the start cell pill stretches over
+                            tableHTML += `
+                                <div class="relative border-b border-r border-slate-100 p-1 ${isToday ? 'bg-blue-50/30' : ''}"></div>
+                            `;
+                        }
+                    } else {
+                        // Empty room-night cell
+                        tableHTML += `
+                            <div class="relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer ${isToday ? 'bg-blue-50/30' : ''}"></div>
+                        `;
+                    }
+                });
+            });
+
+            tableHTML += `
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = tableHTML;
+        }
+
         async function initApp() {
             const statusDiv = document.getElementById('supabase-status');
             const propNameSpan = document.getElementById('active-property-name');
@@ -113,6 +263,9 @@
                     statusDiv.className = "p-4 rounded-md bg-green-50 border border-green-200 text-sm mb-6 hidden"; 
                     propNameSpan.textContent = data[0].name;
                 }
+
+                // Langkah 3: Trigger Eksekusi Tape Chart
+                renderTapeChart();
             } catch (err) {
                 statusDiv.innerHTML = `<span class="text-red-600 font-semibold"><i class="ph ph-warning-circle"></i> Gagal terhubung database:</span> ${err.message}`;
                 statusDiv.className = "p-4 rounded-md bg-red-50 border border-red-200 text-sm mb-6";
