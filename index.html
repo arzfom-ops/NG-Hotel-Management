@@ -89,6 +89,53 @@
         </div>
     </div>
 
+    <!-- Modal Add / Edit Tax & Service -->
+    <div id="taxServiceModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="taxServiceModalTitle" class="text-lg font-semibold text-slate-800">Add Tax & Service</h3>
+                <button type="button" onclick="closeTaxServiceModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="taxServiceForm" onsubmit="handleSaveTaxService(event)" class="space-y-4">
+                <input type="hidden" id="tax-service-id">
+
+                <!-- Type -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Type</label>
+                    <select id="tax-service-type" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <option value="tax">Tax</option>
+                        <option value="service">Service</option>
+                    </select>
+                </div>
+
+                <!-- Name -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
+                    <input type="text" id="tax-service-name" required placeholder="e.g. Government Tax (PB1)" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Value / Percentage -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Value / Percentage (%)</label>
+                    <input type="number" id="tax-service-percentage" step="any" required placeholder="e.g. 10" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeTaxServiceModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="taxServiceSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Add / Edit Room -->
     <div id="roomModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
@@ -526,43 +573,52 @@
 
                 <!-- Tab 5 Content: Tax & Service -->
                 <div id="tab-content-tax-service" class="tab-content-panel hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-base font-semibold text-slate-800">Pajak & Layanan (Tax & Service)</h3>
-                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
-                            <i class="ph ph-plus text-base"></i> + Add New Tax & Service
-                        </button>
-                    </div>
-                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
-                                <tr>
-                                    <th class="py-3 px-4">Name</th>
-                                    <th class="py-3 px-4">Percentage</th>
-                                    <th class="py-3 px-4">Active</th>
-                                    <th class="py-3 px-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200 text-slate-700">
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Government Tax (PB1)</td>
-                                    <td class="py-3 px-4">10%</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Service Charge</td>
-                                    <td class="py-3 px-4">5%</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Card Kiri: Service Menu -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-base font-semibold text-slate-800">Service Menu</h3>
+                                <button type="button" onclick="openTaxServiceModal('service')" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                                    <i class="ph ph-plus text-sm"></i> Add Service
+                                </button>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th class="py-3 px-4">Service Name</th>
+                                            <th class="py-3 px-4">Service Value (%)</th>
+                                            <th class="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="service-menu-tbody" class="divide-y divide-slate-200 text-slate-700">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Card Kanan: Tax Menu -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-base font-semibold text-slate-800">Tax Menu</h3>
+                                <button type="button" onclick="openTaxServiceModal('tax')" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                                    <i class="ph ph-plus text-sm"></i> Add Tax
+                                </button>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th class="py-3 px-4">Tax Name</th>
+                                            <th class="py-3 px-4">Tax Value (%)</th>
+                                            <th class="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tax-menu-tbody" class="divide-y divide-slate-200 text-slate-700">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1092,6 +1148,131 @@
             }
         }
 
+        // --- Tax & Service CRUD ---
+        async function fetchTaxService() {
+            try {
+                const { data, error } = await supabaseClient.from('tax_and_service').select('*');
+                if (error) throw error;
+
+                const items = data || [];
+                const serviceItems = items.filter(item => item.type === 'service');
+                const taxItems = items.filter(item => item.type === 'tax');
+
+                const serviceTbody = document.getElementById('service-menu-tbody');
+                if (serviceTbody) {
+                    serviceTbody.innerHTML = serviceItems.map(item => {
+                        const escapedName = (item.name || '').replace(/'/g, "\\'");
+                        const pctVal = item.percentage !== null && item.percentage !== undefined ? item.percentage : 0;
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${item.name}</td>
+                                <td class="py-3 px-4">${pctVal}%</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openTaxServiceModal('service', '${item.id}', '${escapedName}', ${pctVal})" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteTaxService('${item.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                const taxTbody = document.getElementById('tax-menu-tbody');
+                if (taxTbody) {
+                    taxTbody.innerHTML = taxItems.map(item => {
+                        const escapedName = (item.name || '').replace(/'/g, "\\'");
+                        const pctVal = item.percentage !== null && item.percentage !== undefined ? item.percentage : 0;
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${item.name}</td>
+                                <td class="py-3 px-4">${pctVal}%</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openTaxServiceModal('tax', '${item.id}', '${escapedName}', ${pctVal})" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteTaxService('${item.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error fetching tax & service:', err);
+            }
+        }
+
+        function openTaxServiceModal(modeType, id = '', name = '', percentage = '') {
+            const modal = document.getElementById('taxServiceModal');
+            const titleEl = document.getElementById('taxServiceModalTitle');
+            const submitBtn = document.getElementById('taxServiceSubmitBtn');
+
+            document.getElementById('tax-service-id').value = id;
+            document.getElementById('tax-service-type').value = modeType || 'service';
+            document.getElementById('tax-service-name').value = name;
+            document.getElementById('tax-service-percentage').value = percentage;
+
+            const modeLabel = (modeType === 'tax') ? 'Tax' : 'Service';
+            if (id) {
+                if (titleEl) titleEl.textContent = `Update ${modeLabel}`;
+                if (submitBtn) submitBtn.textContent = 'Update';
+            } else {
+                if (titleEl) titleEl.textContent = `Add ${modeLabel}`;
+                if (submitBtn) submitBtn.textContent = 'Save';
+            }
+
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeTaxServiceModal() {
+            const modal = document.getElementById('taxServiceModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('tax-service-id').value = '';
+            const form = document.getElementById('taxServiceForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveTaxService(event) {
+            event.preventDefault();
+            const id = document.getElementById('tax-service-id').value;
+            const type = document.getElementById('tax-service-type').value;
+            const name = document.getElementById('tax-service-name').value.trim();
+            const percentage = parseFloat(document.getElementById('tax-service-percentage').value);
+
+            if (!name || isNaN(percentage)) {
+                alert('Silakan isi Name dan Percentage dengan benar.');
+                return;
+            }
+
+            const payload = {
+                type: type,
+                name: name,
+                percentage: percentage
+            };
+
+            try {
+                if (id) {
+                    const { error } = await supabaseClient.from('tax_and_service').update(payload).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('tax_and_service').insert([payload]);
+                    if (error) throw error;
+                }
+                closeTaxServiceModal();
+                fetchTaxService();
+            } catch (err) {
+                console.error('Error saving tax & service:', err);
+                alert('Gagal menyimpan tax & service: ' + err.message);
+            }
+        }
+
+        async function deleteTaxService(id) {
+            try {
+                const { error } = await supabaseClient.from('tax_and_service').delete().eq('id', id);
+                if (error) throw error;
+                fetchTaxService();
+            } catch (err) {
+                console.error('Error deleting tax & service:', err);
+                alert('Gagal menghapus data: ' + err.message);
+            }
+        }
+
         async function initApp() {
             const statusDiv = document.getElementById('supabase-status');
             const propNameSpan = document.getElementById('active-property-name');
@@ -1111,10 +1292,11 @@
                 // Langkah 3: Trigger Eksekusi Tape Chart
                 renderTapeChart();
 
-                // Fetch data master Bed Types, Room Categories & Rooms
+                // Fetch data master Bed Types, Room Categories, Rooms & Tax/Service
                 fetchBedTypes();
                 fetchRoomTypes();
                 fetchRooms();
+                fetchTaxService();
             } catch (err) {
                 statusDiv.innerHTML = `<span class="text-red-600 font-semibold"><i class="ph ph-warning-circle"></i> Gagal terhubung database:</span> ${err.message}`;
                 statusDiv.className = "p-4 rounded-md bg-red-50 border border-red-200 text-sm mb-6";
@@ -1236,6 +1418,8 @@
                             fetchRoomTypes();
                         } else if (t === 'rooms') {
                             fetchRooms();
+                        } else if (t === 'tax-service') {
+                            fetchTaxService();
                         }
                     } else {
                         btn.classList.remove('border-primary', 'text-primary', 'font-bold');
