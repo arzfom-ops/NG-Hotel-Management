@@ -203,6 +203,82 @@
         </div>
     </div>
 
+    <!-- Modal Add / Edit Main Group -->
+    <div id="mainGroupModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="mainGroupModalTitle" class="text-lg font-semibold text-slate-800">Add Main Group</h3>
+                <button type="button" onclick="closeMainGroupModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="mainGroupForm" onsubmit="handleSaveMainGroup(event)" class="space-y-4">
+                <input type="hidden" id="edit-main-group-id">
+                <!-- Name -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
+                    <input type="text" id="mainGroupName" required placeholder="e.g. FIT / Direct" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeMainGroupModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="mainGroupSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Add / Edit Segment Code -->
+    <div id="segmentCodeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="segmentCodeModalTitle" class="text-lg font-semibold text-slate-800">Add Segment Code</h3>
+                <button type="button" onclick="closeSegmentCodeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="segmentCodeForm" onsubmit="handleSaveSegmentCode(event)" class="space-y-4">
+                <input type="hidden" id="edit-segment-code-id">
+
+                <!-- Segment Code -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Segment Code</label>
+                    <input type="text" id="segmentCodeInput" required placeholder="e.g. DIR-WALK" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Description</label>
+                    <input type="text" id="segmentCodeDescription" required placeholder="e.g. Direct Walk-in Guest" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Main Group -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Main Group</label>
+                    <select id="segmentCodeMainGroup" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeSegmentCodeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="segmentCodeSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Add / Edit Tax & Service -->
     <div id="taxServiceModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
@@ -507,6 +583,9 @@
                         <button type="button" onclick="switchSettingsTab('invoice-setting')" id="tab-btn-invoice-setting" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
                             Invoice Setting
                         </button>
+                        <button type="button" onclick="switchSettingsTab('market-segments')" id="tab-btn-market-segments" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Market Segments
+                        </button>
                     </nav>
                 </div>
 
@@ -766,6 +845,57 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Market Segments -->
+                <div id="tab-content-market-segments" class="tab-content-panel hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Kolom Kiri: Main Group Setup -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-base font-semibold text-slate-800">Main Group Setup</h3>
+                                <button type="button" onclick="openMainGroupModal()" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                                    <i class="ph ph-plus text-sm"></i> Add Main Group
+                                </button>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th class="py-3 px-4">Group Name</th>
+                                            <th class="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="main-groups-tbody" class="divide-y divide-slate-200 text-slate-700">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Kolom Kanan: Segment Code Setup -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-base font-semibold text-slate-800">Segment Code Setup</h3>
+                                <button type="button" onclick="openSegmentCodeModal()" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                                    <i class="ph ph-plus text-sm"></i> Add Segment Code
+                                </button>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th class="py-3 px-4">Segment Code</th>
+                                            <th class="py-3 px-4">Description</th>
+                                            <th class="py-3 px-4">Main Group</th>
+                                            <th class="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="segment-codes-tbody" class="divide-y divide-slate-200 text-slate-700">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1633,6 +1763,215 @@
             }
         }
 
+        // --- Segment Codes CRUD ---
+        async function fetchSegmentCodes() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('segment_codes')
+                    .select('id, segment_code, description, main_group_id, main_group_segments(name)');
+                if (error) throw error;
+
+                const tbody = document.getElementById('segment-codes-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(sc => {
+                        const mainGroupName = sc.main_group_segments ? (Array.isArray(sc.main_group_segments) ? sc.main_group_segments[0]?.name : sc.main_group_segments.name) : '-';
+                        const escapedCode = (sc.segment_code || '').replace(/'/g, "\\'");
+                        const escapedDesc = (sc.description || '').replace(/'/g, "\\'");
+                        const mainGroupId = sc.main_group_id || '';
+
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${sc.segment_code}</td>
+                                <td class="py-3 px-4">${sc.description || '-'}</td>
+                                <td class="py-3 px-4">${mainGroupName || '-'}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditSegmentCode('${sc.id}', '${escapedCode}', '${escapedDesc}', '${mainGroupId}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteSegmentCode('${sc.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error fetching segment codes:', err);
+            }
+        }
+
+        async function openSegmentCodeModal() {
+            await fetchMainGroups();
+            document.getElementById('edit-segment-code-id').value = '';
+            document.getElementById('segmentCodeInput').value = '';
+            document.getElementById('segmentCodeDescription').value = '';
+            document.getElementById('segmentCodeModalTitle').textContent = 'Add Segment Code';
+            document.getElementById('segmentCodeSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('segmentCodeModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        async function openEditSegmentCode(id, segmentCode, description, mainGroupId) {
+            await fetchMainGroups();
+            document.getElementById('edit-segment-code-id').value = id;
+            document.getElementById('segmentCodeInput').value = segmentCode;
+            document.getElementById('segmentCodeDescription').value = description;
+            const mainGroupSelect = document.getElementById('segmentCodeMainGroup');
+            if (mainGroupSelect) mainGroupSelect.value = mainGroupId;
+
+            document.getElementById('segmentCodeModalTitle').textContent = 'Update Segment Code';
+            document.getElementById('segmentCodeSubmitBtn').textContent = 'Update';
+            const modal = document.getElementById('segmentCodeModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeSegmentCodeModal() {
+            const modal = document.getElementById('segmentCodeModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-segment-code-id').value = '';
+            const form = document.getElementById('segmentCodeForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveSegmentCode(event) {
+            event.preventDefault();
+            const editId = document.getElementById('edit-segment-code-id').value;
+            const segmentCodeVal = document.getElementById('segmentCodeInput').value.trim();
+            const descriptionVal = document.getElementById('segmentCodeDescription').value.trim();
+            const mainGroupIdVal = document.getElementById('segmentCodeMainGroup').value;
+
+            if (!segmentCodeVal || !mainGroupIdVal) {
+                alert('Silakan lengkapi data form.');
+                return;
+            }
+
+            const payload = {
+                segment_code: segmentCodeVal,
+                description: descriptionVal,
+                main_group_id: mainGroupIdVal
+            };
+
+            try {
+                if (editId) {
+                    const { error } = await supabaseClient.from('segment_codes').update(payload).eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('segment_codes').insert([payload]);
+                    if (error) throw error;
+                }
+                closeSegmentCodeModal();
+                fetchSegmentCodes();
+            } catch (err) {
+                console.error('Error saving segment code:', err);
+                alert('Gagal menyimpan segment code: ' + err.message);
+            }
+        }
+
+        async function deleteSegmentCode(id) {
+            try {
+                const { error } = await supabaseClient.from('segment_codes').delete().eq('id', id);
+                if (error) throw error;
+                fetchSegmentCodes();
+            } catch (err) {
+                console.error('Error deleting segment code:', err);
+                alert('Gagal menghapus segment code: ' + err.message);
+            }
+        }
+
+        // --- Main Group Segments CRUD ---
+        async function fetchMainGroups() {
+            try {
+                const { data, error } = await supabaseClient.from('main_group_segments').select('*');
+                if (error) throw error;
+
+                const tbody = document.getElementById('main-groups-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(mg => {
+                        const escapedName = (mg.name || '').replace(/'/g, "\\'");
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${mg.name}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditMainGroup('${mg.id}', '${escapedName}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteMainGroup('${mg.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Populate Option pada Select Dropdown "Main Group" untuk Segment Code Modal
+                const dropdown = document.getElementById('segmentCodeMainGroup');
+                if (dropdown) {
+                    if (data && data.length > 0) {
+                        dropdown.innerHTML = data.map(mg => `<option value="${mg.id}">${mg.name}</option>`).join('');
+                    } else {
+                        dropdown.innerHTML = `<option value="">-- No Main Groups --</option>`;
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching main group segments:', err);
+            }
+        }
+
+        function openMainGroupModal() {
+            document.getElementById('edit-main-group-id').value = '';
+            document.getElementById('mainGroupName').value = '';
+            document.getElementById('mainGroupModalTitle').textContent = 'Add Main Group';
+            document.getElementById('mainGroupSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('mainGroupModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function openEditMainGroup(id, currentName) {
+            document.getElementById('edit-main-group-id').value = id;
+            document.getElementById('mainGroupName').value = currentName;
+            document.getElementById('mainGroupModalTitle').textContent = 'Update Main Group';
+            document.getElementById('mainGroupSubmitBtn').textContent = 'Update';
+            const modal = document.getElementById('mainGroupModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeMainGroupModal() {
+            const modal = document.getElementById('mainGroupModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-main-group-id').value = '';
+            const form = document.getElementById('mainGroupForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveMainGroup(event) {
+            event.preventDefault();
+            const editId = document.getElementById('edit-main-group-id').value;
+            const nameVal = document.getElementById('mainGroupName').value.trim();
+            if (!nameVal) return;
+
+            try {
+                if (editId) {
+                    const { error } = await supabaseClient.from('main_group_segments').update({ name: nameVal }).eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('main_group_segments').insert([{ name: nameVal }]);
+                    if (error) throw error;
+                }
+                closeMainGroupModal();
+                fetchMainGroups();
+                fetchSegmentCodes();
+            } catch (err) {
+                console.error('Error saving main group segment:', err);
+                alert('Gagal menyimpan main group: ' + err.message);
+            }
+        }
+
+        async function deleteMainGroup(id) {
+            try {
+                const { error } = await supabaseClient.from('main_group_segments').delete().eq('id', id);
+                if (error) throw error;
+                fetchMainGroups();
+                fetchSegmentCodes();
+            } catch (err) {
+                console.error('Error deleting main group segment:', err);
+                alert('Gagal menghapus main group: ' + err.message);
+            }
+        }
+
         // --- Tax & Service CRUD ---
         async function fetchTaxService() {
             try {
@@ -1888,7 +2227,7 @@
 
         // Admin Settings Tab Switcher
         function switchSettingsTab(tabId) {
-            const tabs = ['room-types', 'rooms', 'meal-plans', 'rate-structure', 'tax-service', 'extra-charges', 'payment-methods', 'invoice-setting'];
+            const tabs = ['room-types', 'rooms', 'meal-plans', 'rate-structure', 'tax-service', 'extra-charges', 'payment-methods', 'invoice-setting', 'market-segments'];
 
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
@@ -1911,6 +2250,9 @@
                             fetchPaymentMethods();
                         } else if (t === 'invoice-setting') {
                             fetchInvoiceSetting();
+                        } else if (t === 'market-segments') {
+                            fetchMainGroups();
+                            fetchSegmentCodes();
                         }
                     } else {
                         btn.classList.remove('border-primary', 'text-primary', 'font-bold');
