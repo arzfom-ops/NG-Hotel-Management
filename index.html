@@ -62,13 +62,14 @@
     <div id="bedTypeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
             <div class="flex justify-between items-center pb-4 border-b mb-4">
-                <h3 class="text-lg font-semibold text-slate-800">Add Bed Type</h3>
+                <h3 id="bedTypeModalTitle" class="text-lg font-semibold text-slate-800">Add Bed Type</h3>
                 <button type="button" onclick="closeBedTypeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
 
             <form id="bedTypeForm" onsubmit="handleSaveBedType(event)" class="space-y-4">
+                <input type="hidden" id="edit-bed-type-id">
                 <!-- Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
@@ -80,7 +81,7 @@
                     <button type="button" onclick="closeBedTypeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
                         Cancel
                     </button>
-                    <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="bedTypeSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
                         Save
                     </button>
                 </div>
@@ -92,13 +93,14 @@
     <div id="roomCategoryModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
             <div class="flex justify-between items-center pb-4 border-b mb-4">
-                <h3 class="text-lg font-semibold text-slate-800">Add Room Category</h3>
+                <h3 id="roomCategoryModalTitle" class="text-lg font-semibold text-slate-800">Add Room Category</h3>
                 <button type="button" onclick="closeRoomCategoryModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
 
             <form id="roomCategoryForm" onsubmit="handleSaveRoomCategory(event)" class="space-y-4">
+                <input type="hidden" id="edit-room-type-id">
                 <!-- Room Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Room Name</label>
@@ -123,7 +125,7 @@
                     <button type="button" onclick="closeRoomCategoryModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
                         Cancel
                     </button>
-                    <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="roomCategorySubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
                         Save
                     </button>
                 </div>
@@ -707,14 +709,18 @@
 
                 const tbody = document.getElementById('bed-types-tbody');
                 if (tbody) {
-                    tbody.innerHTML = (data || []).map(bt => `
-                        <tr class="hover:bg-slate-50/80 transition-colors">
-                            <td class="py-3 px-4 font-medium">${bt.name}</td>
-                            <td class="py-3 px-4 text-right space-x-2">
-                                <button onclick="deleteBedType('${bt.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                            </td>
-                        </tr>
-                    `).join('');
+                    tbody.innerHTML = (data || []).map(bt => {
+                        const escapedName = (bt.name || '').replace(/'/g, "\\'");
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${bt.name}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditBedType('${bt.id}', '${escapedName}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteBedType('${bt.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
                 }
 
                 // Populate dynamic select options for Room Category modal
@@ -732,6 +738,18 @@
         }
 
         function openBedTypeModal() {
+            document.getElementById('edit-bed-type-id').value = '';
+            document.getElementById('bedTypeModalTitle').textContent = 'Add Bed Type';
+            document.getElementById('bedTypeSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('bedTypeModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function openEditBedType(id, currentName) {
+            document.getElementById('edit-bed-type-id').value = id;
+            document.getElementById('bedTypeName').value = currentName;
+            document.getElementById('bedTypeModalTitle').textContent = 'Update Bed Type';
+            document.getElementById('bedTypeSubmitBtn').textContent = 'Update';
             const modal = document.getElementById('bedTypeModal');
             if (modal) modal.classList.remove('hidden');
         }
@@ -739,20 +757,28 @@
         function closeBedTypeModal() {
             const modal = document.getElementById('bedTypeModal');
             if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-bed-type-id').value = '';
             const form = document.getElementById('bedTypeForm');
             if (form) form.reset();
         }
 
         async function handleSaveBedType(event) {
             event.preventDefault();
+            const editId = document.getElementById('edit-bed-type-id').value;
             const nameVal = document.getElementById('bedTypeName').value.trim();
             if (!nameVal) return;
 
             try {
-                const { error } = await supabaseClient.from('bed_types').insert([{ name: nameVal }]);
-                if (error) throw error;
+                if (editId) {
+                    const { error } = await supabaseClient.from('bed_types').update({ name: nameVal }).eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('bed_types').insert([{ name: nameVal }]);
+                    if (error) throw error;
+                }
                 closeBedTypeModal();
                 fetchBedTypes();
+                fetchRoomTypes();
             } catch (err) {
                 console.error('Error saving bed type:', err);
                 alert('Gagal menyimpan bed type: ' + err.message);
@@ -774,7 +800,7 @@
         // --- Room Categories CRUD ---
         async function fetchRoomTypes() {
             try {
-                const { data, error } = await supabaseClient.from('room_types').select('id, name, base_price, bed_types(name)');
+                const { data, error } = await supabaseClient.from('room_types').select('id, name, base_price, bed_type_id, bed_types(name)');
                 if (error) throw error;
 
                 const tbody = document.getElementById('room-types-tbody');
@@ -784,12 +810,16 @@
                         const priceFormatted = rt.base_price !== null && rt.base_price !== undefined
                             ? `Rp ${Number(rt.base_price).toLocaleString('id-ID')}`
                             : '-';
+                        const escapedName = (rt.name || '').replace(/'/g, "\\'");
+                        const priceVal = rt.base_price !== null && rt.base_price !== undefined ? rt.base_price : 0;
+                        const bedTypeId = rt.bed_type_id || '';
                         return `
                             <tr class="hover:bg-slate-50/80 transition-colors">
                                 <td class="py-3 px-4 font-medium">${rt.name}</td>
                                 <td class="py-3 px-4">${bedTypeName || '-'}</td>
                                 <td class="py-3 px-4">${priceFormatted}</td>
                                 <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditRoomType('${rt.id}', '${escapedName}', ${priceVal}, '${bedTypeId}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
                                     <button onclick="deleteRoomType('${rt.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
                                 </td>
                             </tr>
@@ -802,6 +832,22 @@
         }
 
         function openRoomCategoryModal() {
+            document.getElementById('edit-room-type-id').value = '';
+            document.getElementById('roomCategoryModalTitle').textContent = 'Add Room Category';
+            document.getElementById('roomCategorySubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('roomCategoryModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function openEditRoomType(id, name, price, bedTypeId) {
+            document.getElementById('edit-room-type-id').value = id;
+            document.getElementById('roomCategoryName').value = name;
+            document.getElementById('roomCategoryBasePrice').value = price;
+            const bedTypeSelect = document.getElementById('roomCategoryBedType');
+            if (bedTypeSelect) bedTypeSelect.value = bedTypeId;
+
+            document.getElementById('roomCategoryModalTitle').textContent = 'Update Room Category';
+            document.getElementById('roomCategorySubmitBtn').textContent = 'Update';
             const modal = document.getElementById('roomCategoryModal');
             if (modal) modal.classList.remove('hidden');
         }
@@ -809,12 +855,14 @@
         function closeRoomCategoryModal() {
             const modal = document.getElementById('roomCategoryModal');
             if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-room-type-id').value = '';
             const form = document.getElementById('roomCategoryForm');
             if (form) form.reset();
         }
 
         async function handleSaveRoomCategory(event) {
             event.preventDefault();
+            const editId = document.getElementById('edit-room-type-id').value;
             const nameVal = document.getElementById('roomCategoryName').value.trim();
             const bedTypeIdVal = document.getElementById('roomCategoryBedType').value;
             const priceVal = parseFloat(document.getElementById('roomCategoryBasePrice').value);
@@ -825,12 +873,21 @@
             }
 
             try {
-                const { error } = await supabaseClient.from('room_types').insert([{
-                    name: nameVal,
-                    base_price: priceVal,
-                    bed_type_id: bedTypeIdVal
-                }]);
-                if (error) throw error;
+                if (editId) {
+                    const { error } = await supabaseClient.from('room_types').update({
+                        name: nameVal,
+                        base_price: priceVal,
+                        bed_type_id: bedTypeIdVal
+                    }).eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('room_types').insert([{
+                        name: nameVal,
+                        base_price: priceVal,
+                        bed_type_id: bedTypeIdVal
+                    }]);
+                    if (error) throw error;
+                }
                 closeRoomCategoryModal();
                 fetchRoomTypes();
             } catch (err) {
@@ -915,23 +972,6 @@
             }
         }
 
-        function openRoomCategoryModal() {
-            const modal = document.getElementById('roomCategoryModal');
-            if (modal) {
-                modal.classList.remove('hidden');
-            }
-        }
-
-        function closeRoomCategoryModal() {
-            const modal = document.getElementById('roomCategoryModal');
-            if (modal) {
-                modal.classList.add('hidden');
-            }
-            const form = document.getElementById('roomCategoryForm');
-            if (form) {
-                form.reset();
-            }
-        }
 
         function handleSaveReservation(event) {
             event.preventDefault();
