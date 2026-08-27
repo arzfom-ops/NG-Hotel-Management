@@ -89,6 +89,120 @@
         </div>
     </div>
 
+    <!-- Modal Add / Edit Extra Charge -->
+    <div id="extraChargeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="extraChargeModalTitle" class="text-lg font-semibold text-slate-800">Add Extra Charge</h3>
+                <button type="button" onclick="closeExtraChargeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="extraChargeForm" onsubmit="handleSaveExtraCharge(event)" class="space-y-4">
+                <input type="hidden" id="extra-charge-id">
+
+                <!-- Name -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
+                    <input type="text" id="extra-charge-name" required placeholder="e.g. Extra Bed" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Category</label>
+                    <select id="extra-charge-category" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                        <option value="F&B">F&B</option>
+                        <option value="Front Office">Front Office</option>
+                        <option value="Housekeeping">Housekeeping</option>
+                        <option value="Laundry">Laundry</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+
+                <!-- Price -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Price</label>
+                    <input type="number" id="extra-charge-price" required min="0" step="any" placeholder="e.g. 150000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Taxable -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Taxable</label>
+                    <select id="extra-charge-taxable" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeExtraChargeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="extraChargeSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Add / Edit Payment Method -->
+    <div id="paymentMethodModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="paymentMethodModalTitle" class="text-lg font-semibold text-slate-800">Add Payment Method</h3>
+                <button type="button" onclick="closePaymentMethodModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="paymentMethodForm" onsubmit="handleSavePaymentMethod(event)" class="space-y-4">
+                <input type="hidden" id="payment-method-id">
+
+                <!-- Name -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
+                    <input type="text" id="payment-method-name" required placeholder="e.g. BCA Transfer / Cash / GoPay" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Method Type -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Method Type</label>
+                    <select id="payment-method-type" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                        <option value="Cash">Cash</option>
+                        <option value="Debit Card">Debit Card</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="E-Wallet">E-Wallet</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="City Ledger/OTA">City Ledger/OTA</option>
+                    </select>
+                </div>
+
+                <!-- Status -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                    <select id="payment-method-status" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closePaymentMethodModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="paymentMethodSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Add / Edit Tax & Service -->
     <div id="taxServiceModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
@@ -366,7 +480,7 @@
                     <p class="text-sm text-slate-500 mt-1">Pengaturan data master dan konfigurasi properti hotel.</p>
                 </div>
 
-                <!-- 5 Tab Navigation -->
+                <!-- Tab Navigation -->
                 <div class="border-b border-slate-200 mb-6">
                     <nav class="flex space-x-6 overflow-x-auto" aria-label="Tabs">
                         <button type="button" onclick="switchSettingsTab('room-types')" id="tab-btn-room-types" class="settings-tab-btn border-b-2 border-primary text-primary font-bold py-3 px-1 text-sm whitespace-nowrap transition-colors">
@@ -383,6 +497,15 @@
                         </button>
                         <button type="button" onclick="switchSettingsTab('tax-service')" id="tab-btn-tax-service" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
                             Tax & Service
+                        </button>
+                        <button type="button" onclick="switchSettingsTab('extra-charges')" id="tab-btn-extra-charges" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Extra Charges
+                        </button>
+                        <button type="button" onclick="switchSettingsTab('payment-methods')" id="tab-btn-payment-methods" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Payment Methods
+                        </button>
+                        <button type="button" onclick="switchSettingsTab('invoice-setting')" id="tab-btn-invoice-setting" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Invoice Setting
                         </button>
                     </nav>
                 </div>
@@ -435,6 +558,81 @@
                                 </table>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Tab 6 Content: Extra Charges -->
+                <div id="tab-content-extra-charges" class="tab-content-panel hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-semibold text-slate-800">Daftar Extra Charges</h3>
+                        <button type="button" onclick="openExtraChargeModal()" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                            <i class="ph ph-plus text-base"></i> + Add Extra Charge
+                        </button>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                <tr>
+                                    <th class="py-3 px-4">Name</th>
+                                    <th class="py-3 px-4">Category</th>
+                                    <th class="py-3 px-4">Price</th>
+                                    <th class="py-3 px-4">Taxable</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="extra-charges-tbody" class="divide-y divide-slate-200 text-slate-700">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 7 Content: Payment Methods -->
+                <div id="tab-content-payment-methods" class="tab-content-panel hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-semibold text-slate-800">Daftar Metode Pembayaran</h3>
+                        <button type="button" onclick="openPaymentMethodModal()" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                            <i class="ph ph-plus text-base"></i> + Add Payment Method
+                        </button>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                <tr>
+                                    <th class="py-3 px-4">Name</th>
+                                    <th class="py-3 px-4">Type</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payment-methods-tbody" class="divide-y divide-slate-200 text-slate-700">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 8 Content: Invoice Setting -->
+                <div id="tab-content-invoice-setting" class="tab-content-panel hidden">
+                    <div class="max-w-2xl bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                        <h3 class="text-base font-semibold text-slate-800 mb-4 pb-2 border-b">Invoice Configuration</h3>
+                        <form id="invoiceSettingForm" onsubmit="handleSaveInvoiceSetting(event)" class="space-y-4">
+                            <input type="hidden" id="invoice-setting-id">
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Invoice Prefix</label>
+                                <input type="text" id="invoice-prefix" required placeholder="e.g. INV-" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Footer Notes / Terms</label>
+                                <textarea id="invoice-footer-notes" rows="4" placeholder="e.g. Thank you for staying with us. Payment is due within 14 days." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                            </div>
+
+                            <div class="pt-2">
+                                <button type="submit" id="invoiceSettingSaveBtn" class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
@@ -1148,6 +1346,291 @@
             }
         }
 
+        // --- Extra Charges CRUD ---
+        async function fetchExtraCharges() {
+            try {
+                const { data, error } = await supabaseClient.from('extra_charges').select('*');
+                if (error) throw error;
+
+                const tbody = document.getElementById('extra-charges-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(item => {
+                        const escapedName = (item.name || '').replace(/'/g, "\\'");
+                        const category = item.category || '-';
+                        const priceFormatted = item.price !== null && item.price !== undefined
+                            ? `Rp ${Number(item.price).toLocaleString('id-ID')}`
+                            : 'Rp 0';
+                        const isTaxable = item.taxable === true || item.taxable === 'true';
+                        const taxableBadge = isTaxable
+                            ? `<span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Yes</span>`
+                            : `<span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">No</span>`;
+
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${item.name}</td>
+                                <td class="py-3 px-4">${category}</td>
+                                <td class="py-3 px-4">${priceFormatted}</td>
+                                <td class="py-3 px-4">${taxableBadge}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditExtraCharge('${item.id}', '${escapedName}', '${category}', ${item.price || 0}, ${isTaxable})" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteExtraCharge('${item.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error fetching extra charges:', err);
+            }
+        }
+
+        function openExtraChargeModal() {
+            document.getElementById('extra-charge-id').value = '';
+            document.getElementById('extra-charge-name').value = '';
+            document.getElementById('extra-charge-category').value = 'F&B';
+            document.getElementById('extra-charge-price').value = '';
+            document.getElementById('extra-charge-taxable').value = 'true';
+            document.getElementById('extraChargeModalTitle').textContent = 'Add Extra Charge';
+            document.getElementById('extraChargeSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('extraChargeModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function openEditExtraCharge(id, name, category, price, taxable) {
+            document.getElementById('extra-charge-id').value = id;
+            document.getElementById('extra-charge-name').value = name;
+            document.getElementById('extra-charge-category').value = category || 'F&B';
+            document.getElementById('extra-charge-price').value = price || 0;
+            document.getElementById('extra-charge-taxable').value = taxable ? 'true' : 'false';
+
+            document.getElementById('extraChargeModalTitle').textContent = 'Update Extra Charge';
+            document.getElementById('extraChargeSubmitBtn').textContent = 'Update';
+            const modal = document.getElementById('extraChargeModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeExtraChargeModal() {
+            const modal = document.getElementById('extraChargeModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('extra-charge-id').value = '';
+            const form = document.getElementById('extraChargeForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveExtraCharge(event) {
+            event.preventDefault();
+            const id = document.getElementById('extra-charge-id').value;
+            const name = document.getElementById('extra-charge-name').value.trim();
+            const category = document.getElementById('extra-charge-category').value;
+            const price = parseFloat(document.getElementById('extra-charge-price').value);
+            const taxable = document.getElementById('extra-charge-taxable').value === 'true';
+
+            if (!name || isNaN(price)) {
+                alert('Silakan isi Name dan Price dengan benar.');
+                return;
+            }
+
+            const payload = {
+                name: name,
+                category: category,
+                price: price,
+                taxable: taxable
+            };
+
+            try {
+                if (id) {
+                    const { error } = await supabaseClient.from('extra_charges').update(payload).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('extra_charges').insert([payload]);
+                    if (error) throw error;
+                }
+                closeExtraChargeModal();
+                fetchExtraCharges();
+            } catch (err) {
+                console.error('Error saving extra charge:', err);
+                alert('Gagal menyimpan extra charge: ' + err.message);
+            }
+        }
+
+        async function deleteExtraCharge(id) {
+            try {
+                const { error } = await supabaseClient.from('extra_charges').delete().eq('id', id);
+                if (error) throw error;
+                fetchExtraCharges();
+            } catch (err) {
+                console.error('Error deleting extra charge:', err);
+                alert('Gagal menghapus extra charge: ' + err.message);
+            }
+        }
+
+        // --- Payment Methods CRUD ---
+        async function fetchPaymentMethods() {
+            try {
+                const { data, error } = await supabaseClient.from('payment_methods').select('*');
+                if (error) throw error;
+
+                const tbody = document.getElementById('payment-methods-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(item => {
+                        const escapedName = (item.name || '').replace(/'/g, "\\'");
+                        const type = item.type || item.method_type || '-';
+                        const status = item.status || 'Active';
+                        const isActive = status.toLowerCase() === 'active';
+                        const statusBadge = isActive
+                            ? `<span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Active</span>`
+                            : `<span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">Inactive</span>`;
+
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${item.name}</td>
+                                <td class="py-3 px-4">${type}</td>
+                                <td class="py-3 px-4">${statusBadge}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditPaymentMethod('${item.id}', '${escapedName}', '${type}', '${status}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deletePaymentMethod('${item.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error fetching payment methods:', err);
+            }
+        }
+
+        function openPaymentMethodModal() {
+            document.getElementById('payment-method-id').value = '';
+            document.getElementById('payment-method-name').value = '';
+            document.getElementById('payment-method-type').value = 'Cash';
+            document.getElementById('payment-method-status').value = 'Active';
+            document.getElementById('paymentMethodModalTitle').textContent = 'Add Payment Method';
+            document.getElementById('paymentMethodSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('paymentMethodModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function openEditPaymentMethod(id, name, type, status) {
+            document.getElementById('payment-method-id').value = id;
+            document.getElementById('payment-method-name').value = name;
+            document.getElementById('payment-method-type').value = type || 'Cash';
+            document.getElementById('payment-method-status').value = status || 'Active';
+
+            document.getElementById('paymentMethodModalTitle').textContent = 'Update Payment Method';
+            document.getElementById('paymentMethodSubmitBtn').textContent = 'Update';
+            const modal = document.getElementById('paymentMethodModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closePaymentMethodModal() {
+            const modal = document.getElementById('paymentMethodModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('payment-method-id').value = '';
+            const form = document.getElementById('paymentMethodForm');
+            if (form) form.reset();
+        }
+
+        async function handleSavePaymentMethod(event) {
+            event.preventDefault();
+            const id = document.getElementById('payment-method-id').value;
+            const name = document.getElementById('payment-method-name').value.trim();
+            const type = document.getElementById('payment-method-type').value;
+            const status = document.getElementById('payment-method-status').value;
+
+            if (!name) {
+                alert('Silakan isi Name.');
+                return;
+            }
+
+            const payload = {
+                name: name,
+                type: type,
+                status: status
+            };
+
+            try {
+                if (id) {
+                    const { error } = await supabaseClient.from('payment_methods').update(payload).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('payment_methods').insert([payload]);
+                    if (error) throw error;
+                }
+                closePaymentMethodModal();
+                fetchPaymentMethods();
+            } catch (err) {
+                console.error('Error saving payment method:', err);
+                alert('Gagal menyimpan payment method: ' + err.message);
+            }
+        }
+
+        async function deletePaymentMethod(id) {
+            try {
+                const { error } = await supabaseClient.from('payment_methods').delete().eq('id', id);
+                if (error) throw error;
+                fetchPaymentMethods();
+            } catch (err) {
+                console.error('Error deleting payment method:', err);
+                alert('Gagal menghapus payment method: ' + err.message);
+            }
+        }
+
+        // --- Invoice Setting Single Form ---
+        async function fetchInvoiceSetting() {
+            try {
+                const { data, error } = await supabaseClient.from('invoice_settings').select('*').limit(1);
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    const item = data[0];
+                    document.getElementById('invoice-setting-id').value = item.id || '';
+                    document.getElementById('invoice-prefix').value = item.prefix || item.invoice_prefix || '';
+                    document.getElementById('invoice-footer-notes').value = item.footer_notes || item.terms || item.notes || '';
+                } else {
+                    document.getElementById('invoice-setting-id').value = '';
+                    document.getElementById('invoice-prefix').value = '';
+                    document.getElementById('invoice-footer-notes').value = '';
+                }
+            } catch (err) {
+                console.error('Error fetching invoice settings:', err);
+            }
+        }
+
+        async function handleSaveInvoiceSetting(event) {
+            event.preventDefault();
+            const id = document.getElementById('invoice-setting-id').value;
+            const prefix = document.getElementById('invoice-prefix').value.trim();
+            const footerNotes = document.getElementById('invoice-footer-notes').value.trim();
+
+            if (!prefix) {
+                alert('Silakan isi Invoice Prefix.');
+                return;
+            }
+
+            const payload = {
+                prefix: prefix,
+                footer_notes: footerNotes
+            };
+
+            try {
+                if (id) {
+                    const { error } = await supabaseClient.from('invoice_settings').update(payload).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { data, error } = await supabaseClient.from('invoice_settings').insert([payload]).select();
+                    if (error) throw error;
+                    if (data && data.length > 0) {
+                        document.getElementById('invoice-setting-id').value = data[0].id;
+                    }
+                }
+                alert('Invoice settings berhasil disimpan!');
+                fetchInvoiceSetting();
+            } catch (err) {
+                console.error('Error saving invoice settings:', err);
+                alert('Gagal menyimpan invoice settings: ' + err.message);
+            }
+        }
+
         // --- Tax & Service CRUD ---
         async function fetchTaxService() {
             try {
@@ -1403,7 +1886,7 @@
 
         // Admin Settings Tab Switcher
         function switchSettingsTab(tabId) {
-            const tabs = ['room-types', 'rooms', 'meal-plans', 'rate-structure', 'tax-service'];
+            const tabs = ['room-types', 'rooms', 'meal-plans', 'rate-structure', 'tax-service', 'extra-charges', 'payment-methods', 'invoice-setting'];
 
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
@@ -1420,6 +1903,12 @@
                             fetchRooms();
                         } else if (t === 'tax-service') {
                             fetchTaxService();
+                        } else if (t === 'extra-charges') {
+                            fetchExtraCharges();
+                        } else if (t === 'payment-methods') {
+                            fetchPaymentMethods();
+                        } else if (t === 'invoice-setting') {
+                            fetchInvoiceSetting();
                         }
                     } else {
                         btn.classList.remove('border-primary', 'text-primary', 'font-bold');
