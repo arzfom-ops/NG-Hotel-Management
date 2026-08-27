@@ -1360,7 +1360,7 @@
                         const priceFormatted = item.price !== null && item.price !== undefined
                             ? `Rp ${Number(item.price).toLocaleString('id-ID')}`
                             : 'Rp 0';
-                        const isTaxable = item.taxable === true || item.taxable === 'true';
+                        const isTaxable = item.is_taxable === true || item.is_taxable === 'true' || item.taxable === true || item.taxable === 'true';
                         const taxableBadge = isTaxable
                             ? `<span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Yes</span>`
                             : `<span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">No</span>`;
@@ -1423,7 +1423,7 @@
             const name = document.getElementById('extra-charge-name').value.trim();
             const category = document.getElementById('extra-charge-category').value;
             const price = parseFloat(document.getElementById('extra-charge-price').value);
-            const taxable = document.getElementById('extra-charge-taxable').value === 'true';
+            const isTaxable = document.getElementById('extra-charge-taxable').value === 'true';
 
             if (!name || isNaN(price)) {
                 alert('Silakan isi Name dan Price dengan benar.');
@@ -1434,7 +1434,7 @@
                 name: name,
                 category: category,
                 price: price,
-                taxable: taxable
+                is_taxable: isTaxable
             };
 
             try {
@@ -1474,12 +1474,13 @@
                 if (tbody) {
                     tbody.innerHTML = (data || []).map(item => {
                         const escapedName = (item.name || '').replace(/'/g, "\\'");
-                        const type = item.type || item.method_type || '-';
-                        const status = item.status || 'Active';
-                        const isActive = status.toLowerCase() === 'active';
+                        const type = item.method_type || item.type || '-';
+                        const isActive = item.is_active === true || item.is_active === 'true' || (typeof item.status === 'string' && item.status.toLowerCase() === 'active');
                         const statusBadge = isActive
                             ? `<span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Active</span>`
                             : `<span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">Inactive</span>`;
+
+                        const statusText = isActive ? 'Active' : 'Inactive';
 
                         return `
                             <tr class="hover:bg-slate-50/80 transition-colors">
@@ -1487,7 +1488,7 @@
                                 <td class="py-3 px-4">${type}</td>
                                 <td class="py-3 px-4">${statusBadge}</td>
                                 <td class="py-3 px-4 text-right space-x-2">
-                                    <button onclick="openEditPaymentMethod('${item.id}', '${escapedName}', '${type}', '${status}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="openEditPaymentMethod('${item.id}', '${escapedName}', '${type}', '${statusText}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
                                     <button onclick="deletePaymentMethod('${item.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
                                 </td>
                             </tr>
@@ -1514,7 +1515,7 @@
             document.getElementById('payment-method-id').value = id;
             document.getElementById('payment-method-name').value = name;
             document.getElementById('payment-method-type').value = type || 'Cash';
-            document.getElementById('payment-method-status').value = status || 'Active';
+            document.getElementById('payment-method-status').value = (status === 'Active' || status === true || status === 'true') ? 'Active' : 'Inactive';
 
             document.getElementById('paymentMethodModalTitle').textContent = 'Update Payment Method';
             document.getElementById('paymentMethodSubmitBtn').textContent = 'Update';
@@ -1535,7 +1536,8 @@
             const id = document.getElementById('payment-method-id').value;
             const name = document.getElementById('payment-method-name').value.trim();
             const type = document.getElementById('payment-method-type').value;
-            const status = document.getElementById('payment-method-status').value;
+            const statusVal = document.getElementById('payment-method-status').value;
+            const isActive = statusVal === 'Active';
 
             if (!name) {
                 alert('Silakan isi Name.');
@@ -1544,8 +1546,8 @@
 
             const payload = {
                 name: name,
-                type: type,
-                status: status
+                method_type: type,
+                is_active: isActive
             };
 
             try {
