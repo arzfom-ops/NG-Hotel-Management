@@ -105,7 +105,8 @@
                 <!-- Room Number -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Room Number</label>
-                    <input type="text" id="roomNumber" required placeholder="e.g. 101" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <textarea id="room-number-input" rows="2" required placeholder="Contoh: 101, 102, 103" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                    <p class="text-xs text-slate-400 mt-1">Pisahkan dengan koma untuk tambah banyak kamar sekaligus.</p>
                 </div>
 
                 <!-- Room Type -->
@@ -990,7 +991,7 @@
         async function openRoomModal() {
             await populateRoomTypeDropdown();
             document.getElementById('edit-room-id').value = '';
-            document.getElementById('roomNumber').value = '';
+            document.getElementById('room-number-input').value = '';
             document.getElementById('roomViewSelect').value = 'No View';
             document.getElementById('roomFloor').value = '';
             document.getElementById('roomBuilding').value = '';
@@ -1003,7 +1004,7 @@
         async function openEditRoom(id, room_number, room_type_id, room_view, floor, building) {
             await populateRoomTypeDropdown();
             document.getElementById('edit-room-id').value = id;
-            document.getElementById('roomNumber').value = room_number;
+            document.getElementById('room-number-input').value = room_number;
             const roomTypeSelect = document.getElementById('roomTypeSelect');
             if (roomTypeSelect) roomTypeSelect.value = room_type_id;
             const roomViewSelect = document.getElementById('roomViewSelect');
@@ -1028,31 +1029,48 @@
         async function handleSaveRoom(event) {
             event.preventDefault();
             const editId = document.getElementById('edit-room-id').value;
-            const roomNumberVal = document.getElementById('roomNumber').value.trim();
+            const roomNumberVal = document.getElementById('room-number-input').value;
             const roomTypeIdVal = document.getElementById('roomTypeSelect').value;
             const roomViewVal = document.getElementById('roomViewSelect').value;
             const roomFloorVal = document.getElementById('roomFloor').value.trim();
             const roomBuildingVal = document.getElementById('roomBuilding').value.trim();
 
-            if (!roomNumberVal || !roomTypeIdVal) {
+            if (!roomNumberVal.trim() || !roomTypeIdVal) {
                 alert('Silakan lengkapi data form.');
                 return;
             }
 
-            const roomData = {
-                room_number: roomNumberVal,
-                room_type_id: roomTypeIdVal,
-                room_view: roomViewVal,
-                floor: roomFloorVal,
-                building: roomBuildingVal
-            };
-
             try {
                 if (editId) {
+                    const roomData = {
+                        room_number: roomNumberVal.trim(),
+                        room_type_id: roomTypeIdVal,
+                        room_view: roomViewVal,
+                        floor: roomFloorVal,
+                        building: roomBuildingVal
+                    };
                     const { error } = await supabaseClient.from('rooms').update(roomData).eq('id', editId);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabaseClient.from('rooms').insert([roomData]);
+                    const numbers = roomNumberVal
+                        .split(',')
+                        .map(n => n.trim())
+                        .filter(n => n !== '');
+
+                    if (numbers.length === 0) {
+                        alert('Silakan masukkan nomor kamar.');
+                        return;
+                    }
+
+                    const arrayOfObjects = numbers.map(num => ({
+                        room_number: num,
+                        room_type_id: roomTypeIdVal,
+                        room_view: roomViewVal,
+                        floor: roomFloorVal,
+                        building: roomBuildingVal
+                    }));
+
+                    const { error } = await supabaseClient.from('rooms').insert(arrayOfObjects);
                     if (error) throw error;
                 }
                 closeRoomModal();
