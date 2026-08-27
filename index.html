@@ -89,6 +89,77 @@
         </div>
     </div>
 
+    <!-- Modal Add / Edit Room -->
+    <div id="roomModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="roomModalTitle" class="text-lg font-semibold text-slate-800">Add New Room</h3>
+                <button type="button" onclick="closeRoomModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="roomForm" onsubmit="handleSaveRoom(event)" class="space-y-4">
+                <input type="hidden" id="edit-room-id">
+
+                <!-- Room Number -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Room Number</label>
+                    <input type="text" id="roomNumber" required placeholder="e.g. 101" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Room Type -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Room Type</label>
+                    <select id="roomTypeSelect" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    </select>
+                </div>
+
+                <!-- Room View -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Room View</label>
+                    <select id="roomViewSelect" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                        <option value="No View">No View</option>
+                        <option value="City View">City View</option>
+                        <option value="Garden View">Garden View</option>
+                        <option value="Building View">Building View</option>
+                        <option value="Pool View">Pool View</option>
+                        <option value="Beach View">Beach View</option>
+                        <option value="Mountain View">Mountain View</option>
+                        <option value="Jungle View">Jungle View</option>
+                        <option value="Ricefield View">Ricefield View</option>
+                        <option value="Lake View">Lake View</option>
+                        <option value="River View">River View</option>
+                        <option value="Sea View">Sea View</option>
+                        <option value="View">View</option>
+                    </select>
+                </div>
+
+                <!-- Floor Setting -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Floor Setting</label>
+                    <input type="text" id="roomFloor" placeholder="e.g. 1 or Ground" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Building Setting -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Building Setting</label>
+                    <input type="text" id="roomBuilding" placeholder="e.g. Main Building" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeRoomModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="roomSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Add Room Category -->
     <div id="roomCategoryModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
@@ -323,7 +394,7 @@
                 <div id="tab-content-rooms" class="tab-content-panel hidden">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-base font-semibold text-slate-800">Daftar Kamar</h3>
-                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                        <button type="button" onclick="openRoomModal()" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
                             <i class="ph ph-plus text-base"></i> + Add New Room
                         </button>
                     </div>
@@ -331,67 +402,16 @@
                         <table class="w-full text-left text-sm">
                             <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
                                 <tr>
-                                    <th class="py-3 px-4">Room Number</th>
+                                    <th class="py-3 px-4">Room No</th>
                                     <th class="py-3 px-4">Room Type</th>
+                                    <th class="py-3 px-4">View</th>
+                                    <th class="py-3 px-4">Floor</th>
+                                    <th class="py-3 px-4">Building</th>
                                     <th class="py-3 px-4">Status</th>
                                     <th class="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-200 text-slate-700">
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">101</td>
-                                    <td class="py-3 px-4">Standard</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">102</td>
-                                    <td class="py-3 px-4">Standard</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">103</td>
-                                    <td class="py-3 px-4">Standard</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">201</td>
-                                    <td class="py-3 px-4">Deluxe</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium">Dirty</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">202</td>
-                                    <td class="py-3 px-4">Deluxe</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">301</td>
-                                    <td class="py-3 px-4">Suite</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 font-medium">Clean</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
+                            <tbody id="rooms-tbody" class="divide-y divide-slate-200 text-slate-700">
                             </tbody>
                         </table>
                     </div>
@@ -907,6 +927,153 @@
             }
         }
 
+        // --- Rooms CRUD ---
+        async function populateRoomTypeDropdown() {
+            try {
+                const { data, error } = await supabaseClient.from('room_types').select('id, name');
+                if (error) throw error;
+                const dropdown = document.getElementById('roomTypeSelect');
+                if (dropdown) {
+                    if (data && data.length > 0) {
+                        dropdown.innerHTML = data.map(rt => `<option value="${rt.id}">${rt.name}</option>`).join('');
+                    } else {
+                        dropdown.innerHTML = `<option value="">-- No Room Types --</option>`;
+                    }
+                }
+            } catch (err) {
+                console.error('Error populating room types:', err);
+            }
+        }
+
+        async function fetchRooms() {
+            try {
+                const { data, error } = await supabaseClient.from('rooms').select('id, room_number, room_view, floor, building, status, room_type_id, room_types(name)');
+                if (error) throw error;
+
+                const tbody = document.getElementById('rooms-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(r => {
+                        const roomTypeName = r.room_types ? (Array.isArray(r.room_types) ? r.room_types[0]?.name : r.room_types.name) : '-';
+                        const roomView = r.room_view || '-';
+                        const floor = r.floor || '-';
+                        const building = r.building || '-';
+                        const status = r.status || 'Clean';
+                        const statusColor = status.toLowerCase() === 'dirty' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+
+                        const escapedNumber = (r.room_number || '').replace(/'/g, "\\'");
+                        const escapedView = (r.room_view || 'No View').replace(/'/g, "\\'");
+                        const escapedFloor = (r.floor || '').replace(/'/g, "\\'");
+                        const escapedBuilding = (r.building || '').replace(/'/g, "\\'");
+                        const roomTypeId = r.room_type_id || '';
+
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${r.room_number || '-'}</td>
+                                <td class="py-3 px-4">${roomTypeName}</td>
+                                <td class="py-3 px-4">${roomView}</td>
+                                <td class="py-3 px-4">${floor}</td>
+                                <td class="py-3 px-4">${building}</td>
+                                <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full ${statusColor} font-medium">${status}</span></td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditRoom('${r.id}', '${escapedNumber}', '${roomTypeId}', '${escapedView}', '${escapedFloor}', '${escapedBuilding}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteRoom('${r.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error fetching rooms:', err);
+            }
+        }
+
+        async function openRoomModal() {
+            await populateRoomTypeDropdown();
+            document.getElementById('edit-room-id').value = '';
+            document.getElementById('roomNumber').value = '';
+            document.getElementById('roomViewSelect').value = 'No View';
+            document.getElementById('roomFloor').value = '';
+            document.getElementById('roomBuilding').value = '';
+            document.getElementById('roomModalTitle').textContent = 'Add New Room';
+            document.getElementById('roomSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('roomModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        async function openEditRoom(id, room_number, room_type_id, room_view, floor, building) {
+            await populateRoomTypeDropdown();
+            document.getElementById('edit-room-id').value = id;
+            document.getElementById('roomNumber').value = room_number;
+            const roomTypeSelect = document.getElementById('roomTypeSelect');
+            if (roomTypeSelect) roomTypeSelect.value = room_type_id;
+            const roomViewSelect = document.getElementById('roomViewSelect');
+            if (roomViewSelect) roomViewSelect.value = room_view || 'No View';
+            document.getElementById('roomFloor').value = floor || '';
+            document.getElementById('roomBuilding').value = building || '';
+
+            document.getElementById('roomModalTitle').textContent = 'Update Room';
+            document.getElementById('roomSubmitBtn').textContent = 'Update';
+            const modal = document.getElementById('roomModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeRoomModal() {
+            const modal = document.getElementById('roomModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-room-id').value = '';
+            const form = document.getElementById('roomForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveRoom(event) {
+            event.preventDefault();
+            const editId = document.getElementById('edit-room-id').value;
+            const roomNumberVal = document.getElementById('roomNumber').value.trim();
+            const roomTypeIdVal = document.getElementById('roomTypeSelect').value;
+            const roomViewVal = document.getElementById('roomViewSelect').value;
+            const roomFloorVal = document.getElementById('roomFloor').value.trim();
+            const roomBuildingVal = document.getElementById('roomBuilding').value.trim();
+
+            if (!roomNumberVal || !roomTypeIdVal) {
+                alert('Silakan lengkapi data form.');
+                return;
+            }
+
+            const roomData = {
+                room_number: roomNumberVal,
+                room_type_id: roomTypeIdVal,
+                room_view: roomViewVal,
+                floor: roomFloorVal,
+                building: roomBuildingVal
+            };
+
+            try {
+                if (editId) {
+                    const { error } = await supabaseClient.from('rooms').update(roomData).eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('rooms').insert([roomData]);
+                    if (error) throw error;
+                }
+                closeRoomModal();
+                fetchRooms();
+            } catch (err) {
+                console.error('Error saving room:', err);
+                alert('Gagal menyimpan kamar: ' + err.message);
+            }
+        }
+
+        async function deleteRoom(id) {
+            try {
+                const { error } = await supabaseClient.from('rooms').delete().eq('id', id);
+                if (error) throw error;
+                fetchRooms();
+            } catch (err) {
+                console.error('Error deleting room:', err);
+                alert('Gagal menghapus kamar: ' + err.message);
+            }
+        }
+
         async function initApp() {
             const statusDiv = document.getElementById('supabase-status');
             const propNameSpan = document.getElementById('active-property-name');
@@ -926,9 +1093,10 @@
                 // Langkah 3: Trigger Eksekusi Tape Chart
                 renderTapeChart();
 
-                // Fetch data master Bed Types & Room Categories
+                // Fetch data master Bed Types, Room Categories & Rooms
                 fetchBedTypes();
                 fetchRoomTypes();
+                fetchRooms();
             } catch (err) {
                 statusDiv.innerHTML = `<span class="text-red-600 font-semibold"><i class="ph ph-warning-circle"></i> Gagal terhubung database:</span> ${err.message}`;
                 statusDiv.className = "p-4 rounded-md bg-red-50 border border-red-200 text-sm mb-6";
@@ -1048,6 +1216,8 @@
                         if (t === 'room-types') {
                             fetchBedTypes();
                             fetchRoomTypes();
+                        } else if (t === 'rooms') {
+                            fetchRooms();
                         }
                     } else {
                         btn.classList.remove('border-primary', 'text-primary', 'font-bold');
