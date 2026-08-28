@@ -149,6 +149,122 @@
         </div>
     </div>
 
+    <!-- Modal Add / Edit Department -->
+    <div id="departmentModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="departmentModalTitle" class="text-lg font-semibold text-slate-800">Add Department</h3>
+                <button type="button" onclick="closeDepartmentModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="departmentForm" onsubmit="handleSaveDepartment(event)" class="space-y-4">
+                <input type="hidden" id="edit-department-id">
+                <!-- Name -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
+                    <input type="text" id="departmentName" required placeholder="e.g. Food & Beverage" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeDepartmentModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="departmentSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Add / Edit Outlet -->
+    <div id="outletModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="outletModalTitle" class="text-lg font-semibold text-slate-800">Add Outlet</h3>
+                <button type="button" onclick="closeOutletModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="outletForm" onsubmit="handleSaveOutlet(event)" class="space-y-4">
+                <input type="hidden" id="edit-outlet-id">
+
+                <!-- Name -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Outlet Name</label>
+                    <input type="text" id="outletName" required placeholder="e.g. Main Restaurant" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Department -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Department</label>
+                    <select id="outletDepartment" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeOutletModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="outletSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Add / Edit Meal Plan -->
+    <div id="mealPlanModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 relative max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center pb-4 border-b mb-4 shrink-0">
+                <h3 id="mealPlanModalTitle" class="text-lg font-semibold text-slate-800">Add Meal Plan</h3>
+                <button type="button" onclick="closeMealPlanModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="mealPlanForm" onsubmit="handleSaveMealPlan(event)" class="space-y-4 overflow-y-auto pr-1 flex-1">
+                <input type="hidden" id="edit-meal-plan-id">
+
+                <!-- Package Name -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Package Name</label>
+                    <input type="text" id="mealPlanPackageName" required placeholder="e.g. Bed & Breakfast (BB)" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Revenue Breakdown Area -->
+                <div class="pt-2">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Revenue Breakdown</label>
+                        <button type="button" onclick="addMealPlanBreakdownRow()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                            <i class="ph ph-plus text-sm"></i> Add Item
+                        </button>
+                    </div>
+
+                    <div id="meal-plan-breakdowns-container" class="space-y-3">
+                        <!-- Dynamic rows inserted here -->
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6 shrink-0">
+                    <button type="button" onclick="closeMealPlanModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="mealPlanSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Add / Edit Payment Method -->
     <div id="paymentMethodModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
@@ -586,6 +702,9 @@
                         <button type="button" onclick="switchSettingsTab('market-segments')" id="tab-btn-market-segments" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
                             Market Segments
                         </button>
+                        <button type="button" onclick="switchSettingsTab('revenue-centers')" id="tab-btn-revenue-centers" class="settings-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-3 px-1 text-sm whitespace-nowrap transition-colors">
+                            Revenue Centers
+                        </button>
                     </nav>
                 </div>
 
@@ -746,7 +865,7 @@
                 <div id="tab-content-meal-plans" class="tab-content-panel hidden">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-base font-semibold text-slate-800">Daftar Paket Makan (Meal Plans)</h3>
-                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
+                        <button type="button" onclick="openMealPlanModal()" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
                             <i class="ph ph-plus text-base"></i> + Add New Meal Plan
                         </button>
                     </div>
@@ -754,38 +873,64 @@
                         <table class="w-full text-left text-sm">
                             <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
                                 <tr>
-                                    <th class="py-3 px-4">Name</th>
-                                    <th class="py-3 px-4">Price per Pax</th>
+                                    <th class="py-3 px-4">Package Name</th>
+                                    <th class="py-3 px-4">Total Value</th>
                                     <th class="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-200 text-slate-700">
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Room Only (RO)</td>
-                                    <td class="py-3 px-4">Rp 0</td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Bed & Breakfast (BB)</td>
-                                    <td class="py-3 px-4">Rp 75.000</td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Full Board (FB)</td>
-                                    <td class="py-3 px-4">Rp 200.000</td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
+                            <tbody id="meal-plans-tbody" class="divide-y divide-slate-200 text-slate-700">
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Revenue Centers -->
+                <div id="tab-content-revenue-centers" class="tab-content-panel hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Kolom Kiri: Departments Setup -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-base font-semibold text-slate-800">Departments Setup</h3>
+                                <button type="button" onclick="openDepartmentModal()" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                                    <i class="ph ph-plus text-sm"></i> Add Department
+                                </button>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th class="py-3 px-4">Name</th>
+                                            <th class="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="departments-tbody" class="divide-y divide-slate-200 text-slate-700">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Kolom Kanan: Outlets Setup -->
+                        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-base font-semibold text-slate-800">Outlets Setup</h3>
+                                <button type="button" onclick="openOutletModal()" class="bg-primary hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1">
+                                    <i class="ph ph-plus text-sm"></i> Add Outlet
+                                </button>
+                            </div>
+                            <div class="border border-slate-200 rounded-lg overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                                        <tr>
+                                            <th class="py-3 px-4">Outlet Name</th>
+                                            <th class="py-3 px-4">Department</th>
+                                            <th class="py-3 px-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="outlets-tbody" class="divide-y divide-slate-200 text-slate-700">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -2097,6 +2242,422 @@
             }
         }
 
+        // --- Revenue Centers (Departments & Outlets) CRUD ---
+        async function fetchDepartments() {
+            try {
+                const { data, error } = await supabaseClient.from('departments').select('*').order('created_at', { ascending: true });
+                if (error) throw error;
+
+                const tbody = document.getElementById('departments-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(dept => {
+                        const escapedName = (dept.name || '').replace(/'/g, "\\'");
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${dept.name}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditDepartment('${dept.id}', '${escapedName}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteDepartment('${dept.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Populate Option pada Select Dropdown "Department" untuk Outlet Modal
+                const dropdown = document.getElementById('outletDepartment');
+                if (dropdown) {
+                    if (data && data.length > 0) {
+                        dropdown.innerHTML = data.map(dept => `<option value="${dept.id}">${dept.name}</option>`).join('');
+                    } else {
+                        dropdown.innerHTML = `<option value="">-- No Departments --</option>`;
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching departments:', err);
+            }
+        }
+
+        function openDepartmentModal() {
+            document.getElementById('edit-department-id').value = '';
+            document.getElementById('departmentName').value = '';
+            document.getElementById('departmentModalTitle').textContent = 'Add Department';
+            document.getElementById('departmentSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('departmentModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function openEditDepartment(id, currentName) {
+            document.getElementById('edit-department-id').value = id;
+            document.getElementById('departmentName').value = currentName;
+            document.getElementById('departmentModalTitle').textContent = 'Update Department';
+            document.getElementById('departmentSubmitBtn').textContent = 'Update';
+            const modal = document.getElementById('departmentModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeDepartmentModal() {
+            const modal = document.getElementById('departmentModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-department-id').value = '';
+            const form = document.getElementById('departmentForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveDepartment(event) {
+            event.preventDefault();
+            const editId = document.getElementById('edit-department-id').value;
+            const nameVal = document.getElementById('departmentName').value.trim();
+            if (!nameVal) return;
+
+            try {
+                if (editId) {
+                    const { error } = await supabaseClient.from('departments').update({ name: nameVal }).eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('departments').insert([{ name: nameVal }]);
+                    if (error) throw error;
+                }
+                closeDepartmentModal();
+                fetchDepartments();
+                fetchOutlets();
+            } catch (err) {
+                console.error('Error saving department:', err);
+                alert('Gagal menyimpan department: ' + err.message);
+            }
+        }
+
+        async function deleteDepartment(id) {
+            try {
+                const { error } = await supabaseClient.from('departments').delete().eq('id', id);
+                if (error) throw error;
+                fetchDepartments();
+                fetchOutlets();
+            } catch (err) {
+                console.error('Error deleting department:', err);
+                alert('Gagal menghapus department: ' + err.message);
+            }
+        }
+
+        async function fetchOutlets() {
+            try {
+                await fetchDepartments();
+                const { data, error } = await supabaseClient.from('outlets').select('id, name, department_id, departments(name)').order('created_at', { ascending: true });
+                if (error) throw error;
+
+                const tbody = document.getElementById('outlets-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(outlet => {
+                        const escapedName = (outlet.name || '').replace(/'/g, "\\'");
+                        const deptName = outlet.departments ? outlet.departments.name : '-';
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${outlet.name}</td>
+                                <td class="py-3 px-4">${deptName}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditOutlet('${outlet.id}', '${escapedName}', '${outlet.department_id}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteOutlet('${outlet.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error fetching outlets:', err);
+            }
+        }
+
+        async function openOutletModal() {
+            await fetchDepartments();
+            document.getElementById('edit-outlet-id').value = '';
+            document.getElementById('outletName').value = '';
+            document.getElementById('outletModalTitle').textContent = 'Add Outlet';
+            document.getElementById('outletSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('outletModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        async function openEditOutlet(id, currentName, currentDeptId) {
+            await fetchDepartments();
+            document.getElementById('edit-outlet-id').value = id;
+            document.getElementById('outletName').value = currentName;
+            document.getElementById('outletDepartment').value = currentDeptId;
+            document.getElementById('outletModalTitle').textContent = 'Update Outlet';
+            document.getElementById('outletSubmitBtn').textContent = 'Update';
+            const modal = document.getElementById('outletModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeOutletModal() {
+            const modal = document.getElementById('outletModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-outlet-id').value = '';
+            const form = document.getElementById('outletForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveOutlet(event) {
+            event.preventDefault();
+            const editId = document.getElementById('edit-outlet-id').value;
+            const nameVal = document.getElementById('outletName').value.trim();
+            const deptId = document.getElementById('outletDepartment').value;
+            if (!nameVal || !deptId) return;
+
+            const payload = {
+                name: nameVal,
+                department_id: deptId
+            };
+
+            try {
+                if (editId) {
+                    const { error } = await supabaseClient.from('outlets').update(payload).eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('outlets').insert([payload]);
+                    if (error) throw error;
+                }
+                closeOutletModal();
+                fetchOutlets();
+            } catch (err) {
+                console.error('Error saving outlet:', err);
+                alert('Gagal menyimpan outlet: ' + err.message);
+            }
+        }
+
+        async function deleteOutlet(id) {
+            try {
+                const { error } = await supabaseClient.from('outlets').delete().eq('id', id);
+                if (error) throw error;
+                fetchOutlets();
+            } catch (err) {
+                console.error('Error deleting outlet:', err);
+                alert('Gagal menghapus outlet: ' + err.message);
+            }
+        }
+
+        // --- Meal Plans & Breakdowns CRUD ---
+        let outletsCache = [];
+
+        async function fetchMealPlans() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('meal_plans')
+                    .select('id, name, meal_plan_breakdowns(id, item_name, amount, outlet_id)')
+                    .order('created_at', { ascending: true });
+                if (error) throw error;
+
+                const tbody = document.getElementById('meal-plans-tbody');
+                if (tbody) {
+                    tbody.innerHTML = (data || []).map(mp => {
+                        const escapedName = (mp.name || '').replace(/'/g, "\\'");
+                        const totalValue = (mp.meal_plan_breakdowns || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+                        const formattedTotal = `Rp ${totalValue.toLocaleString('id-ID')}`;
+                        return `
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4 font-medium">${mp.name}</td>
+                                <td class="py-3 px-4">${formattedTotal}</td>
+                                <td class="py-3 px-4 text-right space-x-2">
+                                    <button onclick="openEditMealPlan('${mp.id}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                    <button onclick="deleteMealPlan('${mp.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('Error fetching meal plans:', err);
+            }
+        }
+
+        async function loadOutletsCache() {
+            try {
+                const { data, error } = await supabaseClient.from('outlets').select('id, name').order('created_at', { ascending: true });
+                if (error) throw error;
+                outletsCache = data || [];
+            } catch (err) {
+                console.error('Error loading outlets cache:', err);
+                outletsCache = [];
+            }
+        }
+
+        function buildOutletOptionsHTML(selectedId = '') {
+            if (!outletsCache || outletsCache.length === 0) {
+                return `<option value="">-- No Outlets Available --</option>`;
+            }
+            return outletsCache.map(o => `
+                <option value="${o.id}" ${o.id === selectedId ? 'selected' : ''}>${o.name}</option>
+            `).join('');
+        }
+
+        function addMealPlanBreakdownRow(item = { item_name: '', amount: '', outlet_id: '' }) {
+            const container = document.getElementById('meal-plan-breakdowns-container');
+            if (!container) return;
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'meal-plan-breakdown-row grid grid-cols-12 gap-2 items-center bg-slate-50 p-2.5 rounded-lg border border-slate-200';
+            rowDiv.innerHTML = `
+                <div class="col-span-4">
+                    <input type="text" class="breakdown-item-name w-full px-3 py-1.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary" placeholder="Item Name (e.g. Breakfast)" value="${item.item_name || ''}" required>
+                </div>
+                <div class="col-span-3">
+                    <input type="number" class="breakdown-value w-full px-3 py-1.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary" placeholder="Value (Rp)" value="${item.amount !== undefined && item.amount !== '' ? item.amount : ''}" required min="0">
+                </div>
+                <div class="col-span-4">
+                    <select class="breakdown-outlet w-full px-3 py-1.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white" required>
+                        ${buildOutletOptionsHTML(item.outlet_id)}
+                    </select>
+                </div>
+                <div class="col-span-1 text-center">
+                    <button type="button" onclick="removeMealPlanBreakdownRow(this)" class="text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition-colors" title="Remove row">
+                        <i class="ph ph-x text-lg"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(rowDiv);
+        }
+
+        function removeMealPlanBreakdownRow(btn) {
+            const row = btn.closest('.meal-plan-breakdown-row');
+            if (row) {
+                row.remove();
+            }
+        }
+
+        function clearMealPlanBreakdownRows() {
+            const container = document.getElementById('meal-plan-breakdowns-container');
+            if (container) container.innerHTML = '';
+        }
+
+        async function openMealPlanModal() {
+            await loadOutletsCache();
+            document.getElementById('edit-meal-plan-id').value = '';
+            document.getElementById('mealPlanPackageName').value = '';
+            document.getElementById('mealPlanModalTitle').textContent = 'Add Meal Plan';
+            document.getElementById('mealPlanSubmitBtn').textContent = 'Save';
+            clearMealPlanBreakdownRows();
+            addMealPlanBreakdownRow(); // baris default
+            const modal = document.getElementById('mealPlanModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        async function openEditMealPlan(id) {
+            await loadOutletsCache();
+            try {
+                const { data, error } = await supabaseClient
+                    .from('meal_plans')
+                    .select('id, name, meal_plan_breakdowns(id, item_name, amount, outlet_id)')
+                    .eq('id', id)
+                    .single();
+                if (error) throw error;
+
+                document.getElementById('edit-meal-plan-id').value = data.id;
+                document.getElementById('mealPlanPackageName').value = data.name || '';
+                document.getElementById('mealPlanModalTitle').textContent = 'Update Meal Plan';
+                document.getElementById('mealPlanSubmitBtn').textContent = 'Update';
+                clearMealPlanBreakdownRows();
+
+                if (data.meal_plan_breakdowns && data.meal_plan_breakdowns.length > 0) {
+                    data.meal_plan_breakdowns.forEach(item => {
+                        addMealPlanBreakdownRow(item);
+                    });
+                } else {
+                    addMealPlanBreakdownRow();
+                }
+
+                const modal = document.getElementById('mealPlanModal');
+                if (modal) modal.classList.remove('hidden');
+            } catch (err) {
+                console.error('Error opening edit meal plan modal:', err);
+                alert('Gagal mengambil data meal plan: ' + err.message);
+            }
+        }
+
+        function closeMealPlanModal() {
+            const modal = document.getElementById('mealPlanModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-meal-plan-id').value = '';
+            const form = document.getElementById('mealPlanForm');
+            if (form) form.reset();
+            clearMealPlanBreakdownRows();
+        }
+
+        async function handleSaveMealPlan(event) {
+            event.preventDefault();
+            const editId = document.getElementById('edit-meal-plan-id').value;
+            const packageName = document.getElementById('mealPlanPackageName').value.trim();
+            if (!packageName) return;
+
+            // Collect rows
+            const rows = document.querySelectorAll('#meal-plan-breakdowns-container .meal-plan-breakdown-row');
+            const breakdownItems = [];
+            for (const row of rows) {
+                const itemName = row.querySelector('.breakdown-item-name').value.trim();
+                const amountVal = parseFloat(row.querySelector('.breakdown-value').value) || 0;
+                const outletId = row.querySelector('.breakdown-outlet').value;
+
+                if (!itemName) {
+                    alert('Harap isi Item Name untuk semua baris rincian.');
+                    return;
+                }
+                if (!outletId) {
+                    alert('Harap pilih Outlet untuk semua baris rincian.');
+                    return;
+                }
+                breakdownItems.push({
+                    item_name: itemName,
+                    amount: amountVal,
+                    outlet_id: outletId
+                });
+            }
+
+            try {
+                let mealPlanId = editId;
+                if (editId) {
+                    const { error } = await supabaseClient.from('meal_plans').update({ name: packageName }).eq('id', editId);
+                    if (error) throw error;
+
+                    // Hapus data lama di meal_plan_breakdowns untuk ID tersebut
+                    const { error: deleteErr } = await supabaseClient.from('meal_plan_breakdowns').delete().eq('meal_plan_id', editId);
+                    if (deleteErr) throw deleteErr;
+                } else {
+                    const { data: newPlan, error } = await supabaseClient.from('meal_plans').insert([{ name: packageName }]).select().single();
+                    if (error) throw error;
+                    mealPlanId = newPlan.id;
+                }
+
+                // Bulk Insert rincian baru
+                if (breakdownItems.length > 0) {
+                    const payload = breakdownItems.map(item => ({
+                        meal_plan_id: mealPlanId,
+                        item_name: item.item_name,
+                        amount: item.amount,
+                        outlet_id: item.outlet_id
+                    }));
+                    const { error: insertBreakdownErr } = await supabaseClient.from('meal_plan_breakdowns').insert(payload);
+                    if (insertBreakdownErr) throw insertBreakdownErr;
+                }
+
+                closeMealPlanModal();
+                fetchMealPlans();
+            } catch (err) {
+                console.error('Error saving meal plan:', err);
+                alert('Gagal menyimpan meal plan: ' + err.message);
+            }
+        }
+
+        async function deleteMealPlan(id) {
+            try {
+                // Delete breakdowns first if foreign key constraint isn't ON DELETE CASCADE (safe practice)
+                await supabaseClient.from('meal_plan_breakdowns').delete().eq('meal_plan_id', id);
+                const { error } = await supabaseClient.from('meal_plans').delete().eq('id', id);
+                if (error) throw error;
+                fetchMealPlans();
+            } catch (err) {
+                console.error('Error deleting meal plan:', err);
+                alert('Gagal menghapus meal plan: ' + err.message);
+            }
+        }
+
         async function initApp() {
             const statusDiv = document.getElementById('supabase-status');
             const propNameSpan = document.getElementById('active-property-name');
@@ -2227,7 +2788,7 @@
 
         // Admin Settings Tab Switcher
         function switchSettingsTab(tabId) {
-            const tabs = ['room-types', 'rooms', 'meal-plans', 'rate-structure', 'tax-service', 'extra-charges', 'payment-methods', 'invoice-setting', 'market-segments'];
+            const tabs = ['room-types', 'rooms', 'meal-plans', 'rate-structure', 'tax-service', 'extra-charges', 'payment-methods', 'invoice-setting', 'market-segments', 'revenue-centers'];
 
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
@@ -2242,6 +2803,8 @@
                             fetchRoomTypes();
                         } else if (t === 'rooms') {
                             fetchRooms();
+                        } else if (t === 'meal-plans') {
+                            fetchMealPlans();
                         } else if (t === 'tax-service') {
                             fetchTaxService();
                         } else if (t === 'extra-charges') {
@@ -2253,6 +2816,9 @@
                         } else if (t === 'market-segments') {
                             fetchMainGroups();
                             fetchSegmentCodes();
+                        } else if (t === 'revenue-centers') {
+                            fetchDepartments();
+                            fetchOutlets();
                         }
                     } else {
                         btn.classList.remove('border-primary', 'text-primary', 'font-bold');
