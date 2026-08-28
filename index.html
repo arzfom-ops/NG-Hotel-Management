@@ -232,6 +232,12 @@
             <form id="mealPlanForm" onsubmit="handleSaveMealPlan(event)" class="space-y-4 overflow-y-auto pr-1 flex-1">
                 <input type="hidden" id="edit-meal-plan-id">
 
+                <!-- Package Code -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Package Code</label>
+                    <input type="text" id="mealPlanPackageCode" required placeholder="e.g. BF, HB, FB" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary uppercase">
+                </div>
+
                 <!-- Package Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Package Name</label>
@@ -873,6 +879,7 @@
                         <table class="w-full text-left text-sm">
                             <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
                                 <tr>
+                                    <th class="py-3 px-4">Code</th>
                                     <th class="py-3 px-4">Package Name</th>
                                     <th class="py-3 px-4">Total Value</th>
                                     <th class="py-3 px-4 text-right">Actions</th>
@@ -2442,7 +2449,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('meal_plans')
-                    .select('id, name, meal_plan_breakdowns(id, item_name, amount, outlet_id)')
+                    .select('id, code, name, meal_plan_breakdowns(id, item_name, amount, outlet_id)')
                     .order('created_at', { ascending: true });
                 if (error) throw error;
 
@@ -2454,7 +2461,8 @@
                         const formattedTotal = `Rp ${totalValue.toLocaleString('id-ID')}`;
                         return `
                             <tr class="hover:bg-slate-50/80 transition-colors">
-                                <td class="py-3 px-4 font-medium">${mp.name}</td>
+                                <td class="py-3 px-4 font-mono font-semibold text-slate-700">${mp.code || ''}</td>
+                                <td class="py-3 px-4 font-medium">${mp.name || ''}</td>
                                 <td class="py-3 px-4">${formattedTotal}</td>
                                 <td class="py-3 px-4 text-right space-x-2">
                                     <button onclick="openEditMealPlan('${mp.id}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
@@ -2531,6 +2539,7 @@
         async function openMealPlanModal() {
             await loadOutletsCache();
             document.getElementById('edit-meal-plan-id').value = '';
+            document.getElementById('mealPlanPackageCode').value = '';
             document.getElementById('mealPlanPackageName').value = '';
             document.getElementById('mealPlanModalTitle').textContent = 'Add Meal Plan';
             document.getElementById('mealPlanSubmitBtn').textContent = 'Save';
@@ -2545,12 +2554,13 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('meal_plans')
-                    .select('id, name, meal_plan_breakdowns(id, item_name, amount, outlet_id)')
+                    .select('id, code, name, meal_plan_breakdowns(id, item_name, amount, outlet_id)')
                     .eq('id', id)
                     .single();
                 if (error) throw error;
 
                 document.getElementById('edit-meal-plan-id').value = data.id;
+                document.getElementById('mealPlanPackageCode').value = data.code || '';
                 document.getElementById('mealPlanPackageName').value = data.name || '';
                 document.getElementById('mealPlanModalTitle').textContent = 'Update Meal Plan';
                 document.getElementById('mealPlanSubmitBtn').textContent = 'Update';
@@ -2576,6 +2586,8 @@
             const modal = document.getElementById('mealPlanModal');
             if (modal) modal.classList.add('hidden');
             document.getElementById('edit-meal-plan-id').value = '';
+            document.getElementById('mealPlanPackageCode').value = '';
+            document.getElementById('mealPlanPackageName').value = '';
             const form = document.getElementById('mealPlanForm');
             if (form) form.reset();
             clearMealPlanBreakdownRows();
@@ -2584,8 +2596,9 @@
         async function handleSaveMealPlan(event) {
             event.preventDefault();
             const editId = document.getElementById('edit-meal-plan-id').value;
+            const packageCode = document.getElementById('mealPlanPackageCode').value.trim();
             const packageName = document.getElementById('mealPlanPackageName').value.trim();
-            if (!packageName) return;
+            if (!packageCode || !packageName) return;
 
             // Collect rows
             const rows = document.querySelectorAll('#meal-plan-breakdowns-container .meal-plan-breakdown-row');
@@ -2613,14 +2626,14 @@
             try {
                 let mealPlanId = editId;
                 if (editId) {
-                    const { error } = await supabaseClient.from('meal_plans').update({ name: packageName }).eq('id', editId);
+                    const { error } = await supabaseClient.from('meal_plans').update({ code: packageCode, name: packageName }).eq('id', editId);
                     if (error) throw error;
 
                     // Hapus data lama di meal_plan_breakdowns untuk ID tersebut
                     const { error: deleteErr } = await supabaseClient.from('meal_plan_breakdowns').delete().eq('meal_plan_id', editId);
                     if (deleteErr) throw deleteErr;
                 } else {
-                    const { data: newPlan, error } = await supabaseClient.from('meal_plans').insert([{ name: packageName }]).select().single();
+                    const { data: newPlan, error } = await supabaseClient.from('meal_plans').insert([{ code: packageCode, name: packageName }]).select().single();
                     if (error) throw error;
                     mealPlanId = newPlan.id;
                 }
