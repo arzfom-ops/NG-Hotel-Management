@@ -356,6 +356,68 @@
         </div>
     </div>
 
+    <!-- Modal Add / Edit Rate Plan -->
+    <div id="ratePlanModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="ratePlanModalTitle" class="text-lg font-semibold text-slate-800">Add Rate Plan</h3>
+                <button type="button" onclick="closeRatePlanModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="ratePlanForm" onsubmit="handleSaveRatePlan(event)" class="space-y-4">
+                <input type="hidden" id="edit-rate-plan-id">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Rate Code <span class="text-red-500">*</span></label>
+                    <input type="text" id="ratePlanCode" required placeholder="misal: WALK" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Rate Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="ratePlanName" required placeholder="misal: Walk-in Rate" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Market Segment</label>
+                    <select id="ratePlanSegment" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                        <option value="">-- Select Market Segment --</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Meal Plan</label>
+                    <select id="ratePlanMealPlan" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                        <option value="">-- None / Select Meal Plan --</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Allow Manual Price Override</label>
+                    <select id="ratePlanAllowOverride" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Cancellation Policy</label>
+                    <input type="text" id="ratePlanCancellationPolicy" placeholder="misal: Non-refundable / Free cancellation 24h prior" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t">
+                    <button type="button" onclick="closeRatePlanModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="ratePlanSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Add / Edit Segment Code -->
     <div id="segmentCodeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
@@ -945,55 +1007,26 @@
                 <div id="tab-content-rate-structure" class="tab-content-panel hidden">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-base font-semibold text-slate-800">Struktur Tarif (Rate Structure)</h3>
-                        <button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5">
-                            <i class="ph ph-plus text-base"></i> + Add New Rate Structure
+                        <button type="button" onclick="openRatePlanModal()" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 cursor-pointer">
+                            <i class="ph ph-plus text-base"></i> + Add Rate Plan
                         </button>
                     </div>
                     <div class="border border-slate-200 rounded-lg overflow-x-auto">
                         <table class="w-full text-left text-sm">
                             <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
                                 <tr>
+                                    <th class="py-3 px-4">Rate Code</th>
                                     <th class="py-3 px-4">Rate Name</th>
-                                    <th class="py-3 px-4">Room Type</th>
+                                    <th class="py-3 px-4">Segment</th>
                                     <th class="py-3 px-4">Meal Plan</th>
-                                    <th class="py-3 px-4">Base Price</th>
-                                    <th class="py-3 px-4">Active</th>
+                                    <th class="py-3 px-4">Override</th>
+                                    <th class="py-3 px-4">Cancellation Policy</th>
                                     <th class="py-3 px-4 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-200 text-slate-700">
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Standard BAR</td>
-                                    <td class="py-3 px-4">Standard</td>
-                                    <td class="py-3 px-4">Room Only (RO)</td>
-                                    <td class="py-3 px-4">Rp 350.000</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Deluxe Breakfast Combo</td>
-                                    <td class="py-3 px-4">Deluxe</td>
-                                    <td class="py-3 px-4">Bed & Breakfast (BB)</td>
-                                    <td class="py-3 px-4">Rp 575.000</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="py-3 px-4 font-medium">Suite Package</td>
-                                    <td class="py-3 px-4">Suite</td>
-                                    <td class="py-3 px-4">Full Board (FB)</td>
-                                    <td class="py-3 px-4">Rp 1.050.000</td>
-                                    <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span></td>
-                                    <td class="py-3 px-4 text-right space-x-2">
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                        <button class="text-red-600 hover:text-red-800 transition-colors p-1" title="Delete"><i class="ph ph-trash text-lg"></i></button>
-                                    </td>
+                            <tbody id="rate-plans-tbody" class="divide-y divide-slate-200 text-slate-700">
+                                <tr>
+                                    <td colspan="7" class="py-6 text-center text-slate-400">Loading rate plans...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1944,6 +1977,19 @@
                         `;
                     }).join('');
                 }
+
+                // Populate Option pada Select Dropdown Market Segment
+                const segmentSelect = document.getElementById('ratePlanSegment');
+                if (segmentSelect) {
+                    const currentVal = segmentSelect.value;
+                    let optionsHTML = '<option value="">-- Select Market Segment --</option>';
+                    (data || []).forEach(sc => {
+                        const label = sc.description ? `${sc.segment_code} - ${sc.description}` : sc.segment_code;
+                        optionsHTML += `<option value="${sc.id}">${label}</option>`;
+                    });
+                    segmentSelect.innerHTML = optionsHTML;
+                    segmentSelect.value = currentVal;
+                }
             } catch (err) {
                 console.error('Error fetching segment codes:', err);
             }
@@ -2472,6 +2518,19 @@
                         `;
                     }).join('');
                 }
+
+                // Populate Option pada Select Dropdown Meal Plan
+                const mealPlanSelect = document.getElementById('ratePlanMealPlan');
+                if (mealPlanSelect) {
+                    const currentVal = mealPlanSelect.value;
+                    let optionsHTML = '<option value="">-- None / Select Meal Plan --</option>';
+                    (data || []).forEach(mp => {
+                        const label = mp.name ? `${mp.code} - ${mp.name}` : mp.code;
+                        optionsHTML += `<option value="${mp.id}">${label}</option>`;
+                    });
+                    mealPlanSelect.innerHTML = optionsHTML;
+                    mealPlanSelect.value = currentVal;
+                }
             } catch (err) {
                 console.error('Error fetching meal plans:', err);
             }
@@ -2799,6 +2858,153 @@
             }
         }
 
+        // --- Rate Plans CRUD ---
+        async function fetchRatePlans() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('rate_plans')
+                    .select('id, rate_code, rate_name, segment_id, meal_plan_id, allow_override, cancellation_policy, segment_codes(id, segment_code, description), meal_plans(id, code, name)')
+                    .order('created_at', { ascending: true });
+                if (error) throw error;
+
+                const tbody = document.getElementById('rate-plans-tbody');
+                if (tbody) {
+                    if (!data || data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">Tidak ada data rate plan.</td></tr>`;
+                    } else {
+                        tbody.innerHTML = data.map(rp => {
+                            const sc = rp.segment_codes ? (Array.isArray(rp.segment_codes) ? rp.segment_codes[0] : rp.segment_codes) : null;
+                            const segmentDisplay = sc ? (sc.description ? `${sc.segment_code} - ${sc.description}` : sc.segment_code) : '-';
+
+                            const mp = rp.meal_plans ? (Array.isArray(rp.meal_plans) ? rp.meal_plans[0] : rp.meal_plans) : null;
+                            const mealPlanDisplay = mp ? (mp.name ? `${mp.code} - ${mp.name}` : mp.code) : '-';
+
+                            const allowOverrideBadge = rp.allow_override
+                                ? `<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span>`
+                                : `<span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">No</span>`;
+
+                            const escapedCode = (rp.rate_code || '').replace(/'/g, "\\'");
+                            const escapedName = (rp.rate_name || '').replace(/'/g, "\\'");
+                            const escapedPolicy = (rp.cancellation_policy || '').replace(/'/g, "\\'");
+                            const segId = rp.segment_id || '';
+                            const mpId = rp.meal_plan_id || '';
+                            const allowOverrideBool = Boolean(rp.allow_override);
+
+                            return `
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-mono font-semibold text-slate-700">${rp.rate_code || ''}</td>
+                                    <td class="py-3 px-4 font-medium">${rp.rate_name || ''}</td>
+                                    <td class="py-3 px-4">${segmentDisplay}</td>
+                                    <td class="py-3 px-4">${mealPlanDisplay}</td>
+                                    <td class="py-3 px-4">${allowOverrideBadge}</td>
+                                    <td class="py-3 px-4 text-slate-600">${rp.cancellation_policy || '-'}</td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button onclick="openEditRatePlan('${rp.id}', '${escapedCode}', '${escapedName}', '${segId}', '${mpId}', ${allowOverrideBool}, '${escapedPolicy}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                        <button onclick="deleteRatePlan('${rp.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching rate plans:', err);
+                const tbody = document.getElementById('rate-plans-tbody');
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-red-500">Gagal memuat rate plan.</td></tr>`;
+                }
+            }
+        }
+
+        async function openRatePlanModal() {
+            await fetchSegmentCodes();
+            await fetchMealPlans();
+            document.getElementById('edit-rate-plan-id').value = '';
+            document.getElementById('ratePlanCode').value = '';
+            document.getElementById('ratePlanName').value = '';
+            document.getElementById('ratePlanSegment').value = '';
+            document.getElementById('ratePlanMealPlan').value = '';
+            document.getElementById('ratePlanAllowOverride').value = 'false';
+            document.getElementById('ratePlanCancellationPolicy').value = '';
+
+            document.getElementById('ratePlanModalTitle').textContent = 'Add Rate Plan';
+            document.getElementById('ratePlanSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('ratePlanModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        async function openEditRatePlan(id, code, name, segmentId, mealPlanId, allowOverride, policy) {
+            await fetchSegmentCodes();
+            await fetchMealPlans();
+            document.getElementById('edit-rate-plan-id').value = id;
+            document.getElementById('ratePlanCode').value = code;
+            document.getElementById('ratePlanName').value = name;
+            document.getElementById('ratePlanSegment').value = segmentId;
+            document.getElementById('ratePlanMealPlan').value = mealPlanId;
+            document.getElementById('ratePlanAllowOverride').value = allowOverride ? 'true' : 'false';
+            document.getElementById('ratePlanCancellationPolicy').value = policy;
+
+            document.getElementById('ratePlanModalTitle').textContent = 'Update Rate Plan';
+            document.getElementById('ratePlanSubmitBtn').textContent = 'Update';
+            const modal = document.getElementById('ratePlanModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeRatePlanModal() {
+            const modal = document.getElementById('ratePlanModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-rate-plan-id').value = '';
+            const form = document.getElementById('ratePlanForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveRatePlan(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-rate-plan-id').value;
+            const codeVal = document.getElementById('ratePlanCode').value.trim();
+            const nameVal = document.getElementById('ratePlanName').value.trim();
+            const segmentIdVal = document.getElementById('ratePlanSegment').value || null;
+            const mealPlanIdVal = document.getElementById('ratePlanMealPlan').value || null;
+            const allowOverrideVal = document.getElementById('ratePlanAllowOverride').value === 'true';
+            const cancellationPolicyVal = document.getElementById('ratePlanCancellationPolicy').value.trim() || null;
+
+            const payload = {
+                rate_code: codeVal,
+                rate_name: nameVal,
+                segment_id: segmentIdVal,
+                meal_plan_id: mealPlanIdVal,
+                allow_override: allowOverrideVal,
+                cancellation_policy: cancellationPolicyVal
+            };
+
+            try {
+                if (editId) {
+                    const { error } = await supabaseClient.from('rate_plans').update(payload).eq('id', editId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('rate_plans').insert([payload]);
+                    if (error) throw error;
+                }
+                closeRatePlanModal();
+                fetchRatePlans();
+            } catch (err) {
+                console.error('Error saving rate plan:', err);
+                alert('Gagal menyimpan rate plan: ' + err.message);
+            }
+        }
+
+        async function deleteRatePlan(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus Rate Plan ini?')) return;
+            try {
+                const { error } = await supabaseClient.from('rate_plans').delete().eq('id', id);
+                if (error) throw error;
+                fetchRatePlans();
+            } catch (err) {
+                console.error('Error deleting rate plan:', err);
+                alert('Gagal menghapus rate plan: ' + err.message);
+            }
+        }
+
         // Admin Settings Tab Switcher
         function switchSettingsTab(tabId) {
             const tabs = ['room-types', 'rooms', 'meal-plans', 'rate-structure', 'tax-service', 'extra-charges', 'payment-methods', 'invoice-setting', 'market-segments', 'revenue-centers'];
@@ -2818,6 +3024,10 @@
                             fetchRooms();
                         } else if (t === 'meal-plans') {
                             fetchMealPlans();
+                        } else if (t === 'rate-structure') {
+                            fetchSegmentCodes();
+                            fetchMealPlans();
+                            fetchRatePlans();
                         } else if (t === 'tax-service') {
                             fetchTaxService();
                         } else if (t === 'extra-charges') {
