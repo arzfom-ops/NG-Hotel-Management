@@ -634,66 +634,306 @@
         </div>
     </div>
 
-    <!-- Modal New Reservation -->
-    <div id="reservationModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
-                <h3 class="text-lg font-semibold text-slate-800">New Reservation</h3>
-                <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
-                    <i class="ph ph-x text-xl"></i>
+    <!-- Modal New Reservation (4-Card Smart Form) -->
+    <div id="reservationModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden relative">
+
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                        <i class="ph ph-calendar-plus text-primary text-2xl"></i> New Reservation
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Buat reservasi kamar baru dengan informasi tamu dan rincian menginap.</p>
+                </div>
+                <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                    <i class="ph ph-x text-2xl"></i>
                 </button>
             </div>
 
-            <form id="reservationForm" onsubmit="handleSaveReservation(event)" class="space-y-4">
-                <!-- Guest Name -->
-                <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Guest Name</label>
-                    <input type="text" id="guestName" required placeholder="Nama Tamu" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
-                </div>
+            <!-- Form Content -->
+            <form id="reservationForm" onsubmit="handleSaveReservation(event)" class="flex-1 overflow-y-auto p-6 space-y-6">
+                <input type="hidden" id="res-booker-id">
 
-                <!-- Booking Source -->
-                <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Booking Source</label>
-                    <select id="bookingSource" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
-                        <option value="Walk-in">Walk-in</option>
-                        <option value="tiket.com">tiket.com</option>
-                        <option value="Traveloka">Traveloka</option>
-                        <option value="Agoda">Agoda</option>
-                    </select>
-                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <!-- Room -->
-                <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Room</label>
-                    <select id="roomSelect" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
-                    </select>
-                </div>
+                    <!-- CARD A: Guest & Booker Info -->
+                    <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="ph ph-user-circle text-primary text-lg"></i> A. Guest & Booker Info
+                            </h4>
+                            <button type="button" onclick="clearSelectedGuest()" class="text-xs text-primary hover:underline font-medium flex items-center gap-1">
+                                <i class="ph ph-user-plus text-sm"></i> + New Guest
+                            </button>
+                        </div>
 
-                <!-- Check-in & Check-out Date -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Check-in Date</label>
-                        <input type="date" id="checkInDate" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <!-- Reserve Name Autocomplete -->
+                        <div class="relative">
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Reserve Name / Cari Tamu <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="text" id="res-search-guest" oninput="handleGuestSearchInput(this.value)" autocomplete="off" placeholder="Ketik nama tamu untuk mencari profil..." class="w-full px-3 py-2 pr-8 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <i class="ph ph-magnifying-glass absolute right-2.5 top-2.5 text-slate-400 text-base"></i>
+                            </div>
+                            <!-- Autocomplete Dropdown List -->
+                            <div id="res-guest-suggestions" class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-48 overflow-y-auto z-30 hidden">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Guest Name -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Guest Name <span class="text-red-500">*</span></label>
+                                <input type="text" id="res-guest-name" required placeholder="Nama Lengkap Tamu" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- ID Card No -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">ID Card No (KTP/Passport)</label>
+                                <input type="text" id="res-id-card" placeholder="No. KTP / Paspor" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Phone -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Phone Number</label>
+                                <input type="tel" id="res-phone" placeholder="08123456789" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- Email -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
+                                <input type="email" id="res-email" placeholder="email@contoh.com" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Birth Date -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Birth Date</label>
+                                <input type="date" id="res-birth-date" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- Upload Doc (UI Only) -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Upload Doc (ID / Passport)</label>
+                                <input type="file" id="res-upload-doc" accept="image/*,.pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-primary hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-md bg-white py-1 px-1">
+                            </div>
+                        </div>
+
+                        <!-- Address -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Address</label>
+                            <input type="text" id="res-address" placeholder="Alamat Lengkap Tamu" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Check-out Date</label>
-                        <input type="date" id="checkOutDate" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
-                    </div>
-                </div>
 
-                <!-- Total Price -->
-                <div>
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Total Price</label>
-                    <input type="number" id="totalPrice" required placeholder="0" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <!-- CARD B: Stay Details -->
+                    <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+                        <div class="pb-2 border-b border-slate-200">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="ph ph-calendar text-primary text-lg"></i> B. Stay Details
+                            </h4>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <!-- Check-in Date -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Check-in Date <span class="text-red-500">*</span></label>
+                                <input type="date" id="res-check-in" required onchange="handleStayDatesChange('check-in')" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- Check-out Date -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Check-out Date <span class="text-red-500">*</span></label>
+                                <input type="date" id="res-check-out" required onchange="handleStayDatesChange('check-out')" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- Nights -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Nights <span class="text-red-500">*</span></label>
+                                <input type="number" id="res-nights" required min="1" value="1" onchange="handleStayDatesChange('nights')" oninput="handleStayDatesChange('nights')" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary font-semibold text-primary">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- ETA -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">ETA (Estimated Time Arrival)</label>
+                                <input type="time" id="res-eta" value="14:00" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- ETD -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">ETD (Estimated Time Departure)</label>
+                                <input type="time" id="res-etd" value="12:00" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Adult -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Adult Count</label>
+                                <input type="number" id="res-adult" required min="1" value="2" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- Child -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Child Count</label>
+                                <input type="number" id="res-child" required min="0" value="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD C: Room & Pricing (The Core) -->
+                    <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm md:col-span-2">
+                        <div class="pb-2 border-b border-slate-200 flex justify-between items-center">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="ph ph-bed text-primary text-lg"></i> C. Room & Pricing (The Core)
+                            </h4>
+                            <span id="rate-override-badge" class="text-xs px-2.5 py-0.5 rounded-full font-medium bg-slate-200 text-slate-600">Standard Rate</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                            <!-- Room Type -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Room Type <span class="text-red-500">*</span></label>
+                                <select id="res-room-type" required onchange="handleRoomTypeChange()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option value="">-- Select Room Type --</option>
+                                </select>
+                            </div>
+
+                            <!-- Room Number -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Room Number (Optional)</label>
+                                <select id="res-room-number" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option value="">-- Unassigned --</option>
+                                </select>
+                            </div>
+
+                            <!-- Rate Code -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Rate Code <span class="text-red-500">*</span></label>
+                                <select id="res-rate-code" required onchange="handleRateCodeChange()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option value="">-- Select Rate Code --</option>
+                                </select>
+                            </div>
+
+                            <!-- Room Rate -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Room Rate / Night (Rp) <span class="text-red-500">*</span></label>
+                                <input type="number" id="res-room-rate" required step="any" min="0" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary font-bold text-slate-800">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                            <!-- Meal Plan -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Meal Plan</label>
+                                <select id="res-meal-plan" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option value="">-- None --</option>
+                                </select>
+                            </div>
+
+                            <!-- Segment -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Market Segment</label>
+                                <select id="res-segment" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option value="">-- Select Segment --</option>
+                                </select>
+                            </div>
+
+                            <!-- Booking Source -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Reservation Source <span class="text-red-500">*</span></label>
+                                <select id="res-source" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option value="Direct">Direct</option>
+                                    <option value="Walk-in">Walk-in</option>
+                                    <option value="Phone">Phone</option>
+                                    <option value="Email">Email</option>
+                                    <option value="Online">Online</option>
+                                    <option value="tiket.com">tiket.com</option>
+                                    <option value="Traveloka">Traveloka</option>
+                                    <option value="Agoda">Agoda</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <!-- Voucher Number -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Voucher Number</label>
+                                <input type="text" id="res-voucher" placeholder="e.g. VCH-1234" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+                            <!-- Qty -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Qty (Jumlah Kamar)</label>
+                                <input type="number" id="res-qty" required min="1" value="1" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- Extra Bed -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Extrabed (Qty)</label>
+                                <input type="number" id="res-extrabed" min="0" value="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- Total Estimated Charge Preview -->
+                            <div class="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-2.5 flex justify-between items-center">
+                                <div>
+                                    <span class="text-xs text-blue-700 font-medium">Estimasi Total Harga Kamar:</span>
+                                    <div id="res-total-preview" class="text-lg font-bold text-primary">Rp 0</div>
+                                </div>
+                                <i class="ph ph-calculator text-2xl text-primary opacity-60"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD D: Deposit & Status -->
+                    <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm md:col-span-2">
+                        <div class="pb-2 border-b border-slate-200 flex justify-between items-center">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="ph ph-credit-card text-primary text-lg"></i> D. Deposit & Status
+                            </h4>
+                            <div class="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold">
+                                <i class="ph ph-check-circle text-sm"></i> Status: Reserved
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            <!-- Deposit Amount -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Deposit Amount (Rp)</label>
+                                <input type="number" id="res-deposit-amount" step="any" min="0" value="0" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- Payment Method -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Payment Method</label>
+                                <select id="res-payment-method" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option value="">-- Select Payment Method --</option>
+                                </select>
+                            </div>
+
+                            <!-- Comment -->
+                            <div class="sm:col-span-2 md:col-span-1">
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Reservation Comment / Special Request</label>
+                                <textarea id="res-comment" rows="1" placeholder="Catatan khusus reservasi..." class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200 shrink-0 bg-white">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
                         Cancel
                     </button>
-                    <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
-                        Save
+                    <button type="submit" id="resSubmitBtn" class="px-6 py-2.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
+                        <i class="ph ph-floppy-disk text-lg"></i> Save Reservation
                     </button>
                 </div>
             </form>
@@ -1170,24 +1410,10 @@
         const todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0);
 
-        // Langkah 1: Mock Data
-        const mockRooms = [
-            { id: 1, number: '101', type: 'Standard' },
-            { id: 2, number: '102', type: 'Standard' },
-            { id: 3, number: '103', type: 'Standard' },
-            { id: 4, number: '201', type: 'Deluxe' },
-            { id: 5, number: '202', type: 'Deluxe' },
-            { id: 6, number: '301', type: 'Suite' }
-        ];
-
-        const mockReservations = [
-            { room_id: 1, guest_name: 'Budi Santoso', check_in: formatDateISO(todayDate), check_out: formatDateISO(addDays(todayDate, 2)), source: 'tiket.com' },
-            { room_id: 1, guest_name: 'Siti Rahma', check_in: formatDateISO(addDays(todayDate, 2)), check_out: formatDateISO(addDays(todayDate, 5)), source: 'Traveloka' },
-            { room_id: 2, guest_name: 'John Doe', check_in: formatDateISO(addDays(todayDate, 1)), check_out: formatDateISO(addDays(todayDate, 4)), source: 'Agoda' },
-            { room_id: 3, guest_name: 'Ahmad Dahlan', check_in: formatDateISO(todayDate), check_out: formatDateISO(addDays(todayDate, 3)), source: 'Walk-in' },
-            { room_id: 4, guest_name: 'Dewi Lestari', check_in: formatDateISO(addDays(todayDate, 3)), check_out: formatDateISO(addDays(todayDate, 7)), source: 'tiket.com' },
-            { room_id: 5, guest_name: 'Rudi Tabuti', check_in: formatDateISO(addDays(todayDate, 5)), check_out: formatDateISO(addDays(todayDate, 8)), source: 'Traveloka' }
-        ];
+        // Global Cache for Dynamic Select Options
+        let roomsCache = [];
+        let roomTypesCache = [];
+        let ratePlansCache = [];
 
         function getSourceColorClass(source) {
             switch ((source || '').toLowerCase()) {
@@ -1199,104 +1425,157 @@
                     return 'bg-red-500';
                 case 'walk-in':
                     return 'bg-slate-500';
+                case 'direct':
+                    return 'bg-emerald-600';
+                case 'phone':
+                    return 'bg-amber-600';
+                case 'email':
+                    return 'bg-indigo-600';
+                case 'online':
+                    return 'bg-purple-600';
                 default:
                     return 'bg-blue-500';
             }
         }
 
-        function renderTapeChart() {
+        async function renderTapeChart() {
             const container = document.getElementById('tape-chart-wrapper');
             if (!container) return;
 
-            const daysCount = 14;
-            const datesList = [];
-            for (let i = 0; i < daysCount; i++) {
-                datesList.push(addDays(todayDate, i));
-            }
-
-            // Gunakan CSS Grid
-            // Kolom 1: Kamar (width min 130px, max 160px), Kolom 2-15: Tanggal (width min 100px each)
-            let tableHTML = `
-                <div class="inline-block min-w-full align-middle">
-                    <div class="grid border-collapse" style="grid-template-columns: minmax(130px, 160px) repeat(${daysCount}, minmax(100px, 1fr));">
-
-                        <!-- Header Baris 1: Kolom Kamar & Tanggal-tanggal -->
-                        <div class="sticky top-0 left-0 bg-white z-40 p-3 font-semibold text-xs text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                            Kamar
-                        </div>
-            `;
-
-            datesList.forEach(d => {
-                const dayStr = d.toLocaleDateString('id-ID', { weekday: 'short' });
-                const dateNumStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-                const isToday = formatDateISO(d) === formatDateISO(todayDate);
-
-                tableHTML += `
-                    <div class="sticky top-0 bg-white z-40 p-2 text-center border-b border-r border-slate-200 ${isToday ? 'bg-blue-50 font-bold text-primary' : 'text-slate-700'}">
-                        <div class="text-[11px] uppercase tracking-wider text-slate-400">${dayStr}</div>
-                        <div class="text-xs font-semibold mt-0.5">${dateNumStr}</div>
-                    </div>
-                `;
-            });
-
-            // Baris Kamar
-            mockRooms.forEach(room => {
-                // Sumbu Y Sticky Left
-                tableHTML += `
-                    <div class="sticky left-0 bg-white z-30 p-3 border-b border-r border-slate-200 flex flex-col justify-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                        <div class="font-bold text-sm text-slate-800">Kamar ${room.number}</div>
-                        <div class="text-xs text-slate-400 font-medium">${room.type}</div>
-                    </div>
-                `;
-
-                // Sel untuk setiap tanggal
-                datesList.forEach(d => {
-                    const dateISO = formatDateISO(d);
-                    const isToday = dateISO === formatDateISO(todayDate);
-
-                    // Cari reservasi yang menyangkut kamar & tanggal ini (Room Night: check_in <= dateISO < check_out)
-                    const res = mockReservations.find(r => r.room_id === room.id && r.check_in <= dateISO && dateISO < r.check_out);
-
-                    if (res) {
-                        const isStart = res.check_in === dateISO;
-                        const colorClass = getSourceColorClass(res.source);
-
-                        if (isStart) {
-                            const checkInDate = new Date(res.check_in + 'T00:00:00');
-                            const checkOutDate = new Date(res.check_out + 'T00:00:00');
-                            const diffDays = Math.round((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-
-                            tableHTML += `
-                                <div class="relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}">
-                                    <div class="absolute inset-y-1 left-1 z-10 ${colorClass} text-white rounded-md px-2.5 py-1 text-xs font-medium flex items-center shadow-sm overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-95 transition-opacity"
-                                         style="width: calc(${diffDays * 100}% + ${(diffDays - 1)}px - 0.5rem);"
-                                         title="${res.guest_name} (${res.source}) - ${res.check_in} s/d ${res.check_out}">
-                                        <i class="ph ph-user text-xs mr-1 opacity-80"></i>
-                                        <span class="truncate">${res.guest_name} (${res.source})</span>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            // Middle or end nights of reservation: rendered empty cell since the start cell pill stretches over
-                            tableHTML += `
-                                <div class="relative border-b border-r border-slate-100 p-1 ${isToday ? 'bg-blue-50/30' : ''}"></div>
-                            `;
-                        }
-                    } else {
-                        // Empty room-night cell
-                        tableHTML += `
-                            <div class="relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer ${isToday ? 'bg-blue-50/30' : ''}"></div>
-                        `;
-                    }
-                });
-            });
-
-            tableHTML += `
-                    </div>
+            container.innerHTML = `
+                <div class="p-8 text-center text-slate-500">
+                    <i class="ph ph-spinner animate-spin text-2xl text-primary inline-block mb-2"></i>
+                    <div>Memuat kalender & allotment kamar...</div>
                 </div>
             `;
 
-            container.innerHTML = tableHTML;
+            try {
+                // Fetch rooms joined with room_types
+                const { data: dbRooms, error: roomsErr } = await supabaseClient
+                    .from('rooms')
+                    .select('id, room_number, room_type_id, room_types(name)')
+                    .order('room_number', { ascending: true });
+                if (roomsErr) throw roomsErr;
+
+                roomsCache = dbRooms || [];
+
+                // Fetch reservations joined with guest_profiles and rooms
+                const { data: dbReservations, error: resErr } = await supabaseClient
+                    .from('reservations')
+                    .select('id, room_id, guest_name, check_in_date, check_out_date, reservation_source, status, guest_profiles(full_name), rooms(room_number)');
+                if (resErr) throw resErr;
+
+                const daysCount = 14;
+                const datesList = [];
+                for (let i = 0; i < daysCount; i++) {
+                    datesList.push(addDays(todayDate, i));
+                }
+
+                if (!roomsCache || roomsCache.length === 0) {
+                    container.innerHTML = `
+                        <div class="p-8 text-center text-slate-500">
+                            <i class="ph ph-bed text-3xl text-slate-300 mb-2"></i>
+                            <div>Belum ada kamar yang terdaftar. Tambahkan kamar terlebih dahulu di Admin Settings.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // CSS Grid Construction
+                let tableHTML = `
+                    <div class="inline-block min-w-full align-middle">
+                        <div class="grid border-collapse" style="grid-template-columns: minmax(140px, 170px) repeat(${daysCount}, minmax(105px, 1fr));">
+
+                            <!-- Header Baris 1: Kolom Kamar & Tanggal-tanggal -->
+                            <div class="sticky top-0 left-0 bg-white z-40 p-3 font-semibold text-xs text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                                Kamar / Tipe
+                            </div>
+                `;
+
+                datesList.forEach(d => {
+                    const dayStr = d.toLocaleDateString('id-ID', { weekday: 'short' });
+                    const dateNumStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                    const isToday = formatDateISO(d) === formatDateISO(todayDate);
+
+                    tableHTML += `
+                        <div class="sticky top-0 bg-white z-40 p-2 text-center border-b border-r border-slate-200 ${isToday ? 'bg-blue-50 font-bold text-primary' : 'text-slate-700'}">
+                            <div class="text-[11px] uppercase tracking-wider text-slate-400">${dayStr}</div>
+                            <div class="text-xs font-semibold mt-0.5">${dateNumStr}</div>
+                        </div>
+                    `;
+                });
+
+                // Baris Kamar
+                roomsCache.forEach(room => {
+                    const roomTypeName = room.room_types ? (Array.isArray(room.room_types) ? room.room_types[0]?.name : room.room_types.name) : '-';
+
+                    // Sumbu Y Sticky Left
+                    tableHTML += `
+                        <div class="sticky left-0 bg-white z-30 p-3 border-b border-r border-slate-200 flex flex-col justify-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                            <div class="font-bold text-sm text-slate-800">Kamar ${room.room_number}</div>
+                            <div class="text-xs text-slate-400 font-medium truncate" title="${roomTypeName}">${roomTypeName}</div>
+                        </div>
+                    `;
+
+                    // Sel untuk setiap tanggal
+                    datesList.forEach(d => {
+                        const dateISO = formatDateISO(d);
+                        const isToday = dateISO === formatDateISO(todayDate);
+
+                        // Cari reservasi yang menyangkut kamar & tanggal ini (check_in_date <= dateISO < check_out_date)
+                        const res = (dbReservations || []).find(r => r.room_id === room.id && r.check_in_date <= dateISO && dateISO < r.check_out_date);
+
+                        if (res) {
+                            const isStart = res.check_in_date === dateISO;
+                            const source = res.reservation_source || 'Direct';
+                            const colorClass = getSourceColorClass(source);
+                            const displayName = (res.guest_profiles ? res.guest_profiles.full_name : null) || res.guest_name || 'Guest';
+
+                            if (isStart) {
+                                const checkInDate = new Date(res.check_in_date + 'T00:00:00');
+                                const checkOutDate = new Date(res.check_out_date + 'T00:00:00');
+                                const diffDays = Math.max(1, Math.round((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)));
+
+                                tableHTML += `
+                                    <div class="relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}">
+                                        <div class="absolute inset-y-1 left-1 z-10 ${colorClass} text-white rounded-md px-2.5 py-1 text-xs font-medium flex items-center shadow-sm overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-95 transition-opacity"
+                                             style="width: calc(${diffDays * 100}% + ${(diffDays - 1)}px - 0.5rem);"
+                                             title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date}">
+                                            <i class="ph ph-user text-xs mr-1 opacity-80"></i>
+                                            <span class="truncate">${displayName} (${source})</span>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                // Middle or end nights of reservation: rendered empty cell since the start cell pill stretches over
+                                tableHTML += `
+                                    <div class="relative border-b border-r border-slate-100 p-1 ${isToday ? 'bg-blue-50/30' : ''}"></div>
+                                `;
+                            }
+                        } else {
+                            // Empty room-night cell
+                            tableHTML += `
+                                <div class="relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer ${isToday ? 'bg-blue-50/30' : ''}"></div>
+                            `;
+                        }
+                    });
+                });
+
+                tableHTML += `
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = tableHTML;
+            } catch (err) {
+                console.error('Error rendering tape chart:', err);
+                container.innerHTML = `
+                    <div class="p-6 text-center text-red-500">
+                        <i class="ph ph-warning-circle text-2xl mb-1"></i>
+                        <div>Gagal memuat Tape Chart: ${err.message}</div>
+                    </div>
+                `;
+            }
         }
 
         // --- Bed Types CRUD ---
@@ -2769,24 +3048,326 @@
             }
         }
 
-        // Functions untuk Modal New Reservation
-        function populateRoomDropdown() {
-            const select = document.getElementById('roomSelect');
-            if (!select) return;
-            select.innerHTML = mockRooms.map(r => `<option value="${r.id}">Kamar ${r.number} (${r.type})</option>`).join('');
+        // --- Smart Reservation Modal Logic & Supabase CRUD ---
+        let guestSearchDebounceTimer = null;
+
+        async function handleGuestSearchInput(query) {
+            const suggestionsDiv = document.getElementById('res-guest-suggestions');
+            if (!suggestionsDiv) return;
+
+            const trimmed = query.trim();
+            if (trimmed.length < 1) {
+                suggestionsDiv.classList.add('hidden');
+                suggestionsDiv.innerHTML = '';
+                return;
+            }
+
+            if (guestSearchDebounceTimer) clearTimeout(guestSearchDebounceTimer);
+
+            guestSearchDebounceTimer = setTimeout(async () => {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('guest_profiles')
+                        .select('*')
+                        .ilike('full_name', `%${trimmed}%`)
+                        .limit(8);
+
+                    if (error) throw error;
+
+                    if (!data || data.length === 0) {
+                        suggestionsDiv.innerHTML = `
+                            <div class="px-3 py-2 text-xs text-slate-500 italic">
+                                Tidak ditemukan tamu dengan nama "${trimmed}".
+                            </div>
+                        `;
+                    } else {
+                        suggestionsDiv.innerHTML = data.map(g => {
+                            const escapedName = (g.full_name || '').replace(/'/g, "\\'");
+                            const escapedPhone = (g.phone_number || '').replace(/'/g, "\\'");
+                            const escapedEmail = (g.email || '').replace(/'/g, "\\'");
+                            const escapedIdCard = (g.id_card_no || '').replace(/'/g, "\\'");
+                            const escapedAddress = (g.address || '').replace(/'/g, "\\'");
+                            const birthDate = g.birth_date || '';
+
+                            return `
+                                <div onclick="selectGuestProfile('${g.id}', '${escapedName}', '${escapedIdCard}', '${escapedPhone}', '${escapedEmail}', '${birthDate}', '${escapedAddress}')" class="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-b-0">
+                                    <div class="font-medium text-xs text-slate-800">${g.full_name}</div>
+                                    <div class="text-[11px] text-slate-500 flex gap-2">
+                                        <span>${g.phone_number || 'No phone'}</span>
+                                        <span>•</span>
+                                        <span>${g.id_card_no || 'No ID'}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                    suggestionsDiv.classList.remove('hidden');
+                } catch (err) {
+                    console.error('Error searching guest profiles:', err);
+                }
+            }, 250);
         }
 
-        function openModal() {
-            populateRoomDropdown();
-            // Set default dates: check-in today, check-out tomorrow
-            const checkInInput = document.getElementById('checkInDate');
-            const checkOutInput = document.getElementById('checkOutDate');
-            if (checkInInput && !checkInInput.value) {
-                checkInInput.value = formatDateISO(todayDate);
+        function selectGuestProfile(id, name, idCard, phone, email, birthDate, address) {
+            document.getElementById('res-booker-id').value = id;
+            document.getElementById('res-search-guest').value = name;
+            document.getElementById('res-guest-name').value = name;
+            document.getElementById('res-id-card').value = idCard || '';
+            document.getElementById('res-phone').value = phone || '';
+            document.getElementById('res-email').value = email || '';
+            document.getElementById('res-birth-date').value = birthDate || '';
+            document.getElementById('res-address').value = address || '';
+
+            const suggestionsDiv = document.getElementById('res-guest-suggestions');
+            if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
+        }
+
+        function clearSelectedGuest() {
+            document.getElementById('res-booker-id').value = '';
+            document.getElementById('res-search-guest').value = '';
+            document.getElementById('res-guest-name').value = '';
+            document.getElementById('res-id-card').value = '';
+            document.getElementById('res-phone').value = '';
+            document.getElementById('res-email').value = '';
+            document.getElementById('res-birth-date').value = '';
+            document.getElementById('res-address').value = '';
+
+            const suggestionsDiv = document.getElementById('res-guest-suggestions');
+            if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
+            document.getElementById('res-search-guest').focus();
+        }
+
+        function handleStayDatesChange(triggerSource) {
+            const checkInInput = document.getElementById('res-check-in');
+            const checkOutInput = document.getElementById('res-check-out');
+            const nightsInput = document.getElementById('res-nights');
+
+            const checkInVal = checkInInput.value;
+            const checkOutVal = checkOutInput.value;
+            let nightsVal = parseInt(nightsInput.value, 10);
+
+            if (!checkInVal) return;
+            const checkInDateObj = new Date(checkInVal + 'T00:00:00');
+
+            if (triggerSource === 'nights') {
+                if (isNaN(nightsVal) || nightsVal < 1) {
+                    nightsVal = 1;
+                    nightsInput.value = 1;
+                }
+                const newCheckOutObj = addDays(checkInDateObj, nightsVal);
+                checkOutInput.value = formatDateISO(newCheckOutObj);
+            } else if (triggerSource === 'check-out' || triggerSource === 'check-in') {
+                if (checkInVal && checkOutVal) {
+                    const checkOutDateObj = new Date(checkOutVal + 'T00:00:00');
+                    const diffTime = checkOutDateObj - checkInDateObj;
+                    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays >= 1) {
+                        nightsInput.value = diffDays;
+                    } else {
+                        // Reset check-out to check-in + 1 night if check-out <= check-in
+                        const autoCheckOut = addDays(checkInDateObj, 1);
+                        checkOutInput.value = formatDateISO(autoCheckOut);
+                        nightsInput.value = 1;
+                    }
+                } else if (checkInVal && !checkOutVal) {
+                    const defaultNights = isNaN(nightsVal) || nightsVal < 1 ? 1 : nightsVal;
+                    const autoCheckOut = addDays(checkInDateObj, defaultNights);
+                    checkOutInput.value = formatDateISO(autoCheckOut);
+                }
             }
-            if (checkOutInput && !checkOutInput.value) {
-                checkOutInput.value = formatDateISO(addDays(todayDate, 1));
+
+            updateTotalPreview();
+        }
+
+        async function populateReservationFormDropdowns() {
+            try {
+                // 1. Room Types & Rooms
+                const { data: rTypes, error: rtErr } = await supabaseClient.from('room_types').select('id, name, base_price').order('name', { ascending: true });
+                if (rtErr) throw rtErr;
+                roomTypesCache = rTypes || [];
+
+                const roomTypeSelect = document.getElementById('res-room-type');
+                if (roomTypeSelect) {
+                    roomTypeSelect.innerHTML = `<option value="">-- Select Room Type --</option>` +
+                        roomTypesCache.map(rt => `<option value="${rt.id}">${rt.name}</option>`).join('');
+                }
+
+                // 2. Rate Plans
+                const { data: rPlans, error: rpErr } = await supabaseClient.from('rate_plans').select('id, rate_code, rate_name, allow_override, meal_plan_id, segment_id').order('rate_code', { ascending: true });
+                if (rpErr) throw rpErr;
+                ratePlansCache = rPlans || [];
+
+                const rateCodeSelect = document.getElementById('res-rate-code');
+                if (rateCodeSelect) {
+                    rateCodeSelect.innerHTML = `<option value="">-- Select Rate Code --</option>` +
+                        ratePlansCache.map(rp => `<option value="${rp.id}">${rp.rate_code} - ${rp.rate_name}</option>`).join('');
+                }
+
+                // 3. Meal Plans
+                const { data: mPlans, error: mpErr } = await supabaseClient.from('meal_plans').select('id, code, name').order('code', { ascending: true });
+                if (mpErr) throw mpErr;
+                const mealPlanSelect = document.getElementById('res-meal-plan');
+                if (mealPlanSelect) {
+                    mealPlanSelect.innerHTML = `<option value="">-- None --</option>` +
+                        (mPlans || []).map(mp => `<option value="${mp.id}">${mp.code} - ${mp.name}</option>`).join('');
+                }
+
+                // 4. Market Segments
+                const { data: sCodes, error: scErr } = await supabaseClient.from('segment_codes').select('id, segment_code, description').order('segment_code', { ascending: true });
+                if (scErr) throw scErr;
+                const segmentSelect = document.getElementById('res-segment');
+                if (segmentSelect) {
+                    segmentSelect.innerHTML = `<option value="">-- Select Segment --</option>` +
+                        (sCodes || []).map(sc => `<option value="${sc.id}">${sc.segment_code}${sc.description ? ' - ' + sc.description : ''}</option>`).join('');
+                }
+
+                // 5. Payment Methods
+                const { data: pMethods, error: pmErr } = await supabaseClient.from('payment_methods').select('id, name, method_type').eq('is_active', true).order('name', { ascending: true });
+                if (pmErr) throw pmErr;
+                const paymentMethodSelect = document.getElementById('res-payment-method');
+                if (paymentMethodSelect) {
+                    paymentMethodSelect.innerHTML = `<option value="">-- Select Payment Method --</option>` +
+                        (pMethods || []).map(pm => `<option value="${pm.id}">${pm.name} (${pm.method_type})</option>`).join('');
+                }
+
+            } catch (err) {
+                console.error('Error populating reservation form dropdowns:', err);
             }
+        }
+
+        function handleRoomTypeChange() {
+            const selectedRoomTypeId = document.getElementById('res-room-type').value;
+            const roomNumberSelect = document.getElementById('res-room-number');
+
+            if (roomNumberSelect) {
+                if (!selectedRoomTypeId) {
+                    roomNumberSelect.innerHTML = `<option value="">-- Unassigned --</option>`;
+                } else {
+                    const filteredRooms = roomsCache.filter(r => r.room_type_id === selectedRoomTypeId);
+                    roomNumberSelect.innerHTML = `<option value="">-- Unassigned --</option>` +
+                        filteredRooms.map(r => `<option value="${r.id}">Kamar ${r.room_number}</option>`).join('');
+                }
+            }
+
+            lookupAndSetRoomRate();
+        }
+
+        function handleRateCodeChange() {
+            const selectedRatePlanId = document.getElementById('res-rate-code').value;
+            const ratePlanObj = ratePlansCache.find(rp => rp.id === selectedRatePlanId);
+
+            if (ratePlanObj) {
+                // Auto-set meal plan & segment if defined on rate plan
+                if (ratePlanObj.meal_plan_id) {
+                    const mpSelect = document.getElementById('res-meal-plan');
+                    if (mpSelect) mpSelect.value = ratePlanObj.meal_plan_id;
+                }
+                if (ratePlanObj.segment_id) {
+                    const segSelect = document.getElementById('res-segment');
+                    if (segSelect) segSelect.value = ratePlanObj.segment_id;
+                }
+            }
+
+            lookupAndSetRoomRate();
+        }
+
+        async function lookupAndSetRoomRate() {
+            const roomTypeId = document.getElementById('res-room-type').value;
+            const ratePlanId = document.getElementById('res-rate-code').value;
+            const roomRateInput = document.getElementById('res-room-rate');
+            const badgeEl = document.getElementById('rate-override-badge');
+
+            let rateValue = 0;
+            let allowOverride = true;
+
+            const ratePlanObj = ratePlansCache.find(rp => rp.id === ratePlanId);
+            if (ratePlanObj) {
+                allowOverride = ratePlanObj.allow_override !== false;
+            }
+
+            if (roomTypeId && ratePlanId) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('rate_plan_prices')
+                        .select('price')
+                        .eq('rate_plan_id', ratePlanId)
+                        .eq('room_type_id', roomTypeId)
+                        .maybeSingle();
+
+                    if (!error && data && data.price !== null && data.price !== undefined) {
+                        rateValue = data.price;
+                    } else {
+                        // Fallback to room type base_price
+                        const rtObj = roomTypesCache.find(rt => rt.id === roomTypeId);
+                        rateValue = rtObj ? (rtObj.base_price || 0) : 0;
+                    }
+                } catch (err) {
+                    console.error('Error looking up room rate:', err);
+                }
+            } else if (roomTypeId) {
+                const rtObj = roomTypesCache.find(rt => rt.id === roomTypeId);
+                rateValue = rtObj ? (rtObj.base_price || 0) : 0;
+            }
+
+            if (roomRateInput) {
+                roomRateInput.value = rateValue;
+                if (!allowOverride && ratePlanId) {
+                    roomRateInput.readOnly = true;
+                    roomRateInput.classList.add('bg-slate-100', 'cursor-not-allowed');
+                    if (badgeEl) {
+                        badgeEl.textContent = 'Locked Price (Override Disabled)';
+                        badgeEl.className = 'text-xs px-2.5 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800';
+                    }
+                } else {
+                    roomRateInput.readOnly = false;
+                    roomRateInput.classList.remove('bg-slate-100', 'cursor-not-allowed');
+                    if (badgeEl) {
+                        badgeEl.textContent = 'Override Allowed';
+                        badgeEl.className = 'text-xs px-2.5 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-800';
+                    }
+                }
+            }
+
+            updateTotalPreview();
+        }
+
+        function updateTotalPreview() {
+            const roomRate = parseFloat(document.getElementById('res-room-rate').value) || 0;
+            const nights = parseInt(document.getElementById('res-nights').value, 10) || 1;
+            const qty = parseInt(document.getElementById('res-qty').value, 10) || 1;
+
+            const total = roomRate * nights * qty;
+            const totalPreviewDiv = document.getElementById('res-total-preview');
+            if (totalPreviewDiv) {
+                totalPreviewDiv.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+            }
+        }
+
+        async function openModal() {
+            await populateReservationFormDropdowns();
+
+            // Set default dates & fields
+            const checkInInput = document.getElementById('res-check-in');
+            const checkOutInput = document.getElementById('res-check-out');
+            const checkInISO = formatDateISO(todayDate);
+            const checkOutISO = formatDateISO(addDays(todayDate, 1));
+
+            checkInInput.min = checkInISO;
+            checkInInput.value = checkInISO;
+            checkOutInput.value = checkOutISO;
+
+            document.getElementById('res-nights').value = 1;
+            document.getElementById('res-eta').value = '14:00';
+            document.getElementById('res-etd').value = '12:00';
+            document.getElementById('res-adult').value = 2;
+            document.getElementById('res-child').value = 0;
+            document.getElementById('res-qty').value = 1;
+            document.getElementById('res-extrabed').value = 0;
+            document.getElementById('res-deposit-amount').value = 0;
+            document.getElementById('res-source').value = 'Direct';
+
+            clearSelectedGuest();
 
             const modal = document.getElementById('reservationModal');
             if (modal) {
@@ -2803,28 +3384,125 @@
             if (form) {
                 form.reset();
             }
+            clearSelectedGuest();
         }
 
-
-        function handleSaveReservation(event) {
+        async function handleSaveReservation(event) {
             event.preventDefault();
-            const guestName = document.getElementById('guestName').value;
-            const bookingSource = document.getElementById('bookingSource').value;
-            const roomId = parseInt(document.getElementById('roomSelect').value, 10);
-            const checkIn = document.getElementById('checkInDate').value;
-            const checkOut = document.getElementById('checkOutDate').value;
 
-            if (guestName && roomId && checkIn && checkOut) {
-                mockReservations.push({
-                    room_id: roomId,
-                    guest_name: guestName,
-                    check_in: checkIn,
-                    check_out: checkOut,
-                    source: bookingSource
-                });
-                renderTapeChart();
+            const submitBtn = document.getElementById('resSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Saving...`;
             }
-            closeModal();
+
+            try {
+                // 1. Check or Insert Guest Profile
+                let bookerId = document.getElementById('res-booker-id').value;
+                const guestNameVal = document.getElementById('res-guest-name').value.trim();
+                const idCardVal = document.getElementById('res-id-card').value.trim();
+                const phoneVal = document.getElementById('res-phone').value.trim();
+                const emailVal = document.getElementById('res-email').value.trim();
+                const birthDateVal = document.getElementById('res-birth-date').value || null;
+                const addressVal = document.getElementById('res-address').value.trim();
+
+                if (!guestNameVal) {
+                    alert('Harap isi nama tamu.');
+                    return;
+                }
+
+                if (!bookerId) {
+                    // Create new guest profile record
+                    const { data: newGuest, error: guestErr } = await supabaseClient
+                        .from('guest_profiles')
+                        .insert([{
+                            full_name: guestNameVal,
+                            id_card_no: idCardVal || null,
+                            phone_number: phoneVal || null,
+                            email: emailVal || null,
+                            birth_date: birthDateVal,
+                            address: addressVal || null
+                        }])
+                        .select()
+                        .single();
+
+                    if (guestErr) throw guestErr;
+                    bookerId = newGuest.id;
+                }
+
+                // 2. Prepare Reservation Data
+                const checkInDate = document.getElementById('res-check-in').value;
+                const checkOutDate = document.getElementById('res-check-out').value;
+                const nights = parseInt(document.getElementById('res-nights').value, 10) || 1;
+                const eta = document.getElementById('res-eta').value || '14:00';
+                const etd = document.getElementById('res-etd').value || '12:00';
+                const adult = parseInt(document.getElementById('res-adult').value, 10) || 2;
+                const child = parseInt(document.getElementById('res-child').value, 10) || 0;
+
+                const roomTypeId = document.getElementById('res-room-type').value || null;
+                const roomId = document.getElementById('res-room-number').value || null;
+                const ratePlanId = document.getElementById('res-rate-code').value || null;
+                const roomRate = parseFloat(document.getElementById('res-room-rate').value) || 0;
+                const mealPlanId = document.getElementById('res-meal-plan').value || null;
+                const segmentId = document.getElementById('res-segment').value || null;
+                const reservationSource = document.getElementById('res-source').value || 'Direct';
+                const voucherNumber = document.getElementById('res-voucher').value.trim() || null;
+                const qty = parseInt(document.getElementById('res-qty').value, 10) || 1;
+                const extrabedQty = parseInt(document.getElementById('res-extrabed').value, 10) || 0;
+
+                const depositAmount = parseFloat(document.getElementById('res-deposit-amount').value) || 0;
+                const depositMethod = document.getElementById('res-payment-method').value || null;
+                const comment = document.getElementById('res-comment').value.trim() || null;
+
+                // Unique Reservation Code Generation
+                const randomNum = Math.floor(1000 + Math.random() * 9000);
+                const reservationNumber = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
+
+                const reservationPayload = {
+                    reservation_number: reservationNumber,
+                    booker_id: bookerId,
+                    guest_name: guestNameVal,
+                    check_in_date: checkInDate,
+                    check_out_date: checkOutDate,
+                    nights: nights,
+                    eta: eta,
+                    etd: etd,
+                    adult: adult,
+                    child: child,
+                    room_type_id: roomTypeId,
+                    room_id: roomId,
+                    rate_plan_id: ratePlanId,
+                    room_rate: roomRate,
+                    qty: qty,
+                    extrabed_qty: extrabedQty,
+                    meal_plan_id: mealPlanId,
+                    segment_id: segmentId,
+                    reservation_source: reservationSource,
+                    voucher_number: voucherNumber,
+                    deposit_amount: depositAmount,
+                    deposit_method: depositMethod,
+                    comment: comment,
+                    status: 'Reserved'
+                };
+
+                const { error: insertResErr } = await supabaseClient
+                    .from('reservations')
+                    .insert([reservationPayload]);
+
+                if (insertResErr) throw insertResErr;
+
+                closeModal();
+                await renderTapeChart();
+
+            } catch (err) {
+                console.error('Error saving reservation:', err);
+                alert('Gagal membuat reservasi: ' + err.message);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> Save Reservation`;
+                }
+            }
         }
 
         // Single Page Application (SPA) View Toggling
