@@ -406,6 +406,14 @@
                     <input type="text" id="ratePlanCancellationPolicy" placeholder="misal: Non-refundable / Free cancellation 24h prior" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
                 </div>
 
+                <!-- Default Prices by Room Type (Optional) -->
+                <div class="pt-2 border-t border-slate-100">
+                    <label class="block text-sm font-semibold text-slate-800 mb-2">Default Prices by Room Type (Optional)</label>
+                    <div id="rate-plan-prices-container" class="space-y-3">
+                        <!-- Dynamic room type price inputs rendered here -->
+                    </div>
+                </div>
+
                 <div class="flex justify-end space-x-3 pt-4 border-t">
                     <button type="button" onclick="closeRatePlanModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
                         Cancel
@@ -2858,7 +2866,38 @@
             }
         }
 
-        // --- Rate Plans CRUD ---
+        // --- Rate Plans & Dynamic Prices Matrix CRUD ---
+        async function renderRoomTypePriceInputs(existingPricesMap = {}) {
+            const container = document.getElementById('rate-plan-prices-container');
+            if (!container) return;
+            container.innerHTML = `<p class="text-xs text-slate-400">Loading room types...</p>`;
+
+            try {
+                const { data: roomTypes, error } = await supabaseClient.from('room_types').select('id, name').order('name', { ascending: true });
+                if (error) throw error;
+
+                if (!roomTypes || roomTypes.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-400 font-normal">Tidak ada tipe kamar tersedia.</p>`;
+                    return;
+                }
+
+                container.innerHTML = roomTypes.map(rt => {
+                    const currentPrice = existingPricesMap[rt.id] !== undefined && existingPricesMap[rt.id] !== null ? existingPricesMap[rt.id] : '';
+                    return `
+                        <div class="flex items-center justify-between gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                            <span class="text-xs font-medium text-slate-700 w-1/2 truncate" title="${rt.name}">${rt.name}</span>
+                            <div class="w-1/2">
+                                <input type="number" step="any" min="0" data-room-type-id="${rt.id}" value="${currentPrice}" placeholder="e.g. 500000" class="rate-plan-room-price-input w-full px-3 py-1.5 border border-slate-200 rounded-md text-xs focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Error rendering room type price inputs:', err);
+                container.innerHTML = `<p class="text-xs text-red-500">Gagal memuat tipe kamar.</p>`;
+            }
+        }
+
         async function fetchRatePlans() {
             try {
                 const { data, error } = await supabaseClient
@@ -2927,6 +2966,8 @@
             document.getElementById('ratePlanAllowOverride').value = 'false';
             document.getElementById('ratePlanCancellationPolicy').value = '';
 
+            await renderRoomTypePriceInputs({});
+
             document.getElementById('ratePlanModalTitle').textContent = 'Add Rate Plan';
             document.getElementById('ratePlanSubmitBtn').textContent = 'Save';
             const modal = document.getElementById('ratePlanModal');
@@ -2944,6 +2985,21 @@
             document.getElementById('ratePlanAllowOverride').value = allowOverride ? 'true' : 'false';
             document.getElementById('ratePlanCancellationPolicy').value = policy;
 
+            let existingPricesMap = {};
+            try {
+                const { data: priceData, error } = await supabaseClient.from('rate_plan_prices').select('room_type_id, price').eq('rate_plan_id', id);
+                if (error) throw error;
+                if (priceData) {
+                    priceData.forEach(item => {
+                        existingPricesMap[item.room_type_id] = item.price;
+                    });
+                }
+            } catch (err) {
+                console.error('Error fetching rate plan prices for edit:', err);
+            }
+
+            await renderRoomTypePriceInputs(existingPricesMap);
+
             document.getElementById('ratePlanModalTitle').textContent = 'Update Rate Plan';
             document.getElementById('ratePlanSubmitBtn').textContent = 'Update';
             const modal = document.getElementById('ratePlanModal');
@@ -2956,6 +3012,8 @@
             document.getElementById('edit-rate-plan-id').value = '';
             const form = document.getElementById('ratePlanForm');
             if (form) form.reset();
+            const container = document.getElementById('rate-plan-prices-container');
+            if (container) container.innerHTML = '';
         }
 
         async function handleSaveRatePlan(e) {
@@ -2978,13 +3036,41 @@
             };
 
             try {
+                let ratePlanId = editId;
                 if (editId) {
                     const { error } = await supabaseClient.from('rate_plans').update(payload).eq('id', editId);
                     if (error) throw error;
+
+                    const { error: delErr } = await supabaseClient.from('rate_plan_prices').delete().eq('rate_plan_id', editId);
+                    if (delErr) throw delErr;
                 } else {
-                    const { error } = await supabaseClient.from('rate_plans').insert([payload]);
+                    const { data: newRatePlan, error } = await supabaseClient.from('rate_plans').insert([payload]).select().single();
                     if (error) throw error;
+                    ratePlanId = newRatePlan.id;
                 }
+
+                const priceInputs = document.querySelectorAll('.rate-plan-room-price-input');
+                const pricePayload = [];
+                priceInputs.forEach(input => {
+                    const roomTypeId = input.dataset.roomTypeId;
+                    const rawVal = input.value.trim();
+                    if (rawVal !== '') {
+                        const priceVal = parseFloat(rawVal);
+                        if (!isNaN(priceVal)) {
+                            pricePayload.push({
+                                rate_plan_id: ratePlanId,
+                                room_type_id: roomTypeId,
+                                price: priceVal
+                            });
+                        }
+                    }
+                });
+
+                if (pricePayload.length > 0) {
+                    const { error: priceErr } = await supabaseClient.from('rate_plan_prices').insert(pricePayload);
+                    if (priceErr) throw priceErr;
+                }
+
                 closeRatePlanModal();
                 fetchRatePlans();
             } catch (err) {
