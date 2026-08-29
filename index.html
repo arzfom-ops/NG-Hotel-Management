@@ -641,10 +641,10 @@
             <!-- Header -->
             <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
                 <div>
-                    <h3 class="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                        <i class="ph ph-calendar-plus text-primary text-2xl"></i> New Reservation
+                    <h3 id="reservationModalTitle" class="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                        <i id="reservationModalIcon" class="ph ph-calendar-plus text-primary text-2xl"></i> <span id="reservationModalTitleText">New Reservation</span>
                     </h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Buat reservasi kamar baru dengan informasi tamu dan rincian menginap.</p>
+                    <p id="reservationModalSubTitle" class="text-xs text-slate-500 mt-0.5">Buat reservasi kamar baru dengan informasi tamu dan rincian menginap.</p>
                 </div>
                 <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
                     <i class="ph ph-x text-2xl"></i>
@@ -653,6 +653,7 @@
 
             <!-- Form Content -->
             <form id="reservationForm" onsubmit="handleSaveReservation(event)" class="flex-1 overflow-y-auto p-6 space-y-6">
+                <input type="hidden" id="edit-reservation-id">
                 <input type="hidden" id="res-booker-id">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -897,8 +898,8 @@
                             <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                                 <i class="ph ph-credit-card text-primary text-lg"></i> D. Deposit & Status
                             </h4>
-                            <div class="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold">
-                                <i class="ph ph-check-circle text-sm"></i> Status: Reserved
+                            <div id="res-status-badge" class="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold">
+                                <i class="ph ph-check-circle text-sm"></i> <span id="res-status-text">Status: Reserved</span>
                             </div>
                         </div>
 
@@ -928,13 +929,31 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200 shrink-0 bg-white">
-                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit" id="resSubmitBtn" class="px-6 py-2.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
-                        <i class="ph ph-floppy-disk text-lg"></i> Save Reservation
-                    </button>
+                <div class="pt-4 border-t border-slate-200 shrink-0 bg-white">
+                    <!-- Create Mode Footer -->
+                    <div id="resModalCreateFooter" class="flex justify-end gap-3">
+                        <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" id="resSubmitBtn" class="px-6 py-2.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
+                            <i class="ph ph-floppy-disk text-lg"></i> Save Reservation
+                        </button>
+                    </div>
+                    <!-- Edit Mode Footer -->
+                    <div id="resModalEditFooter" class="flex justify-end gap-3 hidden">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                            Close
+                        </button>
+                        <button type="button" id="resCheckInBtn" onclick="handleCheckInReservation()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
+                            <i class="ph ph-check-circle text-lg"></i> Check-in
+                        </button>
+                        <button type="button" id="resCancelBookingBtn" onclick="handleCancelBookingReservation()" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
+                            <i class="ph ph-x-circle text-lg"></i> Cancel Booking
+                        </button>
+                        <button type="submit" id="resUpdateBtn" class="px-6 py-2.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
+                            <i class="ph ph-floppy-disk text-lg"></i> Update Data
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -1538,9 +1557,9 @@
 
                                 tableHTML += `
                                     <div class="relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}">
-                                        <div class="absolute inset-y-1 left-1 z-10 ${colorClass} text-white rounded-md px-2.5 py-1 text-xs font-medium flex items-center shadow-sm overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-95 transition-opacity"
+                                        <div onclick="openEditReservation('${res.id}')" class="absolute inset-y-1 left-1 z-10 ${colorClass} text-white rounded-md px-2.5 py-1 text-xs font-medium flex items-center shadow-sm overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-95 transition-opacity"
                                              style="width: calc(${diffDays * 100}% + ${(diffDays - 1)}px - 0.5rem);"
-                                             title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date}">
+                                             title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date} [Status: ${res.status || 'Reserved'}]">
                                             <i class="ph ph-user text-xs mr-1 opacity-80"></i>
                                             <span class="truncate">${displayName} (${source})</span>
                                         </div>
@@ -3347,6 +3366,29 @@
         async function openModal() {
             await populateReservationFormDropdowns();
 
+            // Reset IDs
+            document.getElementById('edit-reservation-id').value = '';
+
+            // Modal Header (New Mode)
+            const titleIcon = document.getElementById('reservationModalIcon');
+            const titleText = document.getElementById('reservationModalTitleText');
+            const subTitle = document.getElementById('reservationModalSubTitle');
+            if (titleIcon) titleIcon.className = 'ph ph-calendar-plus text-primary text-2xl';
+            if (titleText) titleText.textContent = 'New Reservation';
+            if (subTitle) subTitle.textContent = 'Buat reservasi kamar baru dengan informasi tamu dan rincian menginap.';
+
+            // Status Badge (New Mode)
+            const statusBadge = document.getElementById('res-status-badge');
+            const statusText = document.getElementById('res-status-text');
+            if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold';
+            if (statusText) statusText.textContent = 'Status: Reserved';
+
+            // Footer buttons toggle
+            const createFooter = document.getElementById('resModalCreateFooter');
+            const editFooter = document.getElementById('resModalEditFooter');
+            if (createFooter) createFooter.classList.remove('hidden');
+            if (editFooter) editFooter.classList.add('hidden');
+
             // Set default dates & fields
             const checkInInput = document.getElementById('res-check-in');
             const checkOutInput = document.getElementById('res-check-out');
@@ -3375,11 +3417,123 @@
             }
         }
 
+        async function openEditReservation(id) {
+            await populateReservationFormDropdowns();
+
+            try {
+                const { data: res, error } = await supabaseClient
+                    .from('reservations')
+                    .select('*, guest_profiles(*)')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+                if (!res) throw new Error('Data reservasi tidak ditemukan.');
+
+                document.getElementById('edit-reservation-id').value = res.id;
+
+                // Set Header Edit Mode
+                const titleIcon = document.getElementById('reservationModalIcon');
+                const titleText = document.getElementById('reservationModalTitleText');
+                const subTitle = document.getElementById('reservationModalSubTitle');
+                if (titleIcon) titleIcon.className = 'ph ph-pencil-simple-line text-primary text-2xl';
+                if (titleText) titleText.textContent = `Edit Reservation (${res.reservation_number || ''})`;
+                if (subTitle) subTitle.textContent = 'Lihat atau ubah rincian data reservasi tamu.';
+
+                // Set Guest Profile Info
+                const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
+                const bookerId = res.booker_id || (guestProfile ? guestProfile.id : '');
+                const guestName = (guestProfile ? guestProfile.full_name : null) || res.guest_name || '';
+
+                document.getElementById('res-booker-id').value = bookerId;
+                document.getElementById('res-search-guest').value = guestName;
+                document.getElementById('res-guest-name').value = guestName;
+                document.getElementById('res-id-card').value = guestProfile ? (guestProfile.id_card_no || '') : '';
+                document.getElementById('res-phone').value = guestProfile ? (guestProfile.phone_number || '') : '';
+                document.getElementById('res-email').value = guestProfile ? (guestProfile.email || '') : '';
+                document.getElementById('res-birth-date').value = guestProfile ? (guestProfile.birth_date || '') : '';
+                document.getElementById('res-address').value = guestProfile ? (guestProfile.address || '') : '';
+
+                // Set Stay Details
+                const checkInInput = document.getElementById('res-check-in');
+                checkInInput.removeAttribute('min');
+                checkInInput.value = res.check_in_date || '';
+                document.getElementById('res-check-out').value = res.check_out_date || '';
+                document.getElementById('res-nights').value = res.nights || 1;
+                document.getElementById('res-eta').value = res.eta ? res.eta.slice(0, 5) : '14:00';
+                document.getElementById('res-etd').value = res.etd ? res.etd.slice(0, 5) : '12:00';
+                document.getElementById('res-adult').value = res.adult || 1;
+                document.getElementById('res-child').value = res.child || 0;
+
+                // Set Room & Pricing Details
+                document.getElementById('res-room-type').value = res.room_type_id || '';
+                handleRoomTypeChange(); // Populate room number select for this type
+                document.getElementById('res-room-number').value = res.room_id || '';
+                document.getElementById('res-rate-code').value = res.rate_plan_id || '';
+                document.getElementById('res-room-rate').value = res.room_rate || 0;
+                document.getElementById('res-meal-plan').value = res.meal_plan_id || '';
+                document.getElementById('res-segment').value = res.segment_id || '';
+                document.getElementById('res-source').value = res.reservation_source || 'Direct';
+                document.getElementById('res-voucher').value = res.voucher_number || '';
+                document.getElementById('res-qty').value = res.qty || 1;
+                document.getElementById('res-extrabed').value = res.extrabed_qty || 0;
+
+                // Set Deposit & Comment
+                document.getElementById('res-deposit-amount').value = res.deposit_amount || 0;
+                document.getElementById('res-payment-method').value = res.deposit_method || '';
+                document.getElementById('res-comment').value = res.comment || '';
+
+                updateTotalPreview();
+
+                // Status Badge & Footer Buttons configuration
+                const currentStatus = res.status || 'Reserved';
+                const statusBadge = document.getElementById('res-status-badge');
+                const statusText = document.getElementById('res-status-text');
+                if (statusText) statusText.textContent = `Status: ${currentStatus}`;
+
+                if (currentStatus === 'Reserved') {
+                    if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold';
+                } else if (currentStatus === 'Checkin') {
+                    if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-bold';
+                } else if (currentStatus === 'Cancelled') {
+                    if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-bold';
+                } else {
+                    if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs px-3 py-1 rounded-full font-bold';
+                }
+
+                // Show Edit Footer, hide Create Footer
+                const createFooter = document.getElementById('resModalCreateFooter');
+                const editFooter = document.getElementById('resModalEditFooter');
+                if (createFooter) createFooter.classList.add('hidden');
+                if (editFooter) editFooter.classList.remove('hidden');
+
+                // Action buttons conditional visibility in Edit Mode:
+                // Tombol Check-in & Cancel Booking HANYA tampil jika status saat ini 'Reserved'
+                const checkInBtn = document.getElementById('resCheckInBtn');
+                const cancelBookingBtn = document.getElementById('resCancelBookingBtn');
+                if (currentStatus === 'Reserved') {
+                    if (checkInBtn) checkInBtn.classList.remove('hidden');
+                    if (cancelBookingBtn) cancelBookingBtn.classList.remove('hidden');
+                } else {
+                    if (checkInBtn) checkInBtn.classList.add('hidden');
+                    if (cancelBookingBtn) cancelBookingBtn.classList.add('hidden');
+                }
+
+                const modal = document.getElementById('reservationModal');
+                if (modal) modal.classList.remove('hidden');
+
+            } catch (err) {
+                console.error('Error opening edit reservation modal:', err);
+                alert('Gagal memuat reservasi: ' + err.message);
+            }
+        }
+
         function closeModal() {
             const modal = document.getElementById('reservationModal');
             if (modal) {
                 modal.classList.add('hidden');
             }
+            document.getElementById('edit-reservation-id').value = '';
             const form = document.getElementById('reservationForm');
             if (form) {
                 form.reset();
@@ -3387,17 +3541,93 @@
             clearSelectedGuest();
         }
 
-        async function handleSaveReservation(event) {
-            event.preventDefault();
+        async function handleCheckInReservation() {
+            const resId = document.getElementById('edit-reservation-id').value;
+            if (!resId) return;
 
-            const submitBtn = document.getElementById('resSubmitBtn');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Saving...`;
+            const checkInBtn = document.getElementById('resCheckInBtn');
+            if (checkInBtn) {
+                checkInBtn.disabled = true;
+                checkInBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Processing...`;
             }
 
             try {
-                // 1. Check or Insert Guest Profile
+                const { error } = await supabaseClient
+                    .from('reservations')
+                    .update({ status: 'Checkin' })
+                    .eq('id', resId);
+
+                if (error) throw error;
+
+                alert('Berhasil check-in reservasi!');
+                closeModal();
+                await renderTapeChart();
+            } catch (err) {
+                console.error('Error during check-in:', err);
+                alert('Gagal melakukan check-in: ' + err.message);
+            } finally {
+                if (checkInBtn) {
+                    checkInBtn.disabled = false;
+                    checkInBtn.innerHTML = `<i class="ph ph-check-circle text-lg"></i> Check-in`;
+                }
+            }
+        }
+
+        async function handleCancelBookingReservation() {
+            const resId = document.getElementById('edit-reservation-id').value;
+            if (!resId) return;
+
+            const reason = prompt('Please enter the reason for cancellation:');
+            if (reason === null) return; // User clicked Cancel on prompt
+            const trimmedReason = reason.trim();
+            if (!trimmedReason) {
+                alert('Alasan pembatalan harus diisi.');
+                return;
+            }
+
+            const cancelBtn = document.getElementById('resCancelBookingBtn');
+            if (cancelBtn) {
+                cancelBtn.disabled = true;
+                cancelBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Cancelling...`;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('reservations')
+                    .update({
+                        status: 'Cancelled',
+                        cancel_reason: trimmedReason
+                    })
+                    .eq('id', resId);
+
+                if (error) throw error;
+
+                alert('Reservasi berhasil dibatalkan!');
+                closeModal();
+                await renderTapeChart();
+            } catch (err) {
+                console.error('Error cancelling reservation:', err);
+                alert('Gagal membatalkan reservasi: ' + err.message);
+            } finally {
+                if (cancelBtn) {
+                    cancelBtn.disabled = false;
+                    cancelBtn.innerHTML = `<i class="ph ph-x-circle text-lg"></i> Cancel Booking`;
+                }
+            }
+        }
+
+        async function handleSaveReservation(event) {
+            event.preventDefault();
+
+            const editId = document.getElementById('edit-reservation-id').value;
+            const submitBtn = editId ? document.getElementById('resUpdateBtn') : document.getElementById('resSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> ${editId ? 'Updating...' : 'Saving...'}`;
+            }
+
+            try {
+                // 1. Check or Insert/Update Guest Profile
                 let bookerId = document.getElementById('res-booker-id').value;
                 const guestNameVal = document.getElementById('res-guest-name').value.trim();
                 const idCardVal = document.getElementById('res-id-card').value.trim();
@@ -3428,6 +3658,19 @@
 
                     if (guestErr) throw guestErr;
                     bookerId = newGuest.id;
+                } else {
+                    // Update existing guest profile details
+                    await supabaseClient
+                        .from('guest_profiles')
+                        .update({
+                            full_name: guestNameVal,
+                            id_card_no: idCardVal || null,
+                            phone_number: phoneVal || null,
+                            email: emailVal || null,
+                            birth_date: birthDateVal,
+                            address: addressVal || null
+                        })
+                        .eq('id', bookerId);
                 }
 
                 // 2. Prepare Reservation Data
@@ -3454,12 +3697,7 @@
                 const depositMethod = document.getElementById('res-payment-method').value || null;
                 const comment = document.getElementById('res-comment').value.trim() || null;
 
-                // Unique Reservation Code Generation
-                const randomNum = Math.floor(1000 + Math.random() * 9000);
-                const reservationNumber = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
-
                 const reservationPayload = {
-                    reservation_number: reservationNumber,
                     booker_id: bookerId,
                     guest_name: guestNameVal,
                     check_in_date: checkInDate,
@@ -3481,26 +3719,39 @@
                     voucher_number: voucherNumber,
                     deposit_amount: depositAmount,
                     deposit_method: depositMethod,
-                    comment: comment,
-                    status: 'Reserved'
+                    comment: comment
                 };
 
-                const { error: insertResErr } = await supabaseClient
-                    .from('reservations')
-                    .insert([reservationPayload]);
+                if (editId) {
+                    const { error: updateResErr } = await supabaseClient
+                        .from('reservations')
+                        .update(reservationPayload)
+                        .eq('id', editId);
 
-                if (insertResErr) throw insertResErr;
+                    if (updateResErr) throw updateResErr;
+                    alert('Data reservasi berhasil diperbarui!');
+                } else {
+                    const randomNum = Math.floor(1000 + Math.random() * 9000);
+                    reservationPayload.reservation_number = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
+                    reservationPayload.status = 'Reserved';
+
+                    const { error: insertResErr } = await supabaseClient
+                        .from('reservations')
+                        .insert([reservationPayload]);
+
+                    if (insertResErr) throw insertResErr;
+                }
 
                 closeModal();
                 await renderTapeChart();
 
             } catch (err) {
                 console.error('Error saving reservation:', err);
-                alert('Gagal membuat reservasi: ' + err.message);
+                alert('Gagal menyimpan reservasi: ' + err.message);
             } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> Save Reservation`;
+                    submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> ${editId ? 'Update Data' : 'Save Reservation'}`;
                 }
             }
         }
