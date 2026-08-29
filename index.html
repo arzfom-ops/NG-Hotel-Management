@@ -654,26 +654,34 @@
             <!-- Form Content -->
             <form id="reservationForm" onsubmit="handleSaveReservation(event)" class="flex-1 overflow-y-auto p-6 space-y-6">
                 <input type="hidden" id="edit-reservation-id">
-                <input type="hidden" id="res-booker-id">
+                <input type="hidden" id="res-guest-profile-id">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     <!-- CARD A: Guest & Booker Info -->
                     <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
-                        <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                        <div class="pb-2 border-b border-slate-200">
                             <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                                 <i class="ph ph-user-circle text-primary text-lg"></i> A. Guest & Booker Info
                             </h4>
-                            <button type="button" onclick="clearSelectedGuest()" class="text-xs text-primary hover:underline font-medium flex items-center gap-1">
-                                <i class="ph ph-user-plus text-sm"></i> + New Guest
-                            </button>
                         </div>
 
-                        <!-- Reserve Name Autocomplete -->
+                        <!-- Reserve Name / Booker Name -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Reserve Name / Booker Name</label>
+                            <input type="text" id="res-booker-name" placeholder="Nama Pemesan / Booker" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                        </div>
+
+                        <!-- Guest Name Autocomplete -->
                         <div class="relative">
-                            <label class="block text-xs font-medium text-slate-700 mb-1">Reserve Name / Cari Tamu <span class="text-red-500">*</span></label>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-medium text-slate-700">Guest Name <span class="text-red-500">*</span></label>
+                                <button type="button" onclick="clearSelectedGuest()" class="text-xs text-primary hover:underline font-medium flex items-center gap-1">
+                                    <i class="ph ph-user-plus text-sm"></i> + New Guest
+                                </button>
+                            </div>
                             <div class="relative">
-                                <input type="text" id="res-search-guest" oninput="handleGuestSearchInput(this.value)" autocomplete="off" placeholder="Ketik nama tamu untuk mencari profil..." class="w-full px-3 py-2 pr-8 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="text" id="res-guest-name" required oninput="handleGuestSearchInput(this.value)" autocomplete="off" placeholder="Ketik nama tamu untuk mencari profil..." class="w-full px-3 py-2 pr-8 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
                                 <i class="ph ph-magnifying-glass absolute right-2.5 top-2.5 text-slate-400 text-base"></i>
                             </div>
                             <!-- Autocomplete Dropdown List -->
@@ -682,51 +690,45 @@
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <!-- Guest Name -->
-                            <div>
-                                <label class="block text-xs font-medium text-slate-700 mb-1">Guest Name <span class="text-red-500">*</span></label>
-                                <input type="text" id="res-guest-name" required placeholder="Nama Lengkap Tamu" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
-                            </div>
-
                             <!-- ID Card No -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">ID Card No (KTP/Passport)</label>
                                 <input type="text" id="res-id-card" placeholder="No. KTP / Paspor" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
                             </div>
-                        </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <!-- Phone -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Phone Number</label>
                                 <input type="tel" id="res-phone" placeholder="08123456789" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
                             </div>
+                        </div>
 
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <!-- Email -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
                                 <input type="email" id="res-email" placeholder="email@contoh.com" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
                             </div>
-                        </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <!-- Birth Date -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Birth Date</label>
                                 <input type="date" id="res-birth-date" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
                             </div>
+                        </div>
 
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <!-- Upload Doc (UI Only) -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Upload Doc (ID / Passport)</label>
                                 <input type="file" id="res-upload-doc" accept="image/*,.pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-primary hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-md bg-white py-1 px-1">
                             </div>
-                        </div>
 
-                        <!-- Address -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">Address</label>
-                            <input type="text" id="res-address" placeholder="Alamat Lengkap Tamu" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            <!-- Address -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Address</label>
+                                <input type="text" id="res-address" placeholder="Alamat Lengkap Tamu" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
                         </div>
                     </div>
 
@@ -1570,7 +1572,7 @@
                 // Fetch reservations joined with guest_profiles and rooms
                 const { data: dbReservations, error: resErr } = await supabaseClient
                     .from('reservations')
-                    .select('id, room_id, guest_name, check_in_date, check_out_date, reservation_source, status, guest_profiles(full_name), rooms(room_number)');
+                    .select('id, room_id, booker_name, check_in_date, check_out_date, reservation_source, status, guest_profiles(full_name), rooms(room_number)');
                 if (resErr) throw resErr;
 
                 const daysCount = 14;
@@ -1641,7 +1643,7 @@
                             const isStart = res.check_in_date === dateISO;
                             const status = (res.status || 'Reserved').toLowerCase();
                             const source = res.reservation_source || 'Direct';
-                            const displayName = (res.guest_profiles ? res.guest_profiles.full_name : null) || res.guest_name || 'Guest';
+                            const displayName = (res.guest_profiles ? res.guest_profiles.full_name : null) || res.booker_name || 'Guest';
 
                             let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300'; // Reserved: Light Blue
                             if (status === 'checkin') {
@@ -1659,7 +1661,7 @@
                             `;
                         } else if (departureRes) {
                             // Crucial Exception: Checkin reservation on check_out_date (Expected Departure: Light Pink / Red)
-                            const displayName = (departureRes.guest_profiles ? departureRes.guest_profiles.full_name : null) || departureRes.guest_name || 'Guest';
+                            const displayName = (departureRes.guest_profiles ? departureRes.guest_profiles.full_name : null) || departureRes.booker_name || 'Guest';
                             const capsuleBgClass = 'bg-rose-200 text-rose-900 border-rose-300';
 
                             tableHTML += `
@@ -3231,8 +3233,7 @@
         }
 
         function selectGuestProfile(id, name, idCard, phone, email, birthDate, address) {
-            document.getElementById('res-booker-id').value = id;
-            document.getElementById('res-search-guest').value = name;
+            document.getElementById('res-guest-profile-id').value = id;
             document.getElementById('res-guest-name').value = name;
             document.getElementById('res-id-card').value = idCard || '';
             document.getElementById('res-phone').value = phone || '';
@@ -3245,8 +3246,7 @@
         }
 
         function clearSelectedGuest() {
-            document.getElementById('res-booker-id').value = '';
-            document.getElementById('res-search-guest').value = '';
+            document.getElementById('res-guest-profile-id').value = '';
             document.getElementById('res-guest-name').value = '';
             document.getElementById('res-id-card').value = '';
             document.getElementById('res-phone').value = '';
@@ -3256,7 +3256,8 @@
 
             const suggestionsDiv = document.getElementById('res-guest-suggestions');
             if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
-            document.getElementById('res-search-guest').focus();
+            const guestNameInput = document.getElementById('res-guest-name');
+            if (guestNameInput) guestNameInput.focus();
         }
 
         function handleStayDatesChange(triggerSource) {
@@ -3512,6 +3513,7 @@
             document.getElementById('res-deposit-amount').value = 0;
             document.getElementById('res-source').value = 'Direct';
 
+            document.getElementById('res-booker-name').value = '';
             clearSelectedGuest();
 
             const modal = document.getElementById('reservationModal');
@@ -3545,11 +3547,11 @@
 
                 // Set Guest Profile Info
                 const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
-                const bookerId = res.booker_id || (guestProfile ? guestProfile.id : '');
+                const guestProfileId = res.guest_profile_id || (guestProfile ? guestProfile.id : '');
                 const guestName = (guestProfile ? guestProfile.full_name : null) || res.guest_name || '';
 
-                document.getElementById('res-booker-id').value = bookerId;
-                document.getElementById('res-search-guest').value = guestName;
+                document.getElementById('res-guest-profile-id').value = guestProfileId;
+                document.getElementById('res-booker-name').value = res.booker_name || '';
                 document.getElementById('res-guest-name').value = guestName;
                 document.getElementById('res-id-card').value = guestProfile ? (guestProfile.id_card_no || '') : '';
                 document.getElementById('res-phone').value = guestProfile ? (guestProfile.phone_number || '') : '';
@@ -3731,7 +3733,8 @@
 
             try {
                 // 1. Check or Insert/Update Guest Profile
-                let bookerId = document.getElementById('res-booker-id').value;
+                let guestProfileId = document.getElementById('res-guest-profile-id').value;
+                const bookerNameVal = document.getElementById('res-booker-name').value.trim();
                 const guestNameVal = document.getElementById('res-guest-name').value.trim();
                 const idCardVal = document.getElementById('res-id-card').value.trim();
                 const phoneVal = document.getElementById('res-phone').value.trim();
@@ -3744,7 +3747,7 @@
                     return;
                 }
 
-                if (!bookerId) {
+                if (!guestProfileId) {
                     // Create new guest profile record
                     const { data: newGuest, error: guestErr } = await supabaseClient
                         .from('guest_profiles')
@@ -3760,7 +3763,7 @@
                         .single();
 
                     if (guestErr) throw guestErr;
-                    bookerId = newGuest.id;
+                    guestProfileId = newGuest.id;
                 } else {
                     // Update existing guest profile details
                     await supabaseClient
@@ -3773,7 +3776,7 @@
                             birth_date: birthDateVal,
                             address: addressVal || null
                         })
-                        .eq('id', bookerId);
+                        .eq('id', guestProfileId);
                 }
 
                 // 2. Prepare Reservation Data
@@ -3801,7 +3804,8 @@
                 const comment = document.getElementById('res-comment').value.trim() || null;
 
                 const reservationPayload = {
-                    booker_id: bookerId,
+                    guest_profile_id: guestProfileId,
+                    booker_name: bookerNameVal || guestNameVal,
                     guest_name: guestNameVal,
                     check_in_date: checkInDate,
                     check_out_date: checkOutDate,
