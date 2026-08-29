@@ -1434,6 +1434,31 @@
         let roomTypesCache = [];
         let ratePlansCache = [];
 
+        function getHousekeepingBgColor(status) {
+            const s = (status || '').toUpperCase();
+            switch (s) {
+                case 'VC':
+                case 'CLEAN':
+                case 'VACANT CLEAN':
+                    return 'bg-emerald-100 text-emerald-900 border-emerald-200';
+                case 'VD':
+                case 'DIRTY':
+                case 'VACANT DIRTY':
+                    return 'bg-yellow-100 text-yellow-900 border-yellow-200';
+                case 'OC':
+                case 'OCCUPIED CLEAN':
+                    return 'bg-blue-100 text-blue-900 border-blue-200';
+                case 'OD':
+                case 'OCCUPIED DIRTY':
+                    return 'bg-orange-100 text-orange-900 border-orange-200';
+                case 'OOO':
+                case 'OUT OF ORDER':
+                    return 'bg-red-100 text-red-900 border-red-200';
+                default:
+                    return 'bg-white text-slate-800 border-slate-200';
+            }
+        }
+
         function getSourceColorClass(source) {
             switch ((source || '').toLowerCase()) {
                 case 'tiket.com':
@@ -1454,6 +1479,70 @@
                     return 'bg-purple-600';
                 default:
                     return 'bg-blue-500';
+            }
+        }
+
+        // Global Drag-to-Select State
+        let isDragging = false;
+        let dragStartData = null; // { roomId, date }
+        let dragEndData = null;   // { roomId, date }
+
+        function updateDragHighlight() {
+            clearDragHighlight();
+            if (!isDragging || !dragStartData || !dragEndData) return;
+
+            const roomId = dragStartData.roomId;
+            const date1 = dragStartData.date;
+            const date2 = dragEndData.date;
+
+            const startDate = date1 < date2 ? date1 : date2;
+            const endDate = date1 < date2 ? date2 : date1;
+
+            const cells = document.querySelectorAll(`.calendar-cell[data-room-id="${roomId}"]`);
+            cells.forEach(cell => {
+                const cellDate = cell.dataset.date;
+                if (cellDate >= startDate && cellDate <= endDate) {
+                    cell.classList.add('bg-blue-200/80', 'ring-2', 'ring-primary', 'ring-inset');
+                }
+            });
+        }
+
+        function clearDragHighlight() {
+            const cells = document.querySelectorAll('.calendar-cell');
+            cells.forEach(cell => {
+                cell.classList.remove('bg-blue-200/80', 'ring-2', 'ring-primary', 'ring-inset');
+            });
+        }
+
+        async function openCreateReservationModal(roomId, checkInDate, checkOutDate) {
+            clearDragHighlight();
+            await openModal();
+
+            if (checkInDate) {
+                const checkInInput = document.getElementById('res-check-in');
+                if (checkInInput) checkInInput.value = checkInDate;
+            }
+
+            if (checkOutDate) {
+                const checkOutInput = document.getElementById('res-check-out');
+                if (checkOutInput) checkOutInput.value = checkOutDate;
+            }
+
+            handleStayDatesChange('check-out');
+
+            if (roomId) {
+                const selectedRoom = roomsCache.find(r => r.id === roomId);
+                if (selectedRoom) {
+                    const roomTypeSelect = document.getElementById('res-room-type');
+                    if (roomTypeSelect) {
+                        roomTypeSelect.value = selectedRoom.room_type_id || '';
+                        handleRoomTypeChange();
+                    }
+                    const roomNumberSelect = document.getElementById('res-room-number');
+                    if (roomNumberSelect) {
+                        roomNumberSelect.value = roomId;
+                    }
+                }
             }
         }
 
@@ -1527,12 +1616,13 @@
                 // Baris Kamar
                 roomsCache.forEach(room => {
                     const roomTypeName = room.room_types ? (Array.isArray(room.room_types) ? room.room_types[0]?.name : room.room_types.name) : '-';
+                    const hkColorClass = getHousekeepingBgColor(room.status);
 
-                    // Sumbu Y Sticky Left
+                    // Sumbu Y Sticky Left: Housekeeping Status Background
                     tableHTML += `
-                        <div class="sticky left-0 bg-white z-30 p-3 border-b border-r border-slate-200 flex flex-col justify-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                            <div class="font-bold text-sm text-slate-800">Kamar ${room.room_number}</div>
-                            <div class="text-xs text-slate-400 font-medium truncate" title="${roomTypeName}">${roomTypeName}</div>
+                        <div class="sticky left-0 ${hkColorClass} z-30 p-3 border-b border-r flex flex-col justify-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                            <div class="font-bold text-sm">Kamar ${room.room_number}</div>
+                            <div class="text-xs font-medium truncate opacity-80" title="${roomTypeName}">${roomTypeName}</div>
                         </div>
                     `;
 
@@ -1541,40 +1631,53 @@
                         const dateISO = formatDateISO(d);
                         const isToday = dateISO === formatDateISO(todayDate);
 
-                        // Cari reservasi yang menyangkut kamar & tanggal ini (check_in_date <= dateISO < check_out_date)
+                        // Cari reservasi aktif (check_in_date <= dateISO < check_out_date)
                         const res = (dbReservations || []).find(r => r.room_id === room.id && r.check_in_date <= dateISO && dateISO < r.check_out_date);
+
+                        // Cari reservasi departure khusus status Checkin jika tanggal sel == check_out_date
+                        const departureRes = !res ? (dbReservations || []).find(r => r.room_id === room.id && (r.status || '').toLowerCase() === 'checkin' && r.check_out_date === dateISO) : null;
 
                         if (res) {
                             const isStart = res.check_in_date === dateISO;
+                            const status = (res.status || 'Reserved').toLowerCase();
                             const source = res.reservation_source || 'Direct';
-                            const colorClass = getSourceColorClass(source);
                             const displayName = (res.guest_profiles ? res.guest_profiles.full_name : null) || res.guest_name || 'Guest';
 
-                            if (isStart) {
-                                const checkInDate = new Date(res.check_in_date + 'T00:00:00');
-                                const checkOutDate = new Date(res.check_out_date + 'T00:00:00');
-                                const diffDays = Math.max(1, Math.round((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)));
-
-                                tableHTML += `
-                                    <div class="relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}">
-                                        <div onclick="openEditReservation('${res.id}')" class="absolute inset-y-1 left-1 z-10 ${colorClass} text-white rounded-md px-2.5 py-1 text-xs font-medium flex items-center shadow-sm overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-95 transition-opacity"
-                                             style="width: calc(${diffDays * 100}% + ${(diffDays - 1)}px - 0.5rem);"
-                                             title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date} [Status: ${res.status || 'Reserved'}]">
-                                            <i class="ph ph-user text-xs mr-1 opacity-80"></i>
-                                            <span class="truncate">${displayName} (${source})</span>
-                                        </div>
-                                    </div>
-                                `;
-                            } else {
-                                // Middle or end nights of reservation: rendered empty cell since the start cell pill stretches over
-                                tableHTML += `
-                                    <div class="relative border-b border-r border-slate-100 p-1 ${isToday ? 'bg-blue-50/30' : ''}"></div>
-                                `;
+                            let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300'; // Reserved: Light Blue
+                            if (status === 'checkin') {
+                                capsuleBgClass = 'bg-emerald-200 text-emerald-900 border-emerald-300'; // Checkin: Light Green
                             }
-                        } else {
-                            // Empty room-night cell
+
                             tableHTML += `
-                                <div class="relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer ${isToday ? 'bg-blue-50/30' : ''}"></div>
+                                <div class="calendar-cell relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}" data-room-id="${room.id}" data-date="${dateISO}">
+                                    <div onclick="openEditReservation('${res.id}')" class="w-full h-full ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-90 transition-opacity z-10"
+                                         title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date} [Status: ${res.status || 'Reserved'}]">
+                                        <i class="ph ph-user text-xs mr-1 opacity-80"></i>
+                                        <span class="truncate">${isStart ? `${displayName} (${source})` : displayName}</span>
+                                    </div>
+                                </div>
+                            `;
+                        } else if (departureRes) {
+                            // Crucial Exception: Checkin reservation on check_out_date (Expected Departure: Light Pink / Red)
+                            const displayName = (departureRes.guest_profiles ? departureRes.guest_profiles.full_name : null) || departureRes.guest_name || 'Guest';
+                            const capsuleBgClass = 'bg-rose-200 text-rose-900 border-rose-300';
+
+                            tableHTML += `
+                                <div class="calendar-cell relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}" data-room-id="${room.id}" data-date="${dateISO}">
+                                    <div onclick="openEditReservation('${departureRes.id}')" class="w-full h-full ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-90 transition-opacity z-10"
+                                         title="Expected Departure: ${displayName} - Check-out: ${departureRes.check_out_date}">
+                                        <i class="ph ph-sign-out text-xs mr-1 opacity-80"></i>
+                                        <span class="truncate">Out: ${displayName}</span>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // Empty room-night cell with data-room-id and data-date for Drag-to-Select
+                            tableHTML += `
+                                <div class="calendar-cell relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer select-none ${isToday ? 'bg-blue-50/30' : ''}"
+                                     data-room-id="${room.id}"
+                                     data-date="${dateISO}">
+                                </div>
                             `;
                         }
                     });
@@ -4066,6 +4169,63 @@
                 }
             });
         }
+
+        // Drag-to-Select Global Event Listeners
+        document.addEventListener('mousedown', (e) => {
+            const cell = e.target.closest('.calendar-cell');
+            if (!cell) return;
+            if (e.target.closest('[onclick^="openEditReservation"]')) return;
+
+            const roomId = cell.dataset.roomId;
+            const date = cell.dataset.date;
+            if (roomId && date) {
+                isDragging = true;
+                dragStartData = { roomId, date };
+                dragEndData = { roomId, date };
+                updateDragHighlight();
+            }
+        });
+
+        document.addEventListener('mouseover', (e) => {
+            if (!isDragging || !dragStartData) return;
+            const cell = e.target.closest('.calendar-cell');
+            if (!cell) return;
+
+            const roomId = cell.dataset.roomId;
+            const date = cell.dataset.date;
+            if (roomId === dragStartData.roomId && date) {
+                dragEndData = { roomId, date };
+                updateDragHighlight();
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+
+            if (dragStartData && dragEndData) {
+                const roomId = dragStartData.roomId;
+                const date1 = dragStartData.date;
+                const date2 = dragEndData.date;
+
+                const startDateStr = date1 < date2 ? date1 : date2;
+                const endDateStr = date1 < date2 ? date2 : date1;
+
+                const checkInDate = startDateStr;
+                const endDateObj = new Date(endDateStr + 'T00:00:00');
+                const checkOutDateObj = addDays(endDateObj, 1);
+                const checkOutDate = formatDateISO(checkOutDateObj);
+
+                dragStartData = null;
+                dragEndData = null;
+
+                openCreateReservationModal(roomId, checkInDate, checkOutDate);
+            } else {
+                clearDragHighlight();
+                dragStartData = null;
+                dragEndData = null;
+            }
+        });
 
         // Toggle Mobile Menu
         document.getElementById('mobileMenuBtn').addEventListener('click', () => {
