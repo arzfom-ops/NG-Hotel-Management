@@ -1864,11 +1864,11 @@
 
                 roomsCache = dbRooms || [];
 
-                // Fetch reservations joined with guest_profiles and rooms (excl. Cancelled)
+                // Fetch reservations joined with guest_profiles and rooms (excl. Cancelled and Checkout)
                 const { data: dbReservations, error: resErr } = await supabaseClient
                     .from('reservations')
                     .select('id, room_id, booker_name, check_in_date, check_out_date, reservation_source, status, guest_profiles(full_name), rooms(room_number)')
-                    .in('status', ['Reserved', 'Checkin', 'Checkout']);
+                    .in('status', ['Reserved', 'Checkin']);
                 if (resErr) throw resErr;
 
                 // Sync datepicker input with currentStartDate
@@ -1954,9 +1954,6 @@
                         // Cari reservasi aktif (check_in_date <= dateISO < check_out_date)
                         const res = (dbReservations || []).find(r => r.room_id === room.id && r.check_in_date <= dateISO && dateISO < r.check_out_date);
 
-                        // Cari reservasi departure khusus status Checkin jika tanggal sel == check_out_date
-                        const departureRes = !res ? (dbReservations || []).find(r => r.room_id === room.id && (r.status || '').toLowerCase() === 'checkin' && r.check_out_date === dateISO) : null;
-
                         if (res) {
                             const isStart = res.check_in_date === dateISO;
                             const status = (res.status || 'Reserved').toLowerCase();
@@ -1966,8 +1963,6 @@
                             let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300'; // Reserved: Light Blue
                             if (status === 'checkin') {
                                 capsuleBgClass = 'bg-emerald-200 text-emerald-900 border-emerald-300'; // Checkin: Light Green
-                            } else if (status === 'checkout') {
-                                capsuleBgClass = 'bg-rose-200 text-rose-900 border-rose-300'; // Checkout: Pink
                             }
 
                             tableHTML += `
@@ -1976,20 +1971,6 @@
                                          title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date} [Status: ${res.status || 'Reserved'}]">
                                         <i class="ph ph-user text-xs mr-1 opacity-80"></i>
                                         <span class="truncate">${isStart ? `${displayName} (${source})` : displayName}</span>
-                                    </div>
-                                </div>
-                            `;
-                        } else if (departureRes) {
-                            // Crucial Exception: Checkin reservation on check_out_date (Expected Departure: Light Pink / Red)
-                            const displayName = (departureRes.guest_profiles ? departureRes.guest_profiles.full_name : null) || departureRes.booker_name || 'Guest';
-                            const capsuleBgClass = 'bg-rose-200 text-rose-900 border-rose-300';
-
-                            tableHTML += `
-                                <div class="calendar-cell relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}" data-room-id="${room.id}" data-date="${dateISO}">
-                                    <div onclick="openEditReservation('${departureRes.id}')" data-reservation-id="${departureRes.id}" class="w-full h-full ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-90 transition-opacity z-10"
-                                         title="Expected Departure: ${displayName} - Check-out: ${departureRes.check_out_date}">
-                                        <i class="ph ph-sign-out text-xs mr-1 opacity-80"></i>
-                                        <span class="truncate">Out: ${displayName}</span>
                                     </div>
                                 </div>
                             `;
@@ -2071,7 +2052,7 @@
                 let queryBuilder = supabaseClient
                     .from('reservations')
                     .select('id, check_in_date, reservation_number, room_type_id')
-                    .in('status', ['Reserved', 'Checkin', 'Checkout']);
+                    .in('status', ['Reserved', 'Checkin']);
 
                 if (guestIds.length > 0) {
                     queryBuilder = queryBuilder.or(`reservation_number.ilike.%${query}%,guest_profile_id.in.(${guestIds.join(',')})`);
