@@ -50,6 +50,13 @@
             <a href="#" onclick="switchView('frontdesk')" id="nav-housekeeping" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
                 <i class="ph ph-broom text-xl"></i> Housekeeping
             </a>
+            <!-- Reports Section -->
+            <div class="pt-2">
+                <div class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Reports</div>
+                <a href="#" onclick="switchView('cancel-list')" id="nav-cancel-list" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+                    <i class="ph ph-x-circle text-xl"></i> Cancel List
+                </a>
+            </div>
         </nav>
         <div class="p-4 border-t border-slate-100 mt-auto">
             <a href="#" onclick="switchView('settings')" id="nav-settings" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal">
@@ -999,6 +1006,44 @@
             </div>
         </div>
 
+        <!-- Content Area: Cancel List View -->
+        <div id="cancel-list-view" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px] flex flex-col">
+                <div class="mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Cancelled Reservations</h2>
+                        <p class="text-sm text-slate-500 mt-1">Laporan daftar reservasi yang telah dibatalkan beserta alasan pembatalan.</p>
+                    </div>
+                    <button type="button" onclick="fetchCancelList()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5">
+                        <i class="ph ph-arrows-clockwise text-base"></i> Refresh
+                    </button>
+                </div>
+
+                <div class="border border-slate-200 rounded-lg overflow-x-auto flex-1">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                            <tr>
+                                <th class="py-3 px-4">Reservation Number</th>
+                                <th class="py-3 px-4">Guest Name</th>
+                                <th class="py-3 px-4">Source / Voucher</th>
+                                <th class="py-3 px-4">Stay Dates</th>
+                                <th class="py-3 px-4">Cancel Reason</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cancel-list-tbody" class="divide-y divide-slate-200 text-slate-700">
+                            <tr>
+                                <td colspan="6" class="py-8 text-center text-slate-400">
+                                    <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
+                                    <div>Memuat data reservasi batal...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Content Area: Admin Settings -->
         <div id="admin-settings-view" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px]">
@@ -1569,10 +1614,11 @@
 
                 roomsCache = dbRooms || [];
 
-                // Fetch reservations joined with guest_profiles and rooms
+                // Fetch reservations joined with guest_profiles and rooms (excl. Cancelled)
                 const { data: dbReservations, error: resErr } = await supabaseClient
                     .from('reservations')
-                    .select('id, room_id, booker_name, check_in_date, check_out_date, reservation_source, status, guest_profiles(full_name), rooms(room_number)');
+                    .select('id, room_id, booker_name, check_in_date, check_out_date, reservation_source, status, guest_profiles(full_name), rooms(room_number)')
+                    .in('status', ['Reserved', 'Checkin', 'Checkout']);
                 if (resErr) throw resErr;
 
                 const daysCount = 14;
@@ -3522,7 +3568,41 @@
             }
         }
 
+        let isReactivateMode = false;
+
+        async function openViewReservationModal(id) {
+            await openEditReservation(id);
+            // Readonly mode configurations if necessary, but openEditReservation works for viewing as well
+        }
+
+        async function openReactivateReservationModal(id) {
+            await openEditReservation(id);
+            isReactivateMode = true;
+
+            // 1. Auto-populate all data (done by openEditReservation)
+            // 2. Kosongkan / reset pilihan Room Number
+            const roomNumberSelect = document.getElementById('res-room-number');
+            if (roomNumberSelect) {
+                roomNumberSelect.value = '';
+            }
+
+            // 3. Ubah header & tombol submit
+            const titleIcon = document.getElementById('reservationModalIcon');
+            const titleText = document.getElementById('reservationModalTitleText');
+            const subTitle = document.getElementById('reservationModalSubTitle');
+            if (titleIcon) titleIcon.className = 'ph ph-arrow-counter-clockwise text-emerald-600 text-2xl';
+            if (titleText) titleText.textContent = `Reactivate Reservation`;
+            if (subTitle) subTitle.textContent = 'Pilih kamar yang tersedia lalu simpan untuk menghidupkan kembali reservasi.';
+
+            const updateBtn = document.getElementById('resUpdateBtn');
+            if (updateBtn) {
+                updateBtn.className = 'px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2';
+                updateBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> Save & Reactivate`;
+            }
+        }
+
         async function openEditReservation(id) {
+            isReactivateMode = false;
             await populateReservationFormDropdowns();
 
             try {
@@ -3545,10 +3625,17 @@
                 if (titleText) titleText.textContent = `Edit Reservation (${res.reservation_number || ''})`;
                 if (subTitle) subTitle.textContent = 'Lihat atau ubah rincian data reservasi tamu.';
 
+                // Reset button style & text to standard Update Data
+                const updateBtn = document.getElementById('resUpdateBtn');
+                if (updateBtn) {
+                    updateBtn.className = 'px-6 py-2.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2';
+                    updateBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> Update Data`;
+                }
+
                 // Set Guest Profile Info
                 const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
                 const guestProfileId = res.guest_profile_id || (guestProfile ? guestProfile.id : '');
-                const guestName = (guestProfile ? guestProfile.full_name : null) || res.guest_name || '';
+                const guestName = guestProfile ? (guestProfile.full_name || '') : '';
 
                 document.getElementById('res-guest-profile-id').value = guestProfileId;
                 document.getElementById('res-booker-name').value = res.booker_name || '';
@@ -3710,6 +3797,7 @@
                 alert('Reservasi berhasil dibatalkan!');
                 closeModal();
                 await renderTapeChart();
+                fetchCancelList();
             } catch (err) {
                 console.error('Error cancelling reservation:', err);
                 alert('Gagal membatalkan reservasi: ' + err.message);
@@ -3806,7 +3894,6 @@
                 const reservationPayload = {
                     guest_profile_id: guestProfileId,
                     booker_name: bookerNameVal || guestNameVal,
-                    guest_name: guestNameVal,
                     check_in_date: checkInDate,
                     check_out_date: checkOutDate,
                     nights: nights,
@@ -3830,13 +3917,22 @@
                 };
 
                 if (editId) {
+                    if (isReactivateMode) {
+                        reservationPayload.status = 'Reserved';
+                    }
+
                     const { error: updateResErr } = await supabaseClient
                         .from('reservations')
                         .update(reservationPayload)
                         .eq('id', editId);
 
                     if (updateResErr) throw updateResErr;
-                    alert('Data reservasi berhasil diperbarui!');
+
+                    if (isReactivateMode) {
+                        alert('Reservasi berhasil di-reactivate (status menjadi Reserved)!');
+                    } else {
+                        alert('Data reservasi berhasil diperbarui!');
+                    }
                 } else {
                     const randomNum = Math.floor(1000 + Math.random() * 9000);
                     reservationPayload.reservation_number = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
@@ -3851,6 +3947,7 @@
 
                 closeModal();
                 await renderTapeChart();
+                fetchCancelList();
 
             } catch (err) {
                 console.error('Error saving reservation:', err);
@@ -3863,36 +3960,128 @@
             }
         }
 
+        // Cancel List Fetch
+        async function fetchCancelList() {
+            const tbody = document.getElementById('cancel-list-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="py-8 text-center text-slate-400">
+                        <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
+                        <div>Memuat data reservasi batal...</div>
+                    </td>
+                </tr>
+            `;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('reservations')
+                    .select('id, reservation_number, booker_name, reservation_source, voucher_number, check_in_date, check_out_date, cancel_reason, created_at, guest_profiles(full_name)')
+                    .eq('status', 'Cancelled')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-400">
+                                <i class="ph ph-check-circle text-3xl mb-1 inline-block text-slate-300"></i>
+                                <div>Tidak ada reservasi yang dibatalkan.</div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = data.map(res => {
+                    const guestFullName = (res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0]?.full_name : res.guest_profiles.full_name) : null) || res.booker_name || '-';
+                    const resNumber = res.reservation_number || '-';
+                    const source = res.reservation_source || 'Direct';
+                    const voucher = res.voucher_number ? ` / ${res.voucher_number}` : '';
+                    const stayDates = `${res.check_in_date || ''} s/d ${res.check_out_date || ''}`;
+                    const cancelReason = res.cancel_reason || '-';
+
+                    return `
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="py-3 px-4 font-mono font-semibold text-slate-800">${resNumber}</td>
+                            <td class="py-3 px-4 font-medium">${guestFullName}</td>
+                            <td class="py-3 px-4 text-slate-600"><span class="font-medium">${source}</span>${voucher}</td>
+                            <td class="py-3 px-4 text-slate-600">${stayDates}</td>
+                            <td class="py-3 px-4 text-red-600 font-medium">${cancelReason}</td>
+                            <td class="py-3 px-4 text-right space-x-2">
+                                <button onclick="openViewReservationModal('${res.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1">
+                                    <i class="ph ph-eye text-sm"></i> View
+                                </button>
+                                <button onclick="openReactivateReservationModal('${res.id}')" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1 shadow-xs">
+                                    <i class="ph ph-arrow-counter-clockwise text-sm"></i> Reactivate
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Error fetching cancel list:', err);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-red-500">
+                            <i class="ph ph-warning-circle text-2xl mb-1 inline-block"></i>
+                            <div>Gagal memuat Cancel List: ${err.message}</div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
         // Single Page Application (SPA) View Toggling
         function switchView(viewName) {
             const frontdeskTopbar = document.getElementById('frontdesk-topbar');
             const frontdeskView = document.getElementById('frontdesk-view');
+            const cancelListView = document.getElementById('cancel-list-view');
             const adminSettingsView = document.getElementById('admin-settings-view');
+
+            const navOverview = document.getElementById('nav-overview');
             const navFrontdesk = document.getElementById('nav-frontdesk');
+            const navReservations = document.getElementById('nav-reservations');
+            const navHousekeeping = document.getElementById('nav-housekeeping');
+            const navCancelList = document.getElementById('nav-cancel-list');
             const navSettings = document.getElementById('nav-settings');
+
+            const allNavBtns = [navOverview, navFrontdesk, navReservations, navHousekeeping, navCancelList, navSettings];
+            allNavBtns.forEach(btn => {
+                if (btn) btn.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
+            });
 
             if (viewName === 'settings') {
                 if (frontdeskTopbar) frontdeskTopbar.classList.add('hidden');
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.remove('hidden');
 
-                if (navFrontdesk) {
-                    navFrontdesk.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
-                }
-                if (navSettings) {
-                    navSettings.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
-                }
+                if (navSettings) navSettings.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+            } else if (viewName === 'cancel-list') {
+                if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+                const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+                if (topbarHeader) topbarHeader.textContent = "Reports / Cancel List";
+
+                if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (adminSettingsView) adminSettingsView.classList.add('hidden');
+                if (cancelListView) cancelListView.classList.remove('hidden');
+
+                if (navCancelList) navCancelList.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+
+                fetchCancelList();
             } else {
                 if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+                const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+                if (topbarHeader) topbarHeader.textContent = "Frontdesk / Tape Chart";
+
                 if (frontdeskView) frontdeskView.classList.remove('hidden');
+                if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
 
-                if (navFrontdesk) {
-                    navFrontdesk.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
-                }
-                if (navSettings) {
-                    navSettings.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
-                }
+                if (navFrontdesk) navFrontdesk.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
             }
 
             // Toggle Mobile Menu closed if open
