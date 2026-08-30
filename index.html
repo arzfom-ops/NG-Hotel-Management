@@ -651,6 +651,171 @@
         </div>
     </div>
 
+    <!-- Modal Guest Folio / Billing System -->
+    <div id="folioModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden relative">
+
+            <!-- Header Info -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-900 text-white shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-amber-500/20 text-amber-400 rounded-lg">
+                        <i class="ph ph-receipt text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold flex items-center gap-2" id="folioHeaderGuestName">
+                            Guest Name Loading...
+                        </h3>
+                        <div class="flex items-center gap-4 text-xs text-slate-300 mt-0.5">
+                            <span id="folioHeaderResNo"><i class="ph ph-hash"></i> Res #: -</span>
+                            <span id="folioHeaderRoomNo"><i class="ph ph-bed"></i> Room: -</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" onclick="closeFolioModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
+                    <i class="ph ph-x text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Body Content -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-50">
+
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Expected Total Card -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Expected Total</p>
+                            <h4 class="text-2xl font-bold text-slate-800 mt-1" id="folioExpectedTotal">Rp 0</h4>
+                            <p class="text-xs text-slate-400 mt-1" id="folioExpectedBreakdown">(Room Rate x Nights)</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl font-bold">
+                            <i class="ph ph-calculator"></i>
+                        </div>
+                    </div>
+
+                    <!-- Current Balance Card -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Balance</p>
+                            <h4 class="text-2xl font-bold mt-1 text-slate-800" id="folioCurrentBalance">Rp 0</h4>
+                            <p class="text-xs text-slate-400 mt-1" id="folioBalanceFormula">Total Charge - Total Payment</p>
+                        </div>
+                        <div id="folioBalanceIcon" class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-2xl font-bold">
+                            <i class="ph ph-scales"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="flex items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                    <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="ph ph-list-bullets text-lg text-primary"></i> Transaction History
+                    </h4>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="openAddChargeModal()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                            <i class="ph ph-plus-circle text-base"></i> + Add Charge
+                        </button>
+                        <button type="button" onclick="openAddPaymentModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                            <i class="ph ph-plus-circle text-base"></i> + Add Payment
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transaction Table -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto max-h-72">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider sticky top-0 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Description</th>
+                                    <th class="p-3">Reference</th>
+                                    <th class="p-3 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="folioTransactionsTbody" class="divide-y divide-slate-100 font-medium">
+                                <tr>
+                                    <td colspan="5" class="p-4 text-center text-slate-400">Loading transactions...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-slate-200 flex justify-between items-center bg-white shrink-0">
+                <button type="button" onclick="closeFolioModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                    Close
+                </button>
+                <button type="button" id="processCheckoutBtn" onclick="handleProcessCheckout()" class="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2">
+                    <i class="ph ph-sign-out text-lg"></i> Process Check-out
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add Folio Transaction (Charge / Payment) -->
+    <div id="folioTransactionModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative">
+
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2" id="folioTxModalTitle">
+                    <i class="ph ph-plus-circle text-xl text-primary"></i> Add Transaction
+                </h3>
+                <button type="button" onclick="closeFolioTransactionModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Form Body -->
+            <form id="folioTransactionForm" onsubmit="handleSaveFolioTransaction(event)" class="p-6 space-y-4">
+                <input type="hidden" id="folio-tx-type" value="CHARGE">
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1" id="folio-tx-desc-label">Description</label>
+                    <input type="text" id="folio-tx-description" required placeholder="e.g. Laundry, F&B, Minibar" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+
+                <!-- Payment Method Dropdown (Only for Payment) -->
+                <div id="folio-tx-payment-method-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Method</label>
+                    <select id="folio-tx-payment-method" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <option value="Cash">Cash</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Transfer">Transfer</option>
+                        <option value="City Ledger/OTA">City Ledger/OTA</option>
+                    </select>
+                </div>
+
+                <!-- Reference Number (Only for Payment) -->
+                <div id="folio-tx-ref-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Reference Number</label>
+                    <input type="text" id="folio-tx-reference" placeholder="e.g. Card Auth Code / Transfer Ref" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+
+                <!-- Amount -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (Rp)</label>
+                    <input type="number" min="1" step="any" id="folio-tx-amount" required placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeFolioTransactionModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="folioTxSubmitBtn" class="px-5 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                        <i class="ph ph-floppy-disk text-base"></i> Save Transaction
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal New Reservation (4-Card Smart Form) -->
     <div id="reservationModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden relative">
@@ -968,6 +1133,9 @@
                         </button>
                         <button type="button" id="resCancelBookingBtn" onclick="handleCancelBookingReservation()" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
                             <i class="ph ph-x-circle text-lg"></i> Cancel Booking
+                        </button>
+                        <button type="button" id="resOpenFolioBtn" onclick="handleOpenFolioFromEdit()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
+                            <i class="ph ph-receipt text-lg"></i> Open Folio / Billing
                         </button>
                         <button type="submit" id="resUpdateBtn" class="px-6 py-2.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
                             <i class="ph ph-floppy-disk text-lg"></i> Update Data
@@ -1767,6 +1935,8 @@
                             let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300'; // Reserved: Light Blue
                             if (status === 'checkin') {
                                 capsuleBgClass = 'bg-emerald-200 text-emerald-900 border-emerald-300'; // Checkin: Light Green
+                            } else if (status === 'checkout') {
+                                capsuleBgClass = 'bg-rose-200 text-rose-900 border-rose-300'; // Checkout: Pink
                             }
 
                             tableHTML += `
@@ -3899,12 +4069,16 @@
                 // Tombol Check-in & Cancel Booking HANYA tampil jika status saat ini 'Reserved'
                 const checkInBtn = document.getElementById('resCheckInBtn');
                 const cancelBookingBtn = document.getElementById('resCancelBookingBtn');
+                const openFolioBtn = document.getElementById('resOpenFolioBtn');
+
                 if (currentStatus === 'Reserved') {
                     if (checkInBtn) checkInBtn.classList.remove('hidden');
                     if (cancelBookingBtn) cancelBookingBtn.classList.remove('hidden');
+                    if (openFolioBtn) openFolioBtn.classList.add('hidden');
                 } else {
                     if (checkInBtn) checkInBtn.classList.add('hidden');
                     if (cancelBookingBtn) cancelBookingBtn.classList.add('hidden');
+                    if (openFolioBtn) openFolioBtn.classList.remove('hidden');
                 }
 
                 const modal = document.getElementById('reservationModal');
@@ -3957,6 +4131,288 @@
                 if (checkInBtn) {
                     checkInBtn.disabled = false;
                     checkInBtn.innerHTML = `<i class="ph ph-check-circle text-lg"></i> Check-in`;
+                }
+            }
+        }
+
+        // --- Guest Folio & Billing System JS Logic ---
+        let currentFolioReservation = null;
+        let currentFolioTransactions = [];
+        let calculatedCurrentBalance = 0;
+
+        async function handleOpenFolioFromEdit() {
+            const resId = document.getElementById('edit-reservation-id').value;
+            if (!resId) return;
+            closeModal();
+            await openFolioModal(resId);
+        }
+
+        async function openFolioModal(reservationId) {
+            try {
+                // Fetch reservation joined with guest_profiles and rooms
+                const { data: res, error } = await supabaseClient
+                    .from('reservations')
+                    .select('*, guest_profiles(*), rooms(*)')
+                    .eq('id', reservationId)
+                    .single();
+
+                if (error) throw error;
+                if (!res) throw new Error('Reservasi tidak ditemukan.');
+
+                currentFolioReservation = res;
+
+                // Populate Header Info
+                const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
+                const guestName = (guestProfile ? guestProfile.full_name : null) || res.booker_name || 'Guest';
+                const roomNo = res.rooms ? (Array.isArray(res.rooms) ? res.rooms[0]?.room_number : res.rooms.room_number) : '-';
+
+                document.getElementById('folioHeaderGuestName').textContent = guestName;
+                document.getElementById('folioHeaderResNo').innerHTML = `<i class="ph ph-hash"></i> Res #: ${res.reservation_number || res.id.slice(0, 8)}`;
+                document.getElementById('folioHeaderRoomNo').innerHTML = `<i class="ph ph-bed"></i> Room: ${roomNo || '-'}`;
+
+                // Calculate Expected Total (room_rate * nights)
+                const roomRate = Number(res.room_rate || 0);
+                const nights = Number(res.nights || 1);
+                const expectedTotal = roomRate * nights;
+
+                document.getElementById('folioExpectedTotal').textContent = `Rp ${expectedTotal.toLocaleString('id-ID')}`;
+                document.getElementById('folioExpectedBreakdown').textContent = `(Rp ${roomRate.toLocaleString('id-ID')} x ${nights} Night${nights > 1 ? 's' : ''})`;
+
+                // Show Folio Modal
+                const folioModal = document.getElementById('folioModal');
+                if (folioModal) folioModal.classList.remove('hidden');
+
+                // Load Transactions
+                await fetchFolioTransactions(reservationId);
+
+            } catch (err) {
+                console.error('Error opening folio modal:', err);
+                alert('Gagal membuka folio: ' + err.message);
+            }
+        }
+
+        function closeFolioModal() {
+            const folioModal = document.getElementById('folioModal');
+            if (folioModal) folioModal.classList.add('hidden');
+            currentFolioReservation = null;
+            currentFolioTransactions = [];
+            calculatedCurrentBalance = 0;
+        }
+
+        async function fetchFolioTransactions(reservationId) {
+            const tbody = document.getElementById('folioTransactionsTbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Loading transactions...</td></tr>`;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('folio_transactions')
+                    .select('*')
+                    .eq('reservation_id', reservationId)
+                    .order('transaction_date', { ascending: true })
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                currentFolioTransactions = data || [];
+                renderFolioTransactions();
+
+            } catch (err) {
+                console.error('Error fetching folio transactions:', err);
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Gagal memuat transaksi: ${err.message}</td></tr>`;
+            }
+        }
+
+        function renderFolioTransactions() {
+            const tbody = document.getElementById('folioTransactionsTbody');
+            if (!tbody) return;
+
+            let totalCharge = 0;
+            let totalPayment = 0;
+
+            if (currentFolioTransactions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada transaksi di folio ini.</td></tr>`;
+            } else {
+                tbody.innerHTML = currentFolioTransactions.map(tx => {
+                    const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
+                    const amount = Number(tx.amount || 0);
+
+                    if (txType === 'CHARGE') {
+                        totalCharge += amount;
+                    } else if (txType === 'PAYMENT') {
+                        totalPayment += amount;
+                    }
+
+                    const typeBadge = txType === 'CHARGE'
+                        ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700">CHARGE</span>`
+                        : `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700">PAYMENT</span>`;
+
+                    const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
+
+                    return `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-3 text-slate-600 whitespace-nowrap">${dateStr}</td>
+                            <td class="p-3">${typeBadge}</td>
+                            <td class="p-3 text-slate-800 font-medium">${tx.description || '-'}</td>
+                            <td class="p-3 text-slate-500">${tx.reference_number || '-'}</td>
+                            <td class="p-3 text-right font-bold ${txType === 'CHARGE' ? 'text-slate-800' : 'text-emerald-600'}">
+                                ${txType === 'CHARGE' ? '' : '-' }Rp ${amount.toLocaleString('id-ID')}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            calculatedCurrentBalance = totalCharge - totalPayment;
+            const balanceEl = document.getElementById('folioCurrentBalance');
+            const balanceIcon = document.getElementById('folioBalanceIcon');
+
+            if (balanceEl) {
+                balanceEl.textContent = `Rp ${calculatedCurrentBalance.toLocaleString('id-ID')}`;
+                if (calculatedCurrentBalance > 0) {
+                    balanceEl.className = 'text-2xl font-bold mt-1 text-red-600';
+                    if (balanceIcon) balanceIcon.className = 'w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-2xl font-bold';
+                } else if (calculatedCurrentBalance < 0) {
+                    balanceEl.className = 'text-2xl font-bold mt-1 text-amber-600';
+                    if (balanceIcon) balanceIcon.className = 'w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-2xl font-bold';
+                } else {
+                    balanceEl.className = 'text-2xl font-bold mt-1 text-emerald-600';
+                    if (balanceIcon) balanceIcon.className = 'w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-2xl font-bold';
+                }
+            }
+        }
+
+        function openAddChargeModal() {
+            if (!currentFolioReservation) return;
+            const txModal = document.getElementById('folioTransactionModal');
+            document.getElementById('folio-tx-type').value = 'CHARGE';
+            document.getElementById('folioTxModalTitle').innerHTML = `<i class="ph ph-plus-circle text-xl text-red-600"></i> + Add Charge (Debit)`;
+            document.getElementById('folio-tx-desc-label').textContent = 'Charge Description';
+            document.getElementById('folio-tx-description').value = '';
+            document.getElementById('folio-tx-description').placeholder = 'e.g. Laundry, F&B, Minibar';
+            document.getElementById('folio-tx-description').required = true;
+            document.getElementById('folio-tx-amount').value = '';
+            document.getElementById('folio-tx-payment-method-container').classList.add('hidden');
+            document.getElementById('folio-tx-ref-container').classList.add('hidden');
+
+            if (txModal) txModal.classList.remove('hidden');
+        }
+
+        function openAddPaymentModal() {
+            if (!currentFolioReservation) return;
+            const txModal = document.getElementById('folioTransactionModal');
+            document.getElementById('folio-tx-type').value = 'PAYMENT';
+            document.getElementById('folioTxModalTitle').innerHTML = `<i class="ph ph-plus-circle text-xl text-emerald-600"></i> + Add Payment (Kredit)`;
+            document.getElementById('folio-tx-desc-label').textContent = 'Payment Description / Note';
+            document.getElementById('folio-tx-description').value = 'Payment';
+            document.getElementById('folio-tx-description').placeholder = 'e.g. Room payment, Deposit refund';
+            document.getElementById('folio-tx-description').required = false;
+            document.getElementById('folio-tx-amount').value = '';
+            document.getElementById('folio-tx-reference').value = '';
+            document.getElementById('folio-tx-payment-method-container').classList.remove('hidden');
+            document.getElementById('folio-tx-ref-container').classList.remove('hidden');
+
+            if (txModal) txModal.classList.remove('hidden');
+        }
+
+        function closeFolioTransactionModal() {
+            const txModal = document.getElementById('folioTransactionModal');
+            if (txModal) txModal.classList.add('hidden');
+            const form = document.getElementById('folioTransactionForm');
+            if (form) form.reset();
+        }
+
+        async function handleSaveFolioTransaction(e) {
+            e.preventDefault();
+            if (!currentFolioReservation) return;
+
+            const txType = document.getElementById('folio-tx-type').value;
+            let description = document.getElementById('folio-tx-description').value.trim();
+            const amount = parseFloat(document.getElementById('folio-tx-amount').value);
+            const paymentMethod = document.getElementById('folio-tx-payment-method').value;
+            const referenceNumber = document.getElementById('folio-tx-reference').value.trim();
+
+            if (isNaN(amount) || amount <= 0) {
+                alert('Jumlah transaksi (amount) harus lebih dari 0.');
+                return;
+            }
+
+            if (txType === 'PAYMENT') {
+                const methodLabel = paymentMethod ? `[${paymentMethod}]` : '';
+                description = description ? `${methodLabel} ${description}`.trim() : `Payment ${methodLabel}`.trim();
+            }
+
+            const payload = {
+                reservation_id: currentFolioReservation.id,
+                transaction_type: txType,
+                description: description || (txType === 'CHARGE' ? 'Room Charge' : 'Payment'),
+                amount: amount,
+                reference_number: txType === 'PAYMENT' ? (referenceNumber || paymentMethod || null) : null,
+                transaction_date: new Date().toISOString()
+            };
+
+            const submitBtn = document.getElementById('folioTxSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-base"></i> Saving...`;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('folio_transactions')
+                    .insert([payload]);
+
+                if (error) throw error;
+
+                closeFolioTransactionModal();
+                await fetchFolioTransactions(currentFolioReservation.id);
+
+            } catch (err) {
+                console.error('Error saving folio transaction:', err);
+                alert('Gagal menyimpan transaksi: ' + err.message);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-base"></i> Save Transaction`;
+                }
+            }
+        }
+
+        async function handleProcessCheckout() {
+            if (!currentFolioReservation) return;
+
+            // Validation: Current Balance MUST be 0
+            if (calculatedCurrentBalance !== 0) {
+                alert('Cannot Check-out. Folio balance must be 0.');
+                return;
+            }
+
+            const checkoutBtn = document.getElementById('processCheckoutBtn');
+            if (checkoutBtn) {
+                checkoutBtn.disabled = true;
+                checkoutBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Processing Check-out...`;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('reservations')
+                    .update({ status: 'Checkout' })
+                    .eq('id', currentFolioReservation.id);
+
+                if (error) throw error;
+
+                alert('Check-out berhasil diproses!');
+                closeFolioModal();
+                await renderTapeChart();
+
+            } catch (err) {
+                console.error('Error processing checkout:', err);
+                alert('Gagal memproses check-out: ' + err.message);
+            } finally {
+                if (checkoutBtn) {
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.innerHTML = `<i class="ph ph-sign-out text-lg"></i> Process Check-out`;
                 }
             }
         }
