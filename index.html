@@ -757,6 +757,34 @@
         </div>
     </div>
 
+    <!-- Modal Cancel Deposit Settlement -->
+    <div id="cancelDepositModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative border border-slate-100">
+            <div class="p-6 text-center space-y-4">
+                <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-3xl">
+                    <i class="ph ph-warning-circle"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Settle Deposit Balance</h3>
+                    <p id="cancelDepositModalMsg" class="text-sm text-slate-600 mt-2">
+                        This reservation has a deposit balance of <span id="cancelDepositAmountText" class="font-bold text-slate-900">Rp 0</span>. How do you want to settle this?
+                    </p>
+                </div>
+                <div class="pt-2 flex flex-col gap-2.5">
+                    <button type="button" id="cancelRefundBtn" onclick="handleDepositSettlement('refund')" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm flex items-center justify-center gap-2">
+                        <i class="ph ph-arrow-u-up-left text-lg"></i> Refund to Guest
+                    </button>
+                    <button type="button" id="cancelFeeBtn" onclick="handleDepositSettlement('fee')" class="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm flex items-center justify-center gap-2">
+                        <i class="ph ph-receipt text-lg"></i> Convert to Cancellation Fee
+                    </button>
+                    <button type="button" onclick="closeCancelDepositModal()" class="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Add Folio Transaction (Charge / Payment) -->
     <div id="folioTransactionModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative">
@@ -1091,13 +1119,13 @@
                             <!-- Deposit Amount -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Deposit Amount (Rp)</label>
-                                <input type="number" id="res-deposit-amount" step="any" min="0" value="0" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="number" id="res-deposit-amount" step="any" min="0" value="0" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed">
                             </div>
 
                             <!-- Payment Method -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Payment Method</label>
-                                <select id="res-payment-method" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-payment-method" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed">
                                     <option value="">-- Select Payment Method --</option>
                                 </select>
                             </div>
@@ -1108,6 +1136,9 @@
                                 <textarea id="res-comment" rows="1" placeholder="Catatan khusus reservasi..." class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
                             </div>
                         </div>
+                        <p id="res-deposit-locked-msg" class="text-[11px] text-amber-600 font-medium hidden">
+                            <i class="ph ph-lock text-xs align-middle"></i> Deposit is locked. To add more payments, please use the Open Folio button.
+                        </p>
                     </div>
 
                 </div>
@@ -3922,7 +3953,19 @@
             document.getElementById('res-child').value = 0;
             document.getElementById('res-qty').value = 1;
             document.getElementById('res-extrabed').value = 0;
-            document.getElementById('res-deposit-amount').value = 0;
+            const depositAmtEl = document.getElementById('res-deposit-amount');
+            const depositMethodEl = document.getElementById('res-payment-method');
+            const depositLockedMsg = document.getElementById('res-deposit-locked-msg');
+            if (depositAmtEl) {
+                depositAmtEl.value = 0;
+                depositAmtEl.disabled = false;
+            }
+            if (depositMethodEl) {
+                depositMethodEl.value = '';
+                depositMethodEl.disabled = false;
+            }
+            if (depositLockedMsg) depositLockedMsg.classList.add('hidden');
+
             document.getElementById('res-source').value = 'Direct';
 
             document.getElementById('res-booker-name').value = '';
@@ -4036,9 +4079,21 @@
                 document.getElementById('res-qty').value = res.qty || 1;
                 document.getElementById('res-extrabed').value = res.extrabed_qty || 0;
 
-                // Set Deposit & Comment
-                document.getElementById('res-deposit-amount').value = res.deposit_amount || 0;
-                document.getElementById('res-payment-method').value = res.deposit_method || '';
+                // Set Deposit & Comment (Deposit fields locked in Edit Mode)
+                const depositAmtEl = document.getElementById('res-deposit-amount');
+                const depositMethodEl = document.getElementById('res-payment-method');
+                const depositLockedMsg = document.getElementById('res-deposit-locked-msg');
+
+                if (depositAmtEl) {
+                    depositAmtEl.value = res.deposit_amount || 0;
+                    depositAmtEl.disabled = true;
+                }
+                if (depositMethodEl) {
+                    depositMethodEl.value = res.deposit_method || '';
+                    depositMethodEl.disabled = true;
+                }
+                if (depositLockedMsg) depositLockedMsg.classList.remove('hidden');
+
                 document.getElementById('res-comment').value = res.comment || '';
 
                 updateTotalPreview();
@@ -4100,6 +4155,13 @@
             if (form) {
                 form.reset();
             }
+            const depositAmtEl = document.getElementById('res-deposit-amount');
+            const depositMethodEl = document.getElementById('res-payment-method');
+            const depositLockedMsg = document.getElementById('res-deposit-locked-msg');
+            if (depositAmtEl) depositAmtEl.disabled = false;
+            if (depositMethodEl) depositMethodEl.disabled = false;
+            if (depositLockedMsg) depositLockedMsg.classList.add('hidden');
+
             clearSelectedGuest();
         }
 
@@ -4417,22 +4479,124 @@
             }
         }
 
+        let pendingCancelReservationId = null;
+        let pendingCancelDepositAmount = 0;
+
+        function closeCancelDepositModal() {
+            const modal = document.getElementById('cancelDepositModal');
+            if (modal) modal.classList.add('hidden');
+            pendingCancelReservationId = null;
+            pendingCancelDepositAmount = 0;
+        }
+
         async function handleCancelBookingReservation() {
             const resId = document.getElementById('edit-reservation-id').value;
             if (!resId) return;
 
+            const cancelBtn = document.getElementById('resCancelBookingBtn');
+            if (cancelBtn) {
+                cancelBtn.disabled = true;
+                cancelBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Checking Folio...`;
+            }
+
+            try {
+                // Fetch folio transactions to compute Current Balance
+                const { data: txs, error: txErr } = await supabaseClient
+                    .from('folio_transactions')
+                    .select('*')
+                    .eq('reservation_id', resId);
+
+                if (txErr) throw txErr;
+
+                let totalCharge = 0;
+                let totalPayment = 0;
+
+                (txs || []).forEach(tx => {
+                    const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
+                    const amt = Number(tx.amount || 0);
+                    if (txType === 'CHARGE') totalCharge += amt;
+                    else if (txType === 'PAYMENT') totalPayment += amt;
+                });
+
+                const currentBalance = totalCharge - totalPayment;
+
+                if (currentBalance < 0) {
+                    // Scenario B: Balance < 0 (Ada Deposit)
+                    pendingCancelReservationId = resId;
+                    pendingCancelDepositAmount = Math.abs(currentBalance);
+
+                    const amountTextEl = document.getElementById('cancelDepositAmountText');
+                    if (amountTextEl) {
+                        amountTextEl.textContent = `Rp ${pendingCancelDepositAmount.toLocaleString('id-ID')}`;
+                    }
+
+                    const modal = document.getElementById('cancelDepositModal');
+                    if (modal) modal.classList.remove('hidden');
+                } else {
+                    // Scenario A: Balance === 0 (or >= 0)
+                    await executeCancelReservation(resId);
+                }
+
+            } catch (err) {
+                console.error('Error checking folio for cancellation:', err);
+                alert('Gagal memeriksa saldo folio reservasi: ' + err.message);
+            } finally {
+                if (cancelBtn) {
+                    cancelBtn.disabled = false;
+                    cancelBtn.innerHTML = `<i class="ph ph-x-circle text-lg"></i> Cancel Booking`;
+                }
+            }
+        }
+
+        async function handleDepositSettlement(settlementType) {
+            if (!pendingCancelReservationId || pendingCancelDepositAmount <= 0) return;
+
+            const resId = pendingCancelReservationId;
+            const depositAmt = pendingCancelDepositAmount;
+
+            const refundBtn = document.getElementById('cancelRefundBtn');
+            const feeBtn = document.getElementById('cancelFeeBtn');
+
+            if (refundBtn) refundBtn.disabled = true;
+            if (feeBtn) feeBtn.disabled = true;
+
+            try {
+                const description = settlementType === 'refund' ? 'Refund Deposit' : 'Cancellation Fee';
+
+                // Insert balancing CHARGE transaction to bring balance to 0
+                const payload = {
+                    reservation_id: resId,
+                    transaction_type: 'CHARGE',
+                    description: description,
+                    amount: depositAmt,
+                    transaction_date: new Date().toISOString()
+                };
+
+                const { error: txErr } = await supabaseClient
+                    .from('folio_transactions')
+                    .insert([payload]);
+
+                if (txErr) throw txErr;
+
+                closeCancelDepositModal();
+                await executeCancelReservation(resId);
+
+            } catch (err) {
+                console.error('Error settling deposit balance:', err);
+                alert('Gagal memproses penyelesaian deposit: ' + err.message);
+            } finally {
+                if (refundBtn) refundBtn.disabled = false;
+                if (feeBtn) feeBtn.disabled = false;
+            }
+        }
+
+        async function executeCancelReservation(resId) {
             const reason = prompt('Please enter the reason for cancellation:');
             if (reason === null) return; // User clicked Cancel on prompt
             const trimmedReason = reason.trim();
             if (!trimmedReason) {
                 alert('Alasan pembatalan harus diisi.');
                 return;
-            }
-
-            const cancelBtn = document.getElementById('resCancelBookingBtn');
-            if (cancelBtn) {
-                cancelBtn.disabled = true;
-                cancelBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Cancelling...`;
             }
 
             try {
@@ -4451,13 +4615,8 @@
                 await renderTapeChart();
                 fetchCancelList();
             } catch (err) {
-                console.error('Error cancelling reservation:', err);
+                console.error('Error executing cancellation:', err);
                 alert('Gagal membatalkan reservasi: ' + err.message);
-            } finally {
-                if (cancelBtn) {
-                    cancelBtn.disabled = false;
-                    cancelBtn.innerHTML = `<i class="ph ph-x-circle text-lg"></i> Cancel Booking`;
-                }
             }
         }
 
@@ -4484,6 +4643,10 @@
 
                 if (!guestNameVal) {
                     alert('Harap isi nama tamu.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> ${editId ? 'Update Data' : 'Save Reservation'}`;
+                    }
                     return;
                 }
 
@@ -4590,11 +4753,34 @@
                     reservationPayload.reservation_number = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
                     reservationPayload.status = 'Reserved';
 
-                    const { error: insertResErr } = await supabaseClient
+                    const { data: newResData, error: insertResErr } = await supabaseClient
                         .from('reservations')
-                        .insert([reservationPayload]);
+                        .insert([reservationPayload])
+                        .select();
 
                     if (insertResErr) throw insertResErr;
+
+                    // 1. Auto-Post Deposit on Create if deposit_amount > 0
+                    if (depositAmount > 0 && newResData && newResData.length > 0) {
+                        const newResId = newResData[0].id;
+                        const methodLabel = depositMethod ? `[${depositMethod}]` : '';
+                        const depositTxPayload = {
+                            reservation_id: newResId,
+                            transaction_type: 'PAYMENT',
+                            description: `Initial Deposit ${methodLabel}`.trim(),
+                            amount: depositAmount,
+                            reference_number: depositMethod || null,
+                            transaction_date: new Date().toISOString()
+                        };
+
+                        const { error: depositTxErr } = await supabaseClient
+                            .from('folio_transactions')
+                            .insert([depositTxPayload]);
+
+                        if (depositTxErr) {
+                            console.error('Error auto-posting deposit to folio_transactions:', depositTxErr);
+                        }
+                    }
                 }
 
                 closeModal();
