@@ -17,6 +17,16 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+
+        @keyframes capsuleBlink {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); border-color: rgb(239, 68, 68); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.4); border-color: rgb(220, 38, 38); }
+        }
+        .highlight-blink {
+            animation: capsuleBlink 0.6s ease-in-out infinite;
+            z-index: 30 !important;
+            border-width: 2px !important;
+        }
     </style>
     <script>
         tailwind.config = {
@@ -998,6 +1008,43 @@
                         + New Reservation
                     </button>
                 </div>
+
+                <!-- Smart Control Bar -->
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <!-- Navigation Buttons -->
+                        <div class="flex items-center gap-1">
+                            <button id="btn-today" onclick="handleTodayClick()" class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-md text-sm font-medium transition-colors shadow-2xs flex items-center gap-1">
+                                <i class="ph ph-calendar-blank text-base"></i> Today
+                            </button>
+                            <button id="btn-prev-7" onclick="handlePrev7Days()" class="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-md text-sm font-medium transition-colors shadow-2xs" title="Mundur 7 Hari">
+                                <i class="ph ph-caret-left text-base"></i>
+                            </button>
+                            <button id="btn-next-7" onclick="handleNext7Days()" class="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-md text-sm font-medium transition-colors shadow-2xs" title="Maju 7 Hari">
+                                <i class="ph ph-caret-right text-base"></i>
+                            </button>
+                        </div>
+
+                        <!-- Datepicker Jump to Date -->
+                        <div class="flex items-center gap-2 sm:border-l sm:border-slate-200 sm:pl-3">
+                            <label for="calendar-jump-date" class="text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Jump to Date:</label>
+                            <input type="date" id="calendar-jump-date" onchange="handleJumpToDate(this.value)" class="px-3 py-1.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white text-slate-700 shadow-2xs">
+                        </div>
+
+                        <!-- Room Type Filter -->
+                        <div class="flex items-center gap-2 sm:border-l sm:border-slate-200 sm:pl-3">
+                            <select id="calendar-room-type-filter" onchange="handleRoomTypeFilterChange(this.value)" class="px-3 py-1.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white text-slate-700 shadow-2xs">
+                                <option value="">All Room Types</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Quick Search -->
+                    <div class="relative w-full sm:w-64">
+                        <input type="text" id="calendar-quick-search" onkeydown="handleQuickSearch(event)" placeholder="Search Guest / Res No..." class="w-full px-3 py-1.5 pr-8 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white text-slate-700 shadow-2xs">
+                        <i class="ph ph-magnifying-glass absolute right-2.5 top-2.5 text-slate-400 text-base pointer-events-none"></i>
+                    </div>
+                </div>
                 
                 <div id="tape-chart-wrapper" class="flex-1 border border-slate-200 rounded-lg overflow-x-auto bg-slate-50 relative min-h-[300px]">
                     <!-- Area kosong ini siap diisi kalender oleh Jules -->
@@ -1476,6 +1523,10 @@
         const todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0);
 
+        // Global State for Calendar Navigation & Filters
+        let currentStartDate = new Date(todayDate);
+        let selectedRoomTypeFilter = '';
+
         // Global Cache for Dynamic Select Options
         let roomsCache = [];
         let roomTypesCache = [];
@@ -1621,10 +1672,16 @@
                     .in('status', ['Reserved', 'Checkin', 'Checkout']);
                 if (resErr) throw resErr;
 
+                // Sync datepicker input with currentStartDate
+                const datepickerInput = document.getElementById('calendar-jump-date');
+                if (datepickerInput) {
+                    datepickerInput.value = formatDateISO(currentStartDate);
+                }
+
                 const daysCount = 14;
                 const datesList = [];
                 for (let i = 0; i < daysCount; i++) {
-                    datesList.push(addDays(todayDate, i));
+                    datesList.push(addDays(currentStartDate, i));
                 }
 
                 if (!roomsCache || roomsCache.length === 0) {
@@ -1632,6 +1689,22 @@
                         <div class="p-8 text-center text-slate-500">
                             <i class="ph ph-bed text-3xl text-slate-300 mb-2"></i>
                             <div>Belum ada kamar yang terdaftar. Tambahkan kamar terlebih dahulu di Admin Settings.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Filter rooms based on Room Type Filter
+                let displayRooms = roomsCache;
+                if (selectedRoomTypeFilter) {
+                    displayRooms = roomsCache.filter(r => r.room_type_id === selectedRoomTypeFilter);
+                }
+
+                if (!displayRooms || displayRooms.length === 0) {
+                    container.innerHTML = `
+                        <div class="p-8 text-center text-slate-500">
+                            <i class="ph ph-bed text-3xl text-slate-300 mb-2"></i>
+                            <div>Tidak ada kamar untuk tipe kamar yang dipilih.</div>
                         </div>
                     `;
                     return;
@@ -1662,7 +1735,7 @@
                 });
 
                 // Baris Kamar
-                roomsCache.forEach(room => {
+                displayRooms.forEach(room => {
                     const roomTypeName = room.room_types ? (Array.isArray(room.room_types) ? room.room_types[0]?.name : room.room_types.name) : '-';
                     const hkColorClass = getHousekeepingBgColor(room.status);
 
@@ -1698,7 +1771,7 @@
 
                             tableHTML += `
                                 <div class="calendar-cell relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}" data-room-id="${room.id}" data-date="${dateISO}">
-                                    <div onclick="openEditReservation('${res.id}')" class="w-full h-full ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-90 transition-opacity z-10"
+                                    <div onclick="openEditReservation('${res.id}')" data-reservation-id="${res.id}" class="w-full h-full ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-90 transition-opacity z-10"
                                          title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date} [Status: ${res.status || 'Reserved'}]">
                                         <i class="ph ph-user text-xs mr-1 opacity-80"></i>
                                         <span class="truncate">${isStart ? `${displayName} (${source})` : displayName}</span>
@@ -1712,7 +1785,7 @@
 
                             tableHTML += `
                                 <div class="calendar-cell relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}" data-room-id="${room.id}" data-date="${dateISO}">
-                                    <div onclick="openEditReservation('${departureRes.id}')" class="w-full h-full ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-90 transition-opacity z-10"
+                                    <div onclick="openEditReservation('${departureRes.id}')" data-reservation-id="${departureRes.id}" class="w-full h-full ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-90 transition-opacity z-10"
                                          title="Expected Departure: ${displayName} - Check-out: ${departureRes.check_out_date}">
                                         <i class="ph ph-sign-out text-xs mr-1 opacity-80"></i>
                                         <span class="truncate">Out: ${displayName}</span>
@@ -1745,6 +1818,126 @@
                         <div>Gagal memuat Tape Chart: ${err.message}</div>
                     </div>
                 `;
+            }
+        }
+
+        // --- Smart Control Bar Handlers ---
+        function handleTodayClick() {
+            currentStartDate = new Date(todayDate);
+            renderTapeChart();
+        }
+
+        function handlePrev7Days() {
+            currentStartDate = addDays(currentStartDate, -7);
+            renderTapeChart();
+        }
+
+        function handleNext7Days() {
+            currentStartDate = addDays(currentStartDate, 7);
+            renderTapeChart();
+        }
+
+        function handleJumpToDate(dateStr) {
+            if (!dateStr) return;
+            const chosenDate = new Date(dateStr + 'T00:00:00');
+            if (!isNaN(chosenDate.getTime())) {
+                currentStartDate = chosenDate;
+                renderTapeChart();
+            }
+        }
+
+        function handleRoomTypeFilterChange(val) {
+            selectedRoomTypeFilter = val;
+            renderTapeChart();
+        }
+
+        async function handleQuickSearch(event) {
+            if (event.key !== 'Enter') return;
+            const query = (event.target.value || '').trim();
+            if (!query) return;
+
+            try {
+                // 1. Query guest_profiles matching full_name
+                const { data: matchedGuests, error: guestErr } = await supabaseClient
+                    .from('guest_profiles')
+                    .select('id')
+                    .ilike('full_name', `%${query}%`);
+                if (guestErr) throw guestErr;
+
+                const guestIds = (matchedGuests || []).map(g => g.id);
+
+                // 2. Query reservations by reservation_number ILIKE or guest_profile_id IN matchedGuests
+                let queryBuilder = supabaseClient
+                    .from('reservations')
+                    .select('id, check_in_date, reservation_number, room_type_id')
+                    .in('status', ['Reserved', 'Checkin', 'Checkout']);
+
+                if (guestIds.length > 0) {
+                    queryBuilder = queryBuilder.or(`reservation_number.ilike.%${query}%,guest_profile_id.in.(${guestIds.join(',')})`);
+                } else {
+                    queryBuilder = queryBuilder.ilike('reservation_number', `%${query}%`);
+                }
+
+                const { data: foundReservations, error: resErr } = await queryBuilder.limit(1);
+                if (resErr) throw resErr;
+
+                if (!foundReservations || foundReservations.length === 0) {
+                    alert('Reservation not found');
+                    return;
+                }
+
+                const targetRes = foundReservations[0];
+                if (targetRes.check_in_date) {
+                    currentStartDate = new Date(targetRes.check_in_date + 'T00:00:00');
+                }
+
+                // If Room Type Filter is active and target reservation's room type doesn't match, clear filter
+                if (selectedRoomTypeFilter && targetRes.room_type_id && targetRes.room_type_id !== selectedRoomTypeFilter) {
+                    selectedRoomTypeFilter = '';
+                    const filterDropdown = document.getElementById('calendar-room-type-filter');
+                    if (filterDropdown) filterDropdown.value = '';
+                }
+
+                await renderTapeChart();
+
+                // Apply 3-second blink highlight animation to the matching reservation capsules
+                const capsules = document.querySelectorAll(`[data-reservation-id="${targetRes.id}"]`);
+                if (capsules.length > 0) {
+                    capsules.forEach(capsule => {
+                        capsule.classList.add('highlight-blink');
+                    });
+
+                    // Scroll the first capsule into view
+                    capsules[0].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+
+                    setTimeout(() => {
+                        capsules.forEach(capsule => {
+                            capsule.classList.remove('highlight-blink');
+                        });
+                    }, 3000);
+                }
+
+            } catch (err) {
+                console.error('Error in Quick Search:', err);
+                alert('Gagal melakukan pencarian: ' + err.message);
+            }
+        }
+
+        async function populateCalendarRoomTypeFilter() {
+            try {
+                const { data, error } = await supabaseClient.from('room_types').select('id, name').order('name', { ascending: true });
+                if (error) throw error;
+                const dropdown = document.getElementById('calendar-room-type-filter');
+                if (dropdown) {
+                    let html = `<option value="">All Room Types</option>`;
+                    if (data && data.length > 0) {
+                        html += data.map(rt => `<option value="${rt.id}">${rt.name}</option>`).join('');
+                    }
+                    dropdown.innerHTML = html;
+                    dropdown.value = selectedRoomTypeFilter;
+                }
+            } catch (err) {
+                console.error('Error populating calendar room type filter:', err);
             }
         }
 
@@ -3202,6 +3395,9 @@
                     statusDiv.className = "p-4 rounded-md bg-green-50 border border-green-200 text-sm mb-6 hidden"; 
                     propNameSpan.textContent = data[0].name;
                 }
+
+                // Populate Room Type Filter
+                populateCalendarRoomTypeFilter();
 
                 // Langkah 3: Trigger Eksekusi Tape Chart
                 renderTapeChart();
