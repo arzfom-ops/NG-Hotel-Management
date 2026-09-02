@@ -1905,6 +1905,20 @@
                     datesList.push(addDays(currentStartDate, i));
                 }
 
+                const minDateStr = formatDateISO(datesList[0]);
+                const maxDateStr = formatDateISO(datesList[datesList.length - 1]);
+
+                // Fetch room blocks for displayed date range
+                const { data: dbRoomBlocks, error: blocksErr } = await supabaseClient
+                    .from('room_blocks')
+                    .select('id, property_id, room_id, start_date, end_date, block_type, reason')
+                    .lte('start_date', maxDateStr)
+                    .gte('end_date', minDateStr);
+                if (blocksErr) {
+                    console.error('Error fetching room_blocks:', blocksErr);
+                }
+                const roomBlocks = dbRoomBlocks || [];
+
                 if (!roomsCache || roomsCache.length === 0) {
                     container.innerHTML = `
                         <div class="p-8 text-center text-slate-500">
@@ -1976,6 +1990,9 @@
                         // Cari reservasi aktif (check_in_date <= dateISO < check_out_date)
                         const res = (dbReservations || []).find(r => r.room_id === room.id && r.check_in_date <= dateISO && dateISO < r.check_out_date);
 
+                        // Cari room block (start_date <= dateISO <= end_date)
+                        const block = roomBlocks.find(b => b.room_id === room.id && b.start_date <= dateISO && dateISO <= b.end_date);
+
                         if (res) {
                             const isStart = res.check_in_date === dateISO;
                             const status = (res.status || 'Reserved').toLowerCase();
@@ -1996,6 +2013,36 @@
                                     </div>
                                 </div>
                             `;
+                        } else if (block) {
+                            const blockType = (block.block_type || '').toUpperCase();
+                            const blockReason = block.reason || '';
+
+                            if (blockType === 'OOO') {
+                                // OOO: Background merah (bg-red-100), teks 'OOO' di tengah, cursor-not-allowed, tanpa event/drag data attributes
+                                tableHTML += `
+                                    <div class="relative border-b border-r border-slate-100 p-1 bg-red-100 text-red-700 text-xs font-semibold flex items-center justify-center select-none cursor-not-allowed ${isToday ? 'ring-1 ring-blue-300 inset' : ''}"
+                                         title="${blockReason}">
+                                        OOO
+                                    </div>
+                                `;
+                            } else if (blockType === 'OOS') {
+                                // OOS: Background abu-abu (bg-slate-200), teks 'OOS', tetap bisa diklik/didrag untuk reservasi
+                                tableHTML += `
+                                    <div class="calendar-cell relative border-b border-r border-slate-100 p-1 bg-slate-200 text-slate-600 text-xs font-semibold flex items-center justify-center hover:bg-slate-300 transition-colors cursor-pointer select-none ${isToday ? 'ring-1 ring-blue-300 inset' : ''}"
+                                         data-room-id="${room.id}"
+                                         data-date="${dateISO}"
+                                         title="${blockReason}">
+                                        OOS
+                                    </div>
+                                `;
+                            } else {
+                                tableHTML += `
+                                    <div class="calendar-cell relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer select-none ${isToday ? 'bg-blue-50/30' : ''}"
+                                         data-room-id="${room.id}"
+                                         data-date="${dateISO}">
+                                    </div>
+                                `;
+                            }
                         } else {
                             // Empty room-night cell with data-room-id and data-date for Drag-to-Select
                             tableHTML += `
