@@ -535,6 +535,56 @@
         </div>
     </div>
 
+    <!-- Modal Block Room (OOO / OOS) -->
+    <div id="blockRoomModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 class="text-lg font-semibold text-slate-800">Block Room Maintenance</h3>
+                <button type="button" onclick="closeBlockRoomModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="blockRoomForm" onsubmit="handleSaveBlockRoom(event)" class="space-y-4">
+                <input type="hidden" id="block-room-id">
+
+                <!-- Block Type -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Block Type</label>
+                    <input type="text" id="block-type" readonly class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm bg-slate-100 text-slate-700 font-semibold cursor-not-allowed">
+                </div>
+
+                <!-- Start Date -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Start Date</label>
+                    <input type="date" id="block-start-date" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- End Date -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">End Date</label>
+                    <input type="date" id="block-end-date" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <!-- Reason -->
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Reason</label>
+                    <textarea id="block-reason" rows="3" required placeholder="Masukkan alasan pemblokiran kamar..." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeBlockRoomModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Save Block
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Add / Edit Room -->
     <div id="roomModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
@@ -1969,16 +2019,46 @@
                     `;
                 });
 
+                // Helper function for status badge styling in Tape Chart left column
+                function getStatusBadgeMarkup(status) {
+                    const rawStatus = (status || 'VD').toUpperCase();
+                    let normalizedStatus = 'VD';
+                    let colorClasses = 'text-amber-600 bg-amber-50 border-amber-200';
+
+                    if (rawStatus === 'VD' || rawStatus === 'VACANT DIRTY' || rawStatus === 'DIRTY') {
+                        normalizedStatus = 'VD';
+                        colorClasses = 'text-amber-600 bg-amber-50 border-amber-200';
+                    } else if (rawStatus === 'VC' || rawStatus === 'VACANT CLEAN' || rawStatus === 'CLEAN') {
+                        normalizedStatus = 'VC';
+                        colorClasses = 'text-emerald-600 bg-emerald-50 border-emerald-200';
+                    } else if (rawStatus === 'OC' || rawStatus === 'OCCUPIED CLEAN') {
+                        normalizedStatus = 'OC';
+                        colorClasses = 'text-blue-600 bg-blue-50 border-blue-200';
+                    } else if (rawStatus === 'OD' || rawStatus === 'OCCUPIED DIRTY') {
+                        normalizedStatus = 'OD';
+                        colorClasses = 'text-orange-600 bg-orange-50 border-orange-200';
+                    } else if (rawStatus === 'OOO' || rawStatus === 'OUT OF ORDER') {
+                        normalizedStatus = 'OOO';
+                        colorClasses = 'text-red-600 bg-red-50 border-red-200';
+                    } else if (rawStatus === 'OOS' || rawStatus === 'OUT OF SERVICE') {
+                        normalizedStatus = 'OOS';
+                        colorClasses = 'text-slate-600 bg-slate-50 border-slate-200';
+                    }
+
+                    return `<span class="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold rounded border ${colorClasses}">${normalizedStatus}</span>`;
+                }
+
                 // Baris Kamar
                 displayRooms.forEach(room => {
                     const roomTypeName = room.room_types ? (Array.isArray(room.room_types) ? room.room_types[0]?.name : room.room_types.name) : '-';
-                    const hkColorClass = getHousekeepingBgColor(room.status);
+                    const statusBadge = getStatusBadgeMarkup(room.status);
 
-                    // Sumbu Y Sticky Left: Housekeeping Status Background
+                    // Sumbu Y Sticky Left: Clean background with Badge Indikator Kecil
                     tableHTML += `
-                        <div class="sticky left-0 ${hkColorClass} z-30 p-3 border-b border-r flex flex-col justify-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                            <div class="font-bold text-sm">Kamar ${room.room_number}</div>
-                            <div class="text-xs font-medium truncate opacity-80" title="${roomTypeName}">${roomTypeName}</div>
+                        <div class="sticky left-0 bg-white z-30 p-3 border-b border-r border-slate-200 flex flex-col justify-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                            <div class="font-bold text-sm text-slate-800">Kamar ${room.room_number}</div>
+                            <div class="text-xs font-medium text-slate-500 truncate" title="${roomTypeName}">${roomTypeName}</div>
+                            <div>${statusBadge}</div>
                         </div>
                     `;
 
@@ -5026,7 +5106,74 @@
             }
         }
 
+        function openBlockRoomModal(roomId, blockType) {
+            document.getElementById('block-room-id').value = roomId;
+            document.getElementById('block-type').value = blockType;
+
+            const todayStr = formatDateISO(new Date());
+            document.getElementById('block-start-date').value = todayStr;
+            document.getElementById('block-end-date').value = todayStr;
+            document.getElementById('block-reason').value = '';
+
+            document.getElementById('blockRoomModal').classList.remove('hidden');
+        }
+
+        function closeBlockRoomModal() {
+            document.getElementById('blockRoomModal').classList.add('hidden');
+            document.getElementById('blockRoomForm').reset();
+            fetchHousekeepingRooms();
+        }
+
+        async function handleSaveBlockRoom(event) {
+            event.preventDefault();
+            const roomId = document.getElementById('block-room-id').value;
+            const blockType = document.getElementById('block-type').value;
+            const startDate = document.getElementById('block-start-date').value;
+            const endDate = document.getElementById('block-end-date').value;
+            const reason = document.getElementById('block-reason').value;
+
+            try {
+                // Insert record to room_blocks
+                const { error: blockErr } = await supabaseClient
+                    .from('room_blocks')
+                    .insert([{
+                        room_id: roomId,
+                        block_type: blockType,
+                        start_date: startDate,
+                        end_date: endDate,
+                        reason: reason
+                    }]);
+
+                if (blockErr) throw blockErr;
+
+                // Update room status in rooms table
+                const { error: roomErr } = await supabaseClient
+                    .from('rooms')
+                    .update({ status: blockType })
+                    .eq('id', roomId);
+
+                if (roomErr) throw roomErr;
+
+                alert(`Kamar berhasil di-block (${blockType})!`);
+                document.getElementById('blockRoomModal').classList.add('hidden');
+                document.getElementById('blockRoomForm').reset();
+
+                fetchHousekeepingRooms();
+                fetchRooms();
+                renderTapeChart();
+            } catch (err) {
+                console.error('Error saving block room:', err);
+                alert('Gagal menyimpan pemblokiran kamar: ' + err.message);
+            }
+        }
+
         async function updateRoomStatus(roomId, newStatus) {
+            const upperStatus = (newStatus || '').toUpperCase();
+            if (upperStatus === 'OOO' || upperStatus === 'OOS') {
+                openBlockRoomModal(roomId, upperStatus);
+                return;
+            }
+
             try {
                 const { error } = await supabaseClient
                     .from('rooms')
@@ -5038,6 +5185,7 @@
                 alert('Status kamar berhasil diperbarui!');
                 fetchHousekeepingRooms();
                 fetchRooms();
+                renderTapeChart();
             } catch (err) {
                 console.error('Error updating room status:', err);
                 alert('Gagal mengupdate status kamar: ' + err.message);
