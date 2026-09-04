@@ -2021,28 +2021,31 @@
 
                 // Helper function for status badge styling in Tape Chart left column
                 function getStatusBadgeMarkup(status) {
-                    const rawStatus = (status || 'VD').toUpperCase();
+                    const rawStatus = (status || '').toUpperCase();
                     let normalizedStatus = 'VD';
                     let colorClasses = 'text-amber-600 bg-amber-50 border-amber-200';
 
-                    if (rawStatus === 'VD' || rawStatus === 'VACANT DIRTY' || rawStatus === 'DIRTY') {
+                    if (rawStatus === 'VD') {
                         normalizedStatus = 'VD';
                         colorClasses = 'text-amber-600 bg-amber-50 border-amber-200';
-                    } else if (rawStatus === 'VC' || rawStatus === 'VACANT CLEAN' || rawStatus === 'CLEAN') {
+                    } else if (rawStatus === 'VC') {
                         normalizedStatus = 'VC';
                         colorClasses = 'text-emerald-600 bg-emerald-50 border-emerald-200';
-                    } else if (rawStatus === 'OC' || rawStatus === 'OCCUPIED CLEAN') {
+                    } else if (rawStatus === 'OC') {
                         normalizedStatus = 'OC';
                         colorClasses = 'text-blue-600 bg-blue-50 border-blue-200';
-                    } else if (rawStatus === 'OD' || rawStatus === 'OCCUPIED DIRTY') {
+                    } else if (rawStatus === 'OD') {
                         normalizedStatus = 'OD';
                         colorClasses = 'text-orange-600 bg-orange-50 border-orange-200';
-                    } else if (rawStatus === 'OOO' || rawStatus === 'OUT OF ORDER') {
+                    } else if (rawStatus === 'OOO') {
                         normalizedStatus = 'OOO';
                         colorClasses = 'text-red-600 bg-red-50 border-red-200';
-                    } else if (rawStatus === 'OOS' || rawStatus === 'OUT OF SERVICE') {
+                    } else if (rawStatus === 'OOS') {
                         normalizedStatus = 'OOS';
                         colorClasses = 'text-slate-600 bg-slate-50 border-slate-200';
+                    } else {
+                        normalizedStatus = 'VD';
+                        colorClasses = 'text-amber-600 bg-amber-50 border-amber-200';
                     }
 
                     return `<span class="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold rounded border ${colorClasses}">${normalizedStatus}</span>`;
@@ -2500,6 +2503,8 @@
             try {
                 const { data, error } = await supabaseClient.from('rooms').select('id, room_number, room_view, floor, building, status, room_type_id, room_types(name)');
                 if (error) throw error;
+
+                roomsCache = data || [];
 
                 const tbody = document.getElementById('rooms-tbody');
                 if (tbody) {
@@ -5184,8 +5189,7 @@
 
                 alert('Status kamar berhasil diperbarui!');
                 fetchHousekeepingRooms();
-                fetchRooms();
-                renderTapeChart();
+                fetchRooms(); // Silent background fetch to update roomsCache
             } catch (err) {
                 console.error('Error updating room status:', err);
                 alert('Gagal mengupdate status kamar: ' + err.message);
@@ -5197,7 +5201,7 @@
         }
 
         // Single Page Application (SPA) View Toggling
-        function switchView(viewName) {
+        async function switchView(viewName) {
             const frontdeskTopbar = document.getElementById('frontdesk-topbar');
             const frontdeskView = document.getElementById('frontdesk-view');
             const housekeepingView = document.getElementById('housekeeping-view');
@@ -5261,6 +5265,9 @@
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
 
                 if (navFrontdesk) navFrontdesk.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+
+                await fetchRooms();
+                renderTapeChart();
             }
 
             // Toggle Mobile Menu closed if open
