@@ -1934,6 +1934,10 @@
                     .order('room_number', { ascending: true });
                 if (roomsErr) throw roomsErr;
 
+                if (dbRooms) {
+                    dbRooms.sort((a, b) => a.room_number.localeCompare(b.room_number, undefined, {numeric: true, sensitivity: 'base'}));
+                }
+
                 roomsCache = dbRooms || [];
 
                 // Fetch reservations joined with guest_profiles and rooms (excl. Cancelled and Checkout)
@@ -5027,6 +5031,10 @@
 
                 if (error) throw error;
 
+                if (data) {
+                    data.sort((a, b) => a.room_number.localeCompare(b.room_number, undefined, {numeric: true, sensitivity: 'base'}));
+                }
+
                 if (!data || data.length === 0) {
                     grid.innerHTML = `
                         <div class="col-span-full py-12 text-center text-slate-400">
@@ -5266,7 +5274,6 @@
 
                 if (navFrontdesk) navFrontdesk.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
 
-                await fetchRooms();
                 renderTapeChart();
             }
 
