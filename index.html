@@ -862,11 +862,7 @@
                 <!-- Payment Method Dropdown (Only for Payment) -->
                 <div id="folio-tx-payment-method-container" class="hidden">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Method</label>
-                    <select id="folio-tx-payment-method" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        <option value="Cash">Cash</option>
-                        <option value="Credit Card">Credit Card</option>
-                        <option value="Transfer">Transfer</option>
-                        <option value="City Ledger/OTA">City Ledger/OTA</option>
+                    <select id="folio-tx-payment-method" onchange="handleFolioPaymentMethodChange()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                     </select>
                 </div>
 
@@ -4500,7 +4496,22 @@
             if (txModal) txModal.classList.remove('hidden');
         }
 
-        function openAddPaymentModal() {
+        function handleFolioPaymentMethodChange() {
+            const selectEl = document.getElementById('folio-tx-payment-method');
+            const refInput = document.getElementById('folio-tx-reference');
+            if (!selectEl || !refInput) return;
+
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            const dataType = selectedOption ? (selectedOption.getAttribute('data-type') || '') : '';
+
+            if (dataType.toLowerCase() === 'cash') {
+                refInput.removeAttribute('required');
+            } else {
+                refInput.setAttribute('required', 'required');
+            }
+        }
+
+        async function openAddPaymentModal() {
             if (!currentFolioReservation) return;
             const txModal = document.getElementById('folioTransactionModal');
             document.getElementById('folio-tx-type').value = 'PAYMENT';
@@ -4513,6 +4524,35 @@
             document.getElementById('folio-tx-reference').value = '';
             document.getElementById('folio-tx-payment-method-container').classList.remove('hidden');
             document.getElementById('folio-tx-ref-container').classList.remove('hidden');
+
+            const pmSelect = document.getElementById('folio-tx-payment-method');
+            if (pmSelect) {
+                pmSelect.innerHTML = `<option value="">Loading...</option>`;
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('payment_methods')
+                        .select('*')
+                        .eq('is_active', true)
+                        .order('name', { ascending: true });
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        pmSelect.innerHTML = data.map(pm => {
+                            const methodType = pm.method_type || pm.type || '';
+                            const optionText = methodType ? `${methodType} - ${pm.name}` : pm.name;
+                            return `<option value="${pm.name}" data-type="${methodType}">${optionText}</option>`;
+                        }).join('');
+                    } else {
+                        pmSelect.innerHTML = `<option value="Cash" data-type="Cash">Cash - Cash</option>`;
+                    }
+                } catch (err) {
+                    console.error('Error fetching payment methods for folio transaction:', err);
+                    pmSelect.innerHTML = `<option value="Cash" data-type="Cash">Cash - Cash</option>`;
+                }
+            }
+
+            handleFolioPaymentMethodChange();
 
             if (txModal) txModal.classList.remove('hidden');
         }
@@ -4531,7 +4571,8 @@
             const txType = document.getElementById('folio-tx-type').value;
             let description = document.getElementById('folio-tx-description').value.trim();
             const amount = parseFloat(document.getElementById('folio-tx-amount').value);
-            const paymentMethod = document.getElementById('folio-tx-payment-method').value;
+            const paymentMethodSelect = document.getElementById('folio-tx-payment-method');
+            const paymentMethod = paymentMethodSelect ? paymentMethodSelect.value : '';
             const referenceNumber = document.getElementById('folio-tx-reference').value.trim();
 
             if (isNaN(amount) || amount <= 0) {
