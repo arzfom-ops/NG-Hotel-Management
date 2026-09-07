@@ -775,18 +775,19 @@
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto max-h-72">
                         <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider sticky top-0 border-b border-slate-200">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider sticky top-0 border-b border-slate-200 text-[11px]">
                                 <tr>
                                     <th class="p-3">Date</th>
                                     <th class="p-3">Type</th>
-                                    <th class="p-3">Description</th>
-                                    <th class="p-3">Reference</th>
-                                    <th class="p-3 text-right">Amount</th>
+                                    <th class="p-3">Description / Category</th>
+                                    <th class="p-3 text-center">Qty</th>
+                                    <th class="p-3 text-right">Unit Price</th>
+                                    <th class="p-3 text-right">Total</th>
                                 </tr>
                             </thead>
                             <tbody id="folioTransactionsTbody" class="divide-y divide-slate-100 font-medium">
                                 <tr>
-                                    <td colspan="5" class="p-4 text-center text-slate-400">Loading transactions...</td>
+                                    <td colspan="6" class="p-4 text-center text-slate-400">Loading transactions...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -853,29 +854,68 @@
             <form id="folioTransactionForm" onsubmit="handleSaveFolioTransaction(event)" class="p-6 space-y-4">
                 <input type="hidden" id="folio-tx-type" value="CHARGE">
 
-                <!-- Description -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1" id="folio-tx-desc-label">Description</label>
-                    <input type="text" id="folio-tx-description" required placeholder="e.g. Laundry, F&B, Minibar" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <!-- CHARGE MODE: Charge Item Dropdown -->
+                <div id="folio-tx-charge-item-container">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Charge Item</label>
+                    <select id="folio-tx-charge-item" onchange="handleChargeItemChange()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <!-- Populated dynamically from extra_charges -->
+                    </select>
                 </div>
 
-                <!-- Payment Method Dropdown (Only for Payment) -->
+                <!-- CHARGE MODE: Custom Description (Hidden by default) -->
+                <div id="folio-tx-custom-desc-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Custom Description</label>
+                    <input type="text" id="folio-tx-custom-desc" placeholder="e.g. Broken Glass Fee, Special Room Service" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+
+                <!-- CHARGE MODE: Category Select (Hidden by default) -->
+                <div id="folio-tx-category-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category</label>
+                    <select id="folio-tx-category" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <option value="F&B">F&B</option>
+                        <option value="Front Office">Front Office</option>
+                        <option value="Housekeeping">Housekeeping</option>
+                        <option value="Laundry">Laundry</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+
+                <!-- CHARGE MODE: Qty & Unit Price Grid -->
+                <div id="folio-tx-qty-price-container" class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Qty</label>
+                        <input type="number" id="folio-tx-qty" value="1" min="1" step="1" oninput="calculateFolioTotal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Unit Price (Rp)</label>
+                        <input type="number" id="folio-tx-unit-price" min="0" step="any" placeholder="0" oninput="calculateFolioTotal()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold">
+                    </div>
+                </div>
+
+                <!-- PAYMENT MODE: Payment Description / Note -->
+                <div id="folio-tx-desc-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1" id="folio-tx-desc-label">Payment Description / Note</label>
+                    <input type="text" id="folio-tx-description" placeholder="e.g. Room payment, Deposit refund" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                </div>
+
+                <!-- PAYMENT MODE: Payment Method Dropdown -->
                 <div id="folio-tx-payment-method-container" class="hidden">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Method</label>
                     <select id="folio-tx-payment-method" onchange="handleFolioPaymentMethodChange()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                     </select>
                 </div>
 
-                <!-- Reference Number (Only for Payment) -->
+                <!-- PAYMENT MODE: Reference Number -->
                 <div id="folio-tx-ref-container" class="hidden">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Reference Number</label>
                     <input type="text" id="folio-tx-reference" placeholder="e.g. Card Auth Code / Transfer Ref" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                 </div>
 
-                <!-- Amount -->
+                <!-- Amount (Total) -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (Rp)</label>
-                    <input type="number" min="1" step="any" id="folio-tx-amount" required placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1" id="folio-tx-amount-label">Total Amount (Rp)</label>
+                    <input type="number" min="0" step="any" id="folio-tx-amount" required placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold">
                 </div>
 
                 <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
@@ -4429,7 +4469,7 @@
             let totalPayment = 0;
 
             if (currentFolioTransactions.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada transaksi di folio ini.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada transaksi di folio ini.</td></tr>`;
             } else {
                 tbody.innerHTML = currentFolioTransactions.map(tx => {
                     const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
@@ -4447,12 +4487,25 @@
 
                     const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
 
+                    const qtyDisplay = txType === 'CHARGE' ? (tx.qty || 1) : '-';
+                    const unitPriceDisplay = txType === 'CHARGE'
+                        ? `Rp ${Number(tx.unit_price || tx.amount || 0).toLocaleString('id-ID')}`
+                        : '-';
+
+                    let descContent = `<div class="font-medium text-slate-800">${tx.description || '-'}</div>`;
+                    if (txType === 'CHARGE' && tx.category) {
+                        descContent += `<div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">${tx.category}</div>`;
+                    } else if (txType === 'PAYMENT' && tx.reference_number) {
+                        descContent += `<div class="text-[10px] text-slate-400">Ref: ${tx.reference_number}</div>`;
+                    }
+
                     return `
                         <tr class="hover:bg-slate-50 transition-colors">
                             <td class="p-3 text-slate-600 whitespace-nowrap">${dateStr}</td>
                             <td class="p-3">${typeBadge}</td>
-                            <td class="p-3 text-slate-800 font-medium">${tx.description || '-'}</td>
-                            <td class="p-3 text-slate-500">${tx.reference_number || '-'}</td>
+                            <td class="p-3">${descContent}</td>
+                            <td class="p-3 text-center text-slate-700 font-semibold">${qtyDisplay}</td>
+                            <td class="p-3 text-right text-slate-600">${unitPriceDisplay}</td>
                             <td class="p-3 text-right font-bold ${txType === 'CHARGE' ? 'text-slate-800' : 'text-emerald-600'}">
                                 ${txType === 'CHARGE' ? '' : '-' }Rp ${amount.toLocaleString('id-ID')}
                             </td>
@@ -4480,20 +4533,118 @@
             }
         }
 
-        function openAddChargeModal() {
+        async function openAddChargeModal() {
             if (!currentFolioReservation) return;
             const txModal = document.getElementById('folioTransactionModal');
             document.getElementById('folio-tx-type').value = 'CHARGE';
             document.getElementById('folioTxModalTitle').innerHTML = `<i class="ph ph-plus-circle text-xl text-red-600"></i> + Add Charge (Debit)`;
-            document.getElementById('folio-tx-desc-label').textContent = 'Charge Description';
-            document.getElementById('folio-tx-description').value = '';
-            document.getElementById('folio-tx-description').placeholder = 'e.g. Laundry, F&B, Minibar';
-            document.getElementById('folio-tx-description').required = true;
-            document.getElementById('folio-tx-amount').value = '';
+
+            // Toggle containers for CHARGE mode
+            document.getElementById('folio-tx-charge-item-container').classList.remove('hidden');
+            document.getElementById('folio-tx-qty-price-container').classList.remove('hidden');
+            document.getElementById('folio-tx-desc-container').classList.add('hidden');
             document.getElementById('folio-tx-payment-method-container').classList.add('hidden');
             document.getElementById('folio-tx-ref-container').classList.add('hidden');
 
+            const amountInput = document.getElementById('folio-tx-amount');
+            if (amountInput) {
+                amountInput.setAttribute('readonly', 'readonly');
+            }
+
+            const qtyInput = document.getElementById('folio-tx-qty');
+            if (qtyInput) qtyInput.value = 1;
+
+            const chargeSelect = document.getElementById('folio-tx-charge-item');
+            if (chargeSelect) {
+                chargeSelect.innerHTML = `<option value="">Loading extra charges...</option>`;
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('extra_charges')
+                        .select('*')
+                        .order('name', { ascending: true });
+
+                    if (error) throw error;
+
+                    let optionsHtml = '';
+                    if (data && data.length > 0) {
+                        optionsHtml = data.map(item => {
+                            const name = item.name || 'Unnamed Item';
+                            const price = item.price || 0;
+                            const category = item.category || 'Others';
+                            return `<option value="${item.id}" data-name="${name}" data-price="${price}" data-category="${category}">${name}</option>`;
+                        }).join('');
+                    }
+                    optionsHtml += `<option value="custom">Custom / Manual Entry</option>`;
+                    chargeSelect.innerHTML = optionsHtml;
+                } catch (err) {
+                    console.error('Error fetching extra charges:', err);
+                    chargeSelect.innerHTML = `<option value="custom">Custom / Manual Entry</option>`;
+                }
+            }
+
+            handleChargeItemChange();
+
             if (txModal) txModal.classList.remove('hidden');
+        }
+
+        function handleChargeItemChange() {
+            const chargeSelect = document.getElementById('folio-tx-charge-item');
+            const customDescContainer = document.getElementById('folio-tx-custom-desc-container');
+            const customDescInput = document.getElementById('folio-tx-custom-desc');
+            const categoryContainer = document.getElementById('folio-tx-category-container');
+            const categorySelect = document.getElementById('folio-tx-category');
+            const unitPriceInput = document.getElementById('folio-tx-unit-price');
+
+            if (!chargeSelect) return;
+
+            const selectedValue = chargeSelect.value;
+
+            if (selectedValue === 'custom') {
+                if (customDescContainer) customDescContainer.classList.remove('hidden');
+                if (customDescInput) {
+                    customDescInput.setAttribute('required', 'required');
+                    customDescInput.value = '';
+                }
+                if (categoryContainer) categoryContainer.classList.remove('hidden');
+                if (categorySelect) categorySelect.setAttribute('required', 'required');
+
+                if (unitPriceInput) {
+                    unitPriceInput.removeAttribute('readonly');
+                    unitPriceInput.value = '';
+                }
+            } else {
+                if (customDescContainer) customDescContainer.classList.add('hidden');
+                if (customDescInput) customDescInput.removeAttribute('required');
+                if (categoryContainer) categoryContainer.classList.add('hidden');
+                if (categorySelect) categorySelect.removeAttribute('required');
+
+                const selectedOption = chargeSelect.options[chargeSelect.selectedIndex];
+                const price = selectedOption ? parseFloat(selectedOption.getAttribute('data-price') || 0) : 0;
+
+                if (unitPriceInput) {
+                    unitPriceInput.value = price;
+                    unitPriceInput.setAttribute('readonly', 'readonly');
+                }
+            }
+
+            calculateFolioTotal();
+        }
+
+        function calculateFolioTotal() {
+            const txType = document.getElementById('folio-tx-type').value;
+            if (txType === 'CHARGE') {
+                const qtyInput = document.getElementById('folio-tx-qty');
+                const unitPriceInput = document.getElementById('folio-tx-unit-price');
+                const amountInput = document.getElementById('folio-tx-amount');
+
+                const qty = parseInt(qtyInput ? qtyInput.value : 1) || 0;
+                const unitPrice = parseFloat(unitPriceInput ? unitPriceInput.value : 0) || 0;
+                const total = qty * unitPrice;
+
+                if (amountInput) {
+                    amountInput.value = total;
+                }
+            }
         }
 
         function handleFolioPaymentMethodChange() {
@@ -4516,14 +4667,36 @@
             const txModal = document.getElementById('folioTransactionModal');
             document.getElementById('folio-tx-type').value = 'PAYMENT';
             document.getElementById('folioTxModalTitle').innerHTML = `<i class="ph ph-plus-circle text-xl text-emerald-600"></i> + Add Payment (Kredit)`;
-            document.getElementById('folio-tx-desc-label').textContent = 'Payment Description / Note';
-            document.getElementById('folio-tx-description').value = 'Payment';
-            document.getElementById('folio-tx-description').placeholder = 'e.g. Room payment, Deposit refund';
-            document.getElementById('folio-tx-description').required = false;
-            document.getElementById('folio-tx-amount').value = '';
-            document.getElementById('folio-tx-reference').value = '';
+
+            // Toggle containers for PAYMENT mode
+            document.getElementById('folio-tx-charge-item-container').classList.add('hidden');
+            document.getElementById('folio-tx-custom-desc-container').classList.add('hidden');
+            document.getElementById('folio-tx-category-container').classList.add('hidden');
+            document.getElementById('folio-tx-qty-price-container').classList.add('hidden');
+
+            document.getElementById('folio-tx-desc-container').classList.remove('hidden');
             document.getElementById('folio-tx-payment-method-container').classList.remove('hidden');
             document.getElementById('folio-tx-ref-container').classList.remove('hidden');
+
+            const descInput = document.getElementById('folio-tx-description');
+            if (descInput) {
+                descInput.value = 'Payment';
+                descInput.placeholder = 'e.g. Room payment, Deposit refund';
+                descInput.required = false;
+            }
+
+            const customDescInput = document.getElementById('folio-tx-custom-desc');
+            if (customDescInput) customDescInput.removeAttribute('required');
+            const categorySelect = document.getElementById('folio-tx-category');
+            if (categorySelect) categorySelect.removeAttribute('required');
+
+            const amountInput = document.getElementById('folio-tx-amount');
+            if (amountInput) {
+                amountInput.removeAttribute('readonly');
+                amountInput.value = '';
+            }
+
+            document.getElementById('folio-tx-reference').value = '';
 
             const pmSelect = document.getElementById('folio-tx-payment-method');
             if (pmSelect) {
@@ -4569,28 +4742,63 @@
             if (!currentFolioReservation) return;
 
             const txType = document.getElementById('folio-tx-type').value;
-            let description = document.getElementById('folio-tx-description').value.trim();
-            const amount = parseFloat(document.getElementById('folio-tx-amount').value);
-            const paymentMethodSelect = document.getElementById('folio-tx-payment-method');
-            const paymentMethod = paymentMethodSelect ? paymentMethodSelect.value : '';
-            const referenceNumber = document.getElementById('folio-tx-reference').value.trim();
+            let description = '';
+            let category = null;
+            let qty = null;
+            let unitPrice = null;
+            let amount = 0;
+            let referenceNumber = null;
+
+            if (txType === 'CHARGE') {
+                const chargeSelect = document.getElementById('folio-tx-charge-item');
+                const selectedValue = chargeSelect ? chargeSelect.value : '';
+
+                qty = parseInt(document.getElementById('folio-tx-qty').value) || 1;
+                unitPrice = parseFloat(document.getElementById('folio-tx-unit-price').value) || 0;
+                amount = qty * unitPrice;
+
+                if (selectedValue === 'custom') {
+                    description = document.getElementById('folio-tx-custom-desc').value.trim();
+                    category = document.getElementById('folio-tx-category').value;
+                } else {
+                    const selectedOption = chargeSelect ? chargeSelect.options[chargeSelect.selectedIndex] : null;
+                    description = selectedOption ? selectedOption.getAttribute('data-name') : 'Charge Item';
+                    category = selectedOption ? selectedOption.getAttribute('data-category') : 'Others';
+                }
+
+                if (!description) {
+                    alert('Deskripsi transaksi harus diisi.');
+                    return;
+                }
+            } else { // PAYMENT
+                const descInput = document.getElementById('folio-tx-description');
+                let noteDesc = descInput ? descInput.value.trim() : '';
+                amount = parseFloat(document.getElementById('folio-tx-amount').value) || 0;
+
+                const paymentMethodSelect = document.getElementById('folio-tx-payment-method');
+                const paymentMethod = paymentMethodSelect ? paymentMethodSelect.value : '';
+                const refInput = document.getElementById('folio-tx-reference');
+                referenceNumber = refInput ? refInput.value.trim() : '';
+
+                const methodLabel = paymentMethod ? `[${paymentMethod}]` : '';
+                description = noteDesc ? `${methodLabel} ${noteDesc}`.trim() : `Payment ${methodLabel}`.trim();
+                referenceNumber = referenceNumber || paymentMethod || null;
+            }
 
             if (isNaN(amount) || amount <= 0) {
                 alert('Jumlah transaksi (amount) harus lebih dari 0.');
                 return;
             }
 
-            if (txType === 'PAYMENT') {
-                const methodLabel = paymentMethod ? `[${paymentMethod}]` : '';
-                description = description ? `${methodLabel} ${description}`.trim() : `Payment ${methodLabel}`.trim();
-            }
-
             const payload = {
                 reservation_id: currentFolioReservation.id,
                 transaction_type: txType,
-                description: description || (txType === 'CHARGE' ? 'Room Charge' : 'Payment'),
+                description: description,
+                category: category,
+                qty: qty,
+                unit_price: unitPrice,
                 amount: amount,
-                reference_number: txType === 'PAYMENT' ? (referenceNumber || paymentMethod || null) : null,
+                reference_number: referenceNumber,
                 transaction_date: new Date().toISOString()
             };
 
