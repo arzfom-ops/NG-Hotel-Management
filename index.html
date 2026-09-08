@@ -1831,6 +1831,17 @@
         const todayDate = new Date();
         todayDate.setHours(0, 0, 0, 0);
 
+        let initializedAppDate = new Date().toDateString();
+
+        // Day Change Detector (Night Audit Sync)
+        setInterval(() => {
+            let currentCheckDate = new Date().toDateString();
+            if (currentCheckDate !== initializedAppDate) {
+                alert("Sistem mendeteksi pergantian hari (Night Audit). Memuat ulang sinkronisasi data...");
+                window.location.reload();
+            }
+        }, 60000);
+
         // Global State for Calendar Navigation & Filters
         let currentStartDate = new Date(todayDate);
         let selectedRoomTypeFilter = '';
@@ -4352,12 +4363,49 @@
             }
 
             try {
+                // Fetch reservation details to get room_id
+                const { data: res, error: resErr } = await supabaseClient
+                    .from('reservations')
+                    .select('room_id')
+                    .eq('id', resId)
+                    .single();
+
+                if (resErr) throw resErr;
+
+                const roomId = res ? res.room_id : null;
+                if (!roomId) throw new Error('Kamar belum dipilih untuk reservasi ini.');
+
+                // Fetch current room status from Supabase
+                const { data: roomData, error: roomErr } = await supabaseClient
+                    .from('rooms')
+                    .select('status')
+                    .eq('id', roomId)
+                    .single();
+
+                if (roomErr) throw roomErr;
+
+                const currentRoomStatus = (roomData?.status || '').toUpperCase();
+                if (currentRoomStatus !== 'VC') {
+                    alert('Check-in ditolak: Kamar belum dibersihkan. Status kamar harus VC (Vacant Clean).');
+                    return;
+                }
+
                 const { error } = await supabaseClient
                     .from('reservations')
                     .update({ status: 'Checkin' })
                     .eq('id', resId);
 
                 if (error) throw error;
+
+                // Update room status to 'OC'
+                const { error: updateRoomErr } = await supabaseClient
+                    .from('rooms')
+                    .update({ status: 'OC' })
+                    .eq('id', roomId);
+
+                if (updateRoomErr) console.error('Error updating room status to OC:', updateRoomErr);
+
+                fetchRooms(); // Background update cache
 
                 alert('Berhasil check-in reservasi!');
                 closeModal();
@@ -4370,6 +4418,65 @@
                     checkInBtn.disabled = false;
                     checkInBtn.innerHTML = `<i class="ph ph-check-circle text-lg"></i> Check-in`;
                 }
+            }
+        }
+
+        async function handleCheckIn(reservationId, roomId) {
+            if (!reservationId) return;
+            try {
+                let targetRoomId = roomId;
+
+                if (!targetRoomId) {
+                    const { data: res, error: resErr } = await supabaseClient
+                        .from('reservations')
+                        .select('room_id')
+                        .eq('id', reservationId)
+                        .single();
+
+                    if (resErr) throw resErr;
+                    targetRoomId = res?.room_id;
+                }
+
+                if (!targetRoomId) throw new Error('Kamar belum dipilih untuk reservasi ini.');
+
+                // Check current room status
+                const { data: roomData, error: roomErr } = await supabaseClient
+                    .from('rooms')
+                    .select('status')
+                    .eq('id', targetRoomId)
+                    .single();
+
+                if (roomErr) throw roomErr;
+
+                const currentRoomStatus = (roomData?.status || '').toUpperCase();
+                if (currentRoomStatus !== 'VC') {
+                    alert('Check-in ditolak: Kamar belum dibersihkan. Status kamar harus VC (Vacant Clean).');
+                    return;
+                }
+
+                const { error } = await supabaseClient
+                    .from('reservations')
+                    .update({ status: 'Checkin' })
+                    .eq('id', reservationId);
+
+                if (error) throw error;
+
+                // Update room status to 'OC'
+                const { error: updateRoomErr } = await supabaseClient
+                    .from('rooms')
+                    .update({ status: 'OC' })
+                    .eq('id', targetRoomId);
+
+                if (updateRoomErr) console.error('Error updating room status to OC:', updateRoomErr);
+
+                fetchRooms(); // Background update cache
+
+                alert('Berhasil check-in reservasi!');
+                if (typeof closeModal === 'function') closeModal();
+                await renderTapeChart();
+            } catch (err) {
+                console.error('Error during check-in:', err);
+                alert('Gagal melakukan check-in: ' + err.message);
             }
         }
 
@@ -4905,6 +5012,19 @@
 
                 if (error) throw error;
 
+                // Update room status to 'VD'
+                const roomId = currentFolioReservation.room_id;
+                if (roomId) {
+                    const { error: updateRoomErr } = await supabaseClient
+                        .from('rooms')
+                        .update({ status: 'VD' })
+                        .eq('id', roomId);
+
+                    if (updateRoomErr) console.error('Error updating room status to VD:', updateRoomErr);
+                }
+
+                fetchRooms(); // Update cache
+
                 alert('Check-out berhasil diproses!');
                 closeFolioModal();
                 await renderTapeChart();
@@ -4917,6 +5037,48 @@
                     checkoutBtn.disabled = false;
                     checkoutBtn.innerHTML = `<i class="ph ph-sign-out text-lg"></i> Process Check-out`;
                 }
+            }
+        }
+
+        async function handleCheckOut(reservationId, roomId) {
+            const targetResId = reservationId || (currentFolioReservation ? currentFolioReservation.id : null);
+            if (!targetResId) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('reservations')
+                    .update({ status: 'Checkout' })
+                    .eq('id', targetResId);
+
+                if (error) throw error;
+
+                let targetRoomId = roomId || (currentFolioReservation ? currentFolioReservation.room_id : null);
+                if (!targetRoomId) {
+                    const { data: res } = await supabaseClient
+                        .from('reservations')
+                        .select('room_id')
+                        .eq('id', targetResId)
+                        .single();
+                    targetRoomId = res?.room_id;
+                }
+
+                if (targetRoomId) {
+                    const { error: updateRoomErr } = await supabaseClient
+                        .from('rooms')
+                        .update({ status: 'VD' })
+                        .eq('id', targetRoomId);
+
+                    if (updateRoomErr) console.error('Error updating room status to VD:', updateRoomErr);
+                }
+
+                fetchRooms(); // Update cache
+
+                alert('Check-out berhasil diproses!');
+                if (typeof closeFolioModal === 'function') closeFolioModal();
+                await renderTapeChart();
+            } catch (err) {
+                console.error('Error processing checkout:', err);
+                alert('Gagal memproses check-out: ' + err.message);
             }
         }
 
