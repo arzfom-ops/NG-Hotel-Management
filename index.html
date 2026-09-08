@@ -2117,77 +2117,134 @@
                         </div>
                     `;
 
-                    // Sel untuk setiap tanggal
+                    // Container 14 hari dengan position: relative untuk Floating Capsules
+                    tableHTML += `<div class="col-span-14 grid grid-cols-14 relative" style="grid-column: span ${daysCount};">`;
+
+                    // 1. Render empty grid cells (td penunjuk grid)
                     datesList.forEach(d => {
                         const dateISO = formatDateISO(d);
                         const isToday = dateISO === formatDateISO(todayDate);
 
-                        // Cari reservasi aktif (check_in_date <= dateISO < check_out_date)
-                        const res = (dbReservations || []).find(r => r.room_id === room.id && r.check_in_date <= dateISO && dateISO < r.check_out_date);
+                        tableHTML += `
+                            <div class="calendar-cell relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer select-none ${isToday ? 'bg-blue-50/30' : ''}"
+                                 data-room-id="${room.id}"
+                                 data-date="${dateISO}">
+                            </div>
+                        `;
+                    });
 
-                        // Cari room block (start_date <= dateISO <= end_date)
-                        const block = roomBlocks.find(b => b.room_id === room.id && b.start_date <= dateISO && dateISO <= b.end_date);
+                    // 2. Render Floating Capsules for Reservations
+                    const roomReservations = (dbReservations || []).filter(r => r.room_id === room.id);
+                    roomReservations.forEach(res => {
+                        const checkIn = res.check_in_date;
+                        const checkOut = res.check_out_date;
 
-                        if (res) {
-                            const isStart = res.check_in_date === dateISO;
-                            const status = (res.status || 'Reserved').toLowerCase();
-                            const source = res.reservation_source || 'Direct';
-                            const displayName = (res.guest_profiles ? res.guest_profiles.full_name : null) || res.booker_name || 'Guest';
+                        // Check if reservation intersects current visible window [minDateStr, maxDateStr]
+                        if (checkOut > minDateStr && checkIn <= maxDateStr) {
+                            const checkInDt = new Date(checkIn + 'T00:00:00');
+                            const checkOutDt = new Date(checkOut + 'T00:00:00');
+                            const gridStartDt = new Date(minDateStr + 'T00:00:00');
 
-                            let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300'; // Reserved: Light Blue
-                            if (status === 'checkin') {
-                                capsuleBgClass = 'bg-emerald-200 text-emerald-900 border-emerald-300'; // Checkin: Light Green
+                            // Calculate offset in days relative to grid start
+                            const startOffsetDays = (checkInDt - gridStartDt) / (1000 * 3600 * 24);
+                            const durationNights = Math.max(1, (checkOutDt - checkInDt) / (1000 * 3600 * 24));
+
+                            const colWidthPercent = 100 / daysCount;
+
+                            // Left position: check-in day index + 0.5 (midday start)
+                            let leftPercent = (startOffsetDays + 0.5) * colWidthPercent;
+                            let widthPercent = durationNights * colWidthPercent;
+
+                            // Edge cases handling: past date (starts before calendar) or right edge clipping
+                            if (leftPercent < 0) {
+                                widthPercent += leftPercent; // reduce width by overflow amount
+                                leftPercent = 0; // clamp left to 0
                             }
 
-                            tableHTML += `
-                                <div class="calendar-cell relative border-b border-r border-slate-100 p-1 flex items-center ${isToday ? 'bg-blue-50/30' : ''}" data-room-id="${room.id}" data-date="${dateISO}">
-                                    <div onclick="openEditReservation('${res.id}')" data-reservation-id="${res.id}" class="w-full h-full ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer hover:opacity-90 transition-opacity z-10"
+                            if (leftPercent + widthPercent > 100) {
+                                widthPercent = 100 - leftPercent; // clip right overflow
+                            }
+
+                            if (widthPercent > 0) {
+                                const status = (res.status || 'Reserved').toLowerCase();
+                                const source = res.reservation_source || 'Direct';
+                                const displayName = (res.guest_profiles ? res.guest_profiles.full_name : null) || res.booker_name || 'Guest';
+
+                                let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300 hover:bg-sky-300'; // Reserved
+                                if (status === 'checkin') {
+                                    capsuleBgClass = 'bg-emerald-200 text-emerald-900 border-emerald-300 hover:bg-emerald-300'; // Checkin
+                                }
+
+                                tableHTML += `
+                                    <div onclick="openEditReservation('${res.id}')"
+                                         data-reservation-id="${res.id}"
+                                         class="absolute top-1.5 bottom-1.5 ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer transition-all z-20"
+                                         style="left: ${leftPercent}%; width: ${widthPercent}%;"
                                          title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date} [Status: ${res.status || 'Reserved'}]">
-                                        <i class="ph ph-user text-xs mr-1 opacity-80"></i>
-                                        <span class="truncate">${isStart ? `${displayName} (${source})` : displayName}</span>
-                                    </div>
-                                </div>
-                            `;
-                        } else if (block) {
-                            const blockType = (block.block_type || '').toUpperCase();
-                            const blockReason = block.reason || '';
-
-                            if (blockType === 'OOO') {
-                                // OOO: Background merah (bg-red-100), teks 'OOO' di tengah, cursor-not-allowed, tanpa event/drag data attributes
-                                tableHTML += `
-                                    <div class="relative border-b border-r border-slate-100 p-1 bg-red-100 text-red-700 text-xs font-semibold flex items-center justify-center select-none cursor-not-allowed ${isToday ? 'ring-1 ring-blue-300 inset' : ''}"
-                                         title="${blockReason}">
-                                        OOO
-                                    </div>
-                                `;
-                            } else if (blockType === 'OOS') {
-                                // OOS: Background abu-abu (bg-slate-200), teks 'OOS', tetap bisa diklik/didrag untuk reservasi
-                                tableHTML += `
-                                    <div class="calendar-cell relative border-b border-r border-slate-100 p-1 bg-slate-200 text-slate-600 text-xs font-semibold flex items-center justify-center hover:bg-slate-300 transition-colors cursor-pointer select-none ${isToday ? 'ring-1 ring-blue-300 inset' : ''}"
-                                         data-room-id="${room.id}"
-                                         data-date="${dateISO}"
-                                         title="${blockReason}">
-                                        OOS
-                                    </div>
-                                `;
-                            } else {
-                                tableHTML += `
-                                    <div class="calendar-cell relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer select-none ${isToday ? 'bg-blue-50/30' : ''}"
-                                         data-room-id="${room.id}"
-                                         data-date="${dateISO}">
+                                        <i class="ph ph-user text-xs mr-1 shrink-0 opacity-80"></i>
+                                        <span class="truncate">${displayName} (${source})</span>
                                     </div>
                                 `;
                             }
-                        } else {
-                            // Empty room-night cell with data-room-id and data-date for Drag-to-Select
-                            tableHTML += `
-                                <div class="calendar-cell relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer select-none ${isToday ? 'bg-blue-50/30' : ''}"
-                                     data-room-id="${room.id}"
-                                     data-date="${dateISO}">
-                                </div>
-                            `;
                         }
                     });
+
+                    // 3. Render Floating Capsules for Room Blocks (OOO / OOS)
+                    const currentRoomBlocks = roomBlocks.filter(b => b.room_id === room.id);
+                    currentRoomBlocks.forEach(block => {
+                        const startDate = block.start_date;
+
+                        // Calculate effective end date (if end_date <= start_date, default to +1 day)
+                        let endDate = block.end_date;
+                        if (!endDate || endDate <= startDate) {
+                            const sDt = new Date(startDate + 'T00:00:00');
+                            sDt.setDate(sDt.getDate() + 1);
+                            endDate = formatDateISO(sDt);
+                        }
+
+                        if (endDate > minDateStr && startDate <= maxDateStr) {
+                            const startDt = new Date(startDate + 'T00:00:00');
+                            const endDt = new Date(endDate + 'T00:00:00');
+                            const gridStartDt = new Date(minDateStr + 'T00:00:00');
+
+                            const startOffsetDays = (startDt - gridStartDt) / (1000 * 3600 * 24);
+                            const durationDays = Math.max(1, (endDt - startDt) / (1000 * 3600 * 24));
+
+                            const colWidthPercent = 100 / daysCount;
+
+                            let leftPercent = (startOffsetDays + 0.5) * colWidthPercent;
+                            let widthPercent = durationDays * colWidthPercent;
+
+                            if (leftPercent < 0) {
+                                widthPercent += leftPercent;
+                                leftPercent = 0;
+                            }
+
+                            if (leftPercent + widthPercent > 100) {
+                                widthPercent = 100 - leftPercent;
+                            }
+
+                            if (widthPercent > 0) {
+                                const blockType = (block.block_type || '').toUpperCase();
+                                const blockReason = block.reason || '';
+
+                                let capsuleBgClass = 'bg-red-200 text-red-900 border-red-300';
+                                if (blockType === 'OOS') {
+                                    capsuleBgClass = 'bg-slate-200 text-slate-800 border-slate-300';
+                                }
+
+                                tableHTML += `
+                                    <div class="absolute top-1.5 bottom-1.5 ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-semibold flex items-center justify-center shadow-xs overflow-hidden whitespace-nowrap z-20 pointer-events-auto"
+                                         style="left: ${leftPercent}%; width: ${widthPercent}%;"
+                                         title="${blockType}: ${blockReason} (${startDate} s/d ${endDate})">
+                                        <span class="truncate">${blockType} - ${blockReason || 'Blocked'}</span>
+                                    </div>
+                                `;
+                            }
+                        }
+                    });
+
+                    tableHTML += `</div>`;
                 });
 
                 tableHTML += `
