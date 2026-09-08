@@ -783,6 +783,7 @@
                                     <th class="p-3 text-center">Qty</th>
                                     <th class="p-3 text-right">Unit Price</th>
                                     <th class="p-3 text-right">Total</th>
+                                    <th class="p-3 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="folioTransactionsTbody" class="divide-y divide-slate-100 font-medium">
@@ -4440,7 +4441,7 @@
             const tbody = document.getElementById('folioTransactionsTbody');
             if (!tbody) return;
 
-            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Loading transactions...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Loading transactions...</td></tr>`;
 
             try {
                 const { data, error } = await supabaseClient
@@ -4457,7 +4458,36 @@
 
             } catch (err) {
                 console.error('Error fetching folio transactions:', err);
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-semibold">Gagal memuat transaksi: ${err.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500 font-semibold">Gagal memuat transaksi: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function handleVoidTransaction(transactionId) {
+            if (!transactionId) return;
+
+            const voidReason = prompt("Masukkan alasan pembatalan (wajib diisi):");
+            if (voidReason === null || voidReason.trim() === "") {
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('folio_transactions')
+                    .update({
+                        is_voided: true,
+                        void_reason: voidReason.trim(),
+                        voided_at: new Date().toISOString()
+                    })
+                    .eq('id', transactionId);
+
+                if (error) throw error;
+
+                if (currentFolioReservation && currentFolioReservation.id) {
+                    await fetchFolioTransactions(currentFolioReservation.id);
+                }
+            } catch (err) {
+                console.error('Error voiding transaction:', err);
+                alert('Gagal membatalkan transaksi: ' + err.message);
             }
         }
 
@@ -4469,21 +4499,28 @@
             let totalPayment = 0;
 
             if (currentFolioTransactions.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada transaksi di folio ini.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada transaksi di folio ini.</td></tr>`;
             } else {
                 tbody.innerHTML = currentFolioTransactions.map(tx => {
                     const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
                     const amount = Number(tx.amount || 0);
+                    const isVoided = tx.is_voided === true;
 
-                    if (txType === 'CHARGE') {
-                        totalCharge += amount;
-                    } else if (txType === 'PAYMENT') {
-                        totalPayment += amount;
+                    if (!isVoided) {
+                        if (txType === 'CHARGE') {
+                            totalCharge += amount;
+                        } else if (txType === 'PAYMENT') {
+                            totalPayment += amount;
+                        }
                     }
 
-                    const typeBadge = txType === 'CHARGE'
+                    let typeBadge = txType === 'CHARGE'
                         ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700">CHARGE</span>`
                         : `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700">PAYMENT</span>`;
+
+                    if (isVoided) {
+                        typeBadge += `<span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-600 text-white">[VOID]</span>`;
+                    }
 
                     const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
 
@@ -4492,23 +4529,39 @@
                         ? `Rp ${Number(tx.unit_price || tx.amount || 0).toLocaleString('id-ID')}`
                         : '-';
 
-                    let descContent = `<div class="font-medium text-slate-800">${tx.description || '-'}</div>`;
+                    const descColorClass = isVoided ? 'text-slate-400 line-through' : 'text-slate-800';
+                    let descContent = `<div class="font-medium ${descColorClass}">${tx.description || '-'}</div>`;
                     if (txType === 'CHARGE' && tx.category) {
                         descContent += `<div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">${tx.category}</div>`;
                     } else if (txType === 'PAYMENT' && tx.reference_number) {
                         descContent += `<div class="text-[10px] text-slate-400">Ref: ${tx.reference_number}</div>`;
                     }
 
+                    const rowClass = isVoided
+                        ? 'text-slate-400 bg-slate-50/50'
+                        : 'hover:bg-slate-50 transition-colors';
+
+                    const titleAttr = isVoided && tx.void_reason ? `title="${tx.void_reason.replace(/"/g, '&quot;')}"` : '';
+
+                    const amountColorClass = isVoided
+                        ? 'text-slate-400 line-through'
+                        : (txType === 'CHARGE' ? 'text-slate-800' : 'text-emerald-600');
+
+                    const actionContent = isVoided
+                        ? ''
+                        : `<button onclick="handleVoidTransaction('${tx.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Void Transaction"><i class="ph ph-trash text-lg"></i></button>`;
+
                     return `
-                        <tr class="hover:bg-slate-50 transition-colors">
+                        <tr class="${rowClass}" ${titleAttr}>
                             <td class="p-3 text-slate-600 whitespace-nowrap">${dateStr}</td>
                             <td class="p-3">${typeBadge}</td>
                             <td class="p-3">${descContent}</td>
-                            <td class="p-3 text-center text-slate-700 font-semibold">${qtyDisplay}</td>
-                            <td class="p-3 text-right text-slate-600">${unitPriceDisplay}</td>
-                            <td class="p-3 text-right font-bold ${txType === 'CHARGE' ? 'text-slate-800' : 'text-emerald-600'}">
+                            <td class="p-3 text-center font-semibold ${isVoided ? 'text-slate-400' : 'text-slate-700'}">${qtyDisplay}</td>
+                            <td class="p-3 text-right ${isVoided ? 'text-slate-400' : 'text-slate-600'}">${unitPriceDisplay}</td>
+                            <td class="p-3 text-right font-bold ${amountColorClass}">
                                 ${txType === 'CHARGE' ? '' : '-' }Rp ${amount.toLocaleString('id-ID')}
                             </td>
+                            <td class="p-3 text-right whitespace-nowrap">${actionContent}</td>
                         </tr>
                     `;
                 }).join('');
