@@ -2047,15 +2047,17 @@
                     return;
                 }
 
-                // CSS Grid Construction
-                let tableHTML = `
-                    <div class="inline-block min-w-full align-middle">
-                        <div class="grid border-collapse" style="grid-template-columns: minmax(140px, 170px) repeat(${daysCount}, minmax(105px, 1fr));">
+                const CELL_WIDTH = 80;
+                const maxGridWidth = daysCount * CELL_WIDTH;
 
-                            <!-- Header Baris 1: Kolom Kamar & Tanggal-tanggal -->
-                            <div class="sticky top-0 left-0 bg-white z-40 p-3 font-semibold text-xs text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 flex items-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                                Kamar / Tipe
-                            </div>
+                let tableHTML = `
+                    <div class="overflow-x-auto w-full">
+                        <table class="border-collapse bg-white text-left select-none">
+                            <thead>
+                                <tr class="sticky top-0 z-10 bg-gray-50">
+                                    <th class="sticky top-0 left-0 z-30 bg-white border-r-2 border-b border-slate-200 min-w-[200px] w-[200px] max-w-[200px] p-3 font-semibold text-xs text-slate-500 uppercase tracking-wider">
+                                        Kamar / Tipe
+                                    </th>
                 `;
 
                 datesList.forEach(d => {
@@ -2064,12 +2066,18 @@
                     const isToday = formatDateISO(d) === formatDateISO(todayDate);
 
                     tableHTML += `
-                        <div class="sticky top-0 bg-white z-40 p-2 text-center border-b border-r border-slate-200 ${isToday ? 'bg-blue-50 font-bold text-primary' : 'text-slate-700'}">
+                        <th class="min-w-[80px] w-[80px] max-w-[80px] p-2 text-center border-b border-r border-slate-200 ${isToday ? 'bg-blue-50 font-bold text-primary' : 'text-slate-700'}">
                             <div class="text-[11px] uppercase tracking-wider text-slate-400">${dayStr}</div>
                             <div class="text-xs font-semibold mt-0.5">${dateNumStr}</div>
-                        </div>
+                        </th>
                     `;
                 });
+
+                tableHTML += `
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
 
                 // Helper function for status badge styling in Tape Chart left column
                 function getStatusBadgeMarkup(status) {
@@ -2108,17 +2116,16 @@
                     const roomTypeName = room.room_types ? (Array.isArray(room.room_types) ? room.room_types[0]?.name : room.room_types.name) : '-';
                     const statusBadge = getStatusBadgeMarkup(room.status);
 
-                    // Sumbu Y Sticky Left: Clean background with Badge Indikator Kecil
                     tableHTML += `
-                        <div class="sticky left-0 bg-white z-30 p-3 border-b border-r border-slate-200 flex flex-col justify-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                            <div class="font-bold text-sm text-slate-800">Kamar ${room.room_number}</div>
-                            <div class="text-xs font-medium text-slate-500 truncate" title="${roomTypeName}">${roomTypeName}</div>
-                            <div>${statusBadge}</div>
-                        </div>
+                        <tr>
+                            <td class="sticky left-0 z-20 bg-white border-r-2 border-b border-slate-200 min-w-[200px] w-[200px] max-w-[200px] p-3 flex flex-col justify-center">
+                                <div class="font-bold text-sm text-slate-800">Kamar ${room.room_number}</div>
+                                <div class="text-xs font-medium text-slate-500 truncate" title="${roomTypeName}">${roomTypeName}</div>
+                                <div>${statusBadge}</div>
+                            </td>
+                            <td colspan="${daysCount}" class="p-0 border-b border-slate-200 align-top">
+                                <div class="relative flex h-14 min-w-[${maxGridWidth}px]">
                     `;
-
-                    // Container 14 hari dengan position: relative untuk Floating Capsules
-                    tableHTML += `<div class="col-span-14 grid grid-cols-14 relative" style="grid-column: span ${daysCount};">`;
 
                     // 1. Render empty grid cells (td penunjuk grid)
                     datesList.forEach(d => {
@@ -2126,7 +2133,7 @@
                         const isToday = dateISO === formatDateISO(todayDate);
 
                         tableHTML += `
-                            <div class="calendar-cell relative border-b border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer select-none ${isToday ? 'bg-blue-50/30' : ''}"
+                            <div class="calendar-cell min-w-[80px] w-[80px] max-w-[80px] h-full border-r border-slate-100 p-1 hover:bg-slate-100/50 transition-colors cursor-pointer select-none ${isToday ? 'bg-blue-50/30' : ''}"
                                  data-room-id="${room.id}"
                                  data-date="${dateISO}">
                             </div>
@@ -2149,23 +2156,20 @@
                             const startOffsetDays = (checkInDt - gridStartDt) / (1000 * 3600 * 24);
                             const durationNights = Math.max(1, (checkOutDt - checkInDt) / (1000 * 3600 * 24));
 
-                            const colWidthPercent = 100 / daysCount;
-
-                            // Left position: check-in day index + 0.5 (midday start)
-                            let leftPercent = (startOffsetDays + 0.5) * colWidthPercent;
-                            let widthPercent = durationNights * colWidthPercent;
+                            let leftPx = (startOffsetDays + 0.5) * CELL_WIDTH;
+                            let widthPx = durationNights * CELL_WIDTH;
 
                             // Edge cases handling: past date (starts before calendar) or right edge clipping
-                            if (leftPercent < 0) {
-                                widthPercent += leftPercent; // reduce width by overflow amount
-                                leftPercent = 0; // clamp left to 0
+                            if (leftPx < 0) {
+                                widthPx += leftPx; // reduce width by overflow amount
+                                leftPx = 0; // clamp left to 0
                             }
 
-                            if (leftPercent + widthPercent > 100) {
-                                widthPercent = 100 - leftPercent; // clip right overflow
+                            if (leftPx + widthPx > maxGridWidth) {
+                                widthPx = maxGridWidth - leftPx; // clip right overflow
                             }
 
-                            if (widthPercent > 0) {
+                            if (widthPx > 0) {
                                 const status = (res.status || 'Reserved').toLowerCase();
                                 const source = res.reservation_source || 'Direct';
                                 const displayName = (res.guest_profiles ? res.guest_profiles.full_name : null) || res.booker_name || 'Guest';
@@ -2179,7 +2183,7 @@
                                     <div onclick="openEditReservation('${res.id}')"
                                          data-reservation-id="${res.id}"
                                          class="absolute top-1.5 bottom-1.5 ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer transition-all z-20"
-                                         style="left: ${leftPercent}%; width: ${widthPercent}%;"
+                                         style="left: ${leftPx}px; width: ${widthPx}px;"
                                          title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date} [Status: ${res.status || 'Reserved'}]">
                                         <i class="ph ph-user text-xs mr-1 shrink-0 opacity-80"></i>
                                         <span class="truncate">${displayName} (${source})</span>
@@ -2210,21 +2214,19 @@
                             const startOffsetDays = (startDt - gridStartDt) / (1000 * 3600 * 24);
                             const durationDays = Math.max(1, (endDt - startDt) / (1000 * 3600 * 24));
 
-                            const colWidthPercent = 100 / daysCount;
+                            let leftPx = (startOffsetDays + 0.5) * CELL_WIDTH;
+                            let widthPx = durationDays * CELL_WIDTH;
 
-                            let leftPercent = (startOffsetDays + 0.5) * colWidthPercent;
-                            let widthPercent = durationDays * colWidthPercent;
-
-                            if (leftPercent < 0) {
-                                widthPercent += leftPercent;
-                                leftPercent = 0;
+                            if (leftPx < 0) {
+                                widthPx += leftPx;
+                                leftPx = 0;
                             }
 
-                            if (leftPercent + widthPercent > 100) {
-                                widthPercent = 100 - leftPercent;
+                            if (leftPx + widthPx > maxGridWidth) {
+                                widthPx = maxGridWidth - leftPx;
                             }
 
-                            if (widthPercent > 0) {
+                            if (widthPx > 0) {
                                 const blockType = (block.block_type || '').toUpperCase();
                                 const blockReason = block.reason || '';
 
@@ -2235,7 +2237,7 @@
 
                                 tableHTML += `
                                     <div class="absolute top-1.5 bottom-1.5 ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-semibold flex items-center justify-center shadow-xs overflow-hidden whitespace-nowrap z-20 pointer-events-auto"
-                                         style="left: ${leftPercent}%; width: ${widthPercent}%;"
+                                         style="left: ${leftPx}px; width: ${widthPx}px;"
                                          title="${blockType}: ${blockReason} (${startDate} s/d ${endDate})">
                                         <span class="truncate">${blockType} - ${blockReason || 'Blocked'}</span>
                                     </div>
@@ -2244,11 +2246,16 @@
                         }
                     });
 
-                    tableHTML += `</div>`;
+                    tableHTML += `
+                                </div>
+                            </td>
+                        </tr>
+                    `;
                 });
 
                 tableHTML += `
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
                 `;
 
