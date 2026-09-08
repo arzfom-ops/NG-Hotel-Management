@@ -1967,7 +1967,7 @@
                 // Fetch rooms joined with room_types
                 const { data: dbRooms, error: roomsErr } = await supabaseClient
                     .from('rooms')
-                    .select('id, room_number, room_type_id, room_types(name)')
+                    .select('id, room_number, status, room_type_id, room_types(name)')
                     .order('room_number', { ascending: true });
                 if (roomsErr) throw roomsErr;
 
@@ -2062,26 +2062,26 @@
 
                 // Helper function for status badge styling in Tape Chart left column
                 function getStatusBadgeMarkup(status) {
-                    const rawStatus = (status || '').toUpperCase();
+                    const rawStatus = (status || '').trim().toUpperCase();
                     let normalizedStatus = 'VD';
                     let colorClasses = 'text-amber-600 bg-amber-50 border-amber-200';
 
-                    if (rawStatus === 'VD') {
+                    if (rawStatus === 'VD' || rawStatus === 'VACANT DIRTY' || rawStatus === 'DIRTY') {
                         normalizedStatus = 'VD';
                         colorClasses = 'text-amber-600 bg-amber-50 border-amber-200';
-                    } else if (rawStatus === 'VC') {
+                    } else if (rawStatus === 'VC' || rawStatus === 'VACANT CLEAN' || rawStatus === 'CLEAN') {
                         normalizedStatus = 'VC';
                         colorClasses = 'text-emerald-600 bg-emerald-50 border-emerald-200';
-                    } else if (rawStatus === 'OC') {
+                    } else if (rawStatus === 'OC' || rawStatus === 'OCCUPIED CLEAN') {
                         normalizedStatus = 'OC';
                         colorClasses = 'text-blue-600 bg-blue-50 border-blue-200';
-                    } else if (rawStatus === 'OD') {
+                    } else if (rawStatus === 'OD' || rawStatus === 'OCCUPIED DIRTY') {
                         normalizedStatus = 'OD';
                         colorClasses = 'text-orange-600 bg-orange-50 border-orange-200';
-                    } else if (rawStatus === 'OOO') {
+                    } else if (rawStatus === 'OOO' || rawStatus === 'OUT OF ORDER') {
                         normalizedStatus = 'OOO';
                         colorClasses = 'text-red-600 bg-red-50 border-red-200';
-                    } else if (rawStatus === 'OOS') {
+                    } else if (rawStatus === 'OOS' || rawStatus === 'OUT OF SERVICE') {
                         normalizedStatus = 'OOS';
                         colorClasses = 'text-slate-600 bg-slate-50 border-slate-200';
                     } else {
@@ -5576,7 +5576,8 @@
 
                 if (navFrontdesk) navFrontdesk.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
 
-                renderTapeChart();
+                await fetchRooms();
+                await renderTapeChart();
             }
 
             // Toggle Mobile Menu closed if open
