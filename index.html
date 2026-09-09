@@ -2108,7 +2108,7 @@
                         colorClasses = 'text-amber-600 bg-amber-50 border-amber-200';
                     }
 
-                    return `<span class="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold rounded border ${colorClasses}">${normalizedStatus}</span>`;
+                    return `<span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border ${colorClasses}">${normalizedStatus}</span>`;
                 }
 
                 // Baris Kamar
@@ -2118,13 +2118,15 @@
 
                     tableHTML += `
                         <tr>
-                            <td class="sticky left-0 z-20 bg-white border-r-2 border-b border-slate-200 min-w-[200px] w-[200px] max-w-[200px] p-3 flex flex-col justify-center">
-                                <div class="font-bold text-sm text-slate-800">Kamar ${room.room_number}</div>
-                                <div class="text-xs font-medium text-slate-500 truncate" title="${roomTypeName}">${roomTypeName}</div>
-                                <div>${statusBadge}</div>
+                            <td class="sticky left-0 z-20 bg-white border-r-2 border-b border-slate-200 min-w-[200px] w-[200px] max-w-[200px] px-3 py-2 text-left align-middle">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-bold text-gray-800 truncate">Kamar ${room.room_number}</span>
+                                    ${statusBadge}
+                                </div>
+                                <div class="text-sm text-gray-500 truncate" title="${roomTypeName}">${roomTypeName}</div>
                             </td>
                             <td colspan="${daysCount}" class="p-0 border-b border-slate-200 align-top">
-                                <div class="relative flex h-14 min-w-[${maxGridWidth}px]">
+                                <div class="relative flex h-12 min-w-[${maxGridWidth}px]">
                     `;
 
                     // 1. Render empty grid cells (td penunjuk grid)
