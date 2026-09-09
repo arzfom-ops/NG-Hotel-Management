@@ -1297,6 +1297,31 @@
                     </button>
                 </div>
 
+                <!-- Header Dashboard Global: Date Picker, Room Type Filter, Smart Search -->
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <!-- Date Picker -->
+                        <div class="flex items-center gap-2">
+                            <label for="dash-date-picker" class="text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Tanggal:</label>
+                            <input type="date" id="dash-date-picker" onchange="handleDashDateChange(this.value)" class="px-3 py-1.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white text-slate-700 shadow-2xs">
+                        </div>
+
+                        <!-- Tipe Kamar Filter -->
+                        <div class="flex items-center gap-2 sm:border-l sm:border-slate-200 sm:pl-3">
+                            <label for="dash-room-type-filter" class="text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Tipe Kamar:</label>
+                            <select id="dash-room-type-filter" onchange="handleDashRoomTypeChange(this.value)" class="px-3 py-1.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white text-slate-700 shadow-2xs">
+                                <option value="">Semua Tipe Kamar</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Smart Search Input -->
+                    <div class="relative w-full sm:w-64">
+                        <input type="text" id="dash-smart-search" oninput="handleDashSearchInput(this.value)" placeholder="Cari Res No, Guest, Kamar..." class="w-full px-3 py-1.5 pr-8 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white text-slate-700 shadow-2xs">
+                        <i class="ph ph-magnifying-glass absolute right-2.5 top-2.5 text-slate-400 text-base pointer-events-none"></i>
+                    </div>
+                </div>
+
                 <!-- Tab Navigation -->
                 <div class="border-b border-slate-200 mb-4">
                     <nav class="flex space-x-6 overflow-x-auto" aria-label="Dashboard Tabs">
@@ -1905,11 +1930,48 @@
 
         // Global State for Frontdesk Dashboard
         let currentDashboardTab = 'arrival';
+        let dashboardSelectedDate = formatDateISO(todayDate);
+        let dashboardRoomTypeFilter = '';
+        let dashboardSearchQuery = '';
         let dashboardData = {
             arrival: [],
             inHouse: [],
             departure: []
         };
+
+        function handleDashDateChange(val) {
+            if (!val) return;
+            dashboardSelectedDate = val;
+            fetchFrontdeskDashboard();
+        }
+
+        function handleDashRoomTypeChange(val) {
+            dashboardRoomTypeFilter = val;
+            renderDashboardTable();
+        }
+
+        function handleDashSearchInput(val) {
+            dashboardSearchQuery = (val || '').toLowerCase().trim();
+            renderDashboardTable();
+        }
+
+        async function populateDashRoomTypeFilter() {
+            try {
+                const { data, error } = await supabaseClient.from('room_types').select('id, name').order('name', { ascending: true });
+                if (error) throw error;
+                const dropdown = document.getElementById('dash-room-type-filter');
+                if (dropdown) {
+                    let html = `<option value="">Semua Tipe Kamar</option>`;
+                    if (data && data.length > 0) {
+                        html += data.map(rt => `<option value="${rt.id}">${rt.name}</option>`).join('');
+                    }
+                    dropdown.innerHTML = html;
+                    dropdown.value = dashboardRoomTypeFilter;
+                }
+            } catch (err) {
+                console.error('Error populating dashboard room type filter:', err);
+            }
+        }
 
         function switchDashboardTab(tabName) {
             currentDashboardTab = tabName;
@@ -1937,6 +1999,11 @@
         }
 
         async function fetchFrontdeskDashboard() {
+            const datePickerEl = document.getElementById('dash-date-picker');
+            if (datePickerEl && !datePickerEl.value) {
+                datePickerEl.value = dashboardSelectedDate;
+            }
+
             const tbody = document.getElementById('frontdesk-dashboard-tbody');
             if (tbody) {
                 tbody.innerHTML = `
@@ -1950,7 +2017,7 @@
             }
 
             try {
-                const currentDateISO = formatDateISO(todayDate);
+                const selectedDateISO = dashboardSelectedDate || formatDateISO(todayDate);
 
                 // Fetch ALL active reservations joined with guest_profiles, room_types, and rooms
                 const { data, error } = await supabaseClient
@@ -1962,14 +2029,14 @@
 
                 const resList = data || [];
 
-                // 1. Arrival List: check_in_date = CURRENT_DATE AND status = 'Reserved' (including room_id = null)
-                dashboardData.arrival = resList.filter(r => r.check_in_date === currentDateISO && r.status === 'Reserved');
+                // 1. Arrival List: check_in_date = selectedDateISO AND status = 'Reserved' (including room_id = null)
+                dashboardData.arrival = resList.filter(r => r.check_in_date === selectedDateISO && r.status === 'Reserved');
 
-                // 2. In-House List: status = 'Checkin'
+                // 2. In-House List: status = 'Checkin' (Static to date)
                 dashboardData.inHouse = resList.filter(r => r.status === 'Checkin');
 
-                // 3. Departure List: check_out_date = CURRENT_DATE AND status = 'Checkin'
-                dashboardData.departure = resList.filter(r => r.check_out_date === currentDateISO && r.status === 'Checkin');
+                // 3. Departure List: check_out_date = selectedDateISO AND status = 'Checkin'
+                dashboardData.departure = resList.filter(r => r.check_out_date === selectedDateISO && r.status === 'Checkin');
 
                 // Update count badges
                 const countArr = document.getElementById('dash-count-arrival');
@@ -1999,15 +2066,37 @@
             const tbody = document.getElementById('frontdesk-dashboard-tbody');
             if (!tbody) return;
 
-            let list = [];
-            if (currentDashboardTab === 'arrival') list = dashboardData.arrival;
-            else if (currentDashboardTab === 'in-house') list = dashboardData.inHouse;
-            else if (currentDashboardTab === 'departure') list = dashboardData.departure;
+            let rawList = [];
+            if (currentDashboardTab === 'arrival') rawList = dashboardData.arrival;
+            else if (currentDashboardTab === 'in-house') rawList = dashboardData.inHouse;
+            else if (currentDashboardTab === 'departure') rawList = dashboardData.departure;
 
-            if (!list || list.length === 0) {
-                let emptyMsg = 'Tidak ada daftar kedatangan hari ini.';
+            // Apply Room Type Filter
+            let filteredList = rawList;
+            if (dashboardRoomTypeFilter) {
+                filteredList = filteredList.filter(r => r.room_type_id === dashboardRoomTypeFilter);
+            }
+
+            // Apply Smart Search Filter (Res No, Guest Name, Room No)
+            if (dashboardSearchQuery) {
+                filteredList = filteredList.filter(r => {
+                    const resNo = (r.reservation_number || r.id || '').toLowerCase();
+                    const guestName = ((r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0]?.full_name : r.guest_profiles.full_name) : null) || r.booker_name || '').toLowerCase();
+                    const roomNo = (r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '') || '';
+                    const roomNoStr = String(roomNo).toLowerCase();
+
+                    return resNo.includes(dashboardSearchQuery) || guestName.includes(dashboardSearchQuery) || roomNoStr.includes(dashboardSearchQuery);
+                });
+            }
+
+            if (!filteredList || filteredList.length === 0) {
+                let emptyMsg = 'Tidak ada daftar kedatangan.';
                 if (currentDashboardTab === 'in-house') emptyMsg = 'Tidak ada tamu yang sedang menginap (In-House).';
-                else if (currentDashboardTab === 'departure') emptyMsg = 'Tidak ada keberangkatan hari ini.';
+                else if (currentDashboardTab === 'departure') emptyMsg = 'Tidak ada keberangkatan.';
+
+                if (dashboardSearchQuery || dashboardRoomTypeFilter) {
+                    emptyMsg = 'Tidak ditemukan data yang sesuai dengan filter pencarian.';
+                }
 
                 tbody.innerHTML = `
                     <tr>
@@ -2020,7 +2109,7 @@
                 return;
             }
 
-            tbody.innerHTML = list.map(r => {
+            tbody.innerHTML = filteredList.map(r => {
                 const resNo = r.reservation_number || r.id.slice(0, 8);
                 const guestName = (r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0]?.full_name : r.guest_profiles.full_name) : null) || r.booker_name || '-';
                 const roomTypeName = r.room_types ? (Array.isArray(r.room_types) ? r.room_types[0]?.name : r.room_types.name) : '-';
@@ -2030,34 +2119,40 @@
                     ? `<span class="px-2 py-0.5 rounded font-bold bg-slate-100 text-slate-800 border border-slate-200">Kamar ${roomNo}</span>`
                     : `<span class="px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Belum Dialokasikan</span>`;
 
-                let actionHTML = '';
+                let mainActionHTML = '';
                 if (currentDashboardTab === 'arrival') {
                     if (!r.room_id) {
-                        actionHTML = `
-                            <button onclick="openEditReservation('${r.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1">
+                        mainActionHTML = `
+                            <button onclick="openEditReservation('${r.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
                                 <i class="ph ph-bed text-sm"></i> Assign Room
                             </button>
                         `;
                     } else {
-                        actionHTML = `
-                            <button onclick="handleDashboardCheckIn('${r.id}', '${r.room_id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1">
+                        mainActionHTML = `
+                            <button onclick="handleDashboardCheckIn('${r.id}', '${r.room_id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
                                 <i class="ph ph-check-circle text-sm"></i> Check-in
                             </button>
                         `;
                     }
                 } else if (currentDashboardTab === 'in-house') {
-                    actionHTML = `
-                        <button onclick="openEditReservation('${r.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1">
-                            <i class="ph ph-eye text-sm"></i> Detail / Folio
+                    mainActionHTML = `
+                        <button onclick="openFolioModal('${r.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
+                            <i class="ph ph-receipt text-sm"></i> Folio
                         </button>
                     `;
                 } else if (currentDashboardTab === 'departure') {
-                    actionHTML = `
-                        <button onclick="openFolioModal('${r.id}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1">
+                    mainActionHTML = `
+                        <button onclick="openFolioModal('${r.id}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
                             <i class="ph ph-sign-out text-sm"></i> Check-out
                         </button>
                     `;
                 }
+
+                const editActionHTML = `
+                    <button onclick="openEditReservation('${r.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer" title="Edit Reservasi">
+                        <i class="ph ph-pencil-simple text-sm"></i> Edit
+                    </button>
+                `;
 
                 return `
                     <tr class="hover:bg-slate-50/80 transition-colors">
@@ -2065,7 +2160,7 @@
                         <td class="py-3 px-4 font-medium">${guestName}</td>
                         <td class="py-3 px-4 text-slate-600">${roomTypeName}</td>
                         <td class="py-3 px-4">${roomNoDisplay}</td>
-                        <td class="py-3 px-4 text-right">${actionHTML}</td>
+                        <td class="py-3 px-4 text-right space-x-1.5">${mainActionHTML}${editActionHTML}</td>
                     </tr>
                 `;
             }).join('');
@@ -4077,6 +4172,7 @@
 
                 // Populate Room Type Filter
                 populateCalendarRoomTypeFilter();
+                populateDashRoomTypeFilter();
 
                 // Langkah 3: Trigger Eksekusi Tape Chart & Dashboard
                 fetchFrontdeskDashboard();
