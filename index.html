@@ -1108,7 +1108,7 @@
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Room Number (Optional)</label>
                                 <select id="res-room-number" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
-                                    <option value="">-- Unassigned --</option>
+                                    <option value="">Belum Dialokasikan</option>
                                 </select>
                             </div>
 
@@ -1991,7 +1991,7 @@
                 // Fetch reservations joined with guest_profiles and rooms (excl. Cancelled and Checkout)
                 const { data: dbReservations, error: resErr } = await supabaseClient
                     .from('reservations')
-                    .select('id, room_id, booker_name, check_in_date, check_out_date, reservation_source, status, guest_profiles(full_name), rooms(room_number)')
+                    .select('id, room_id, room_type_id, booker_name, check_in_date, check_out_date, reservation_source, status, guest_profiles(full_name), rooms(room_number)')
                     .in('status', ['Reserved', 'Checkin']);
                 if (resErr) throw resErr;
 
@@ -2111,7 +2111,85 @@
                     return `<span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border ${colorClasses}">${normalizedStatus}</span>`;
                 }
 
-                // Baris Kamar
+                // Baris Unassigned / Inbox (Statis)
+                tableHTML += `
+                    <tr class="bg-yellow-50/40">
+                        <td class="sticky left-0 z-20 bg-yellow-50 border-r-2 border-b border-slate-200 min-w-[200px] w-[200px] max-w-[200px] px-3 py-2 text-left align-middle font-bold">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-bold text-amber-900 truncate">Unassigned / Inbox</span>
+                                <span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border text-amber-800 bg-amber-100 border-amber-300">INBOX</span>
+                            </div>
+                            <div class="text-xs text-amber-700 font-normal truncate">Belum Dialokasikan</div>
+                        </td>
+                        <td colspan="${daysCount}" class="p-0 border-b border-slate-200 align-top">
+                            <div class="relative flex h-12 min-w-[${maxGridWidth}px]">
+                `;
+
+                // 1. Render empty grid cells for unassigned row
+                datesList.forEach(d => {
+                    const dateISO = formatDateISO(d);
+                    const isToday = dateISO === formatDateISO(todayDate);
+
+                    tableHTML += `
+                        <div class="calendar-cell min-w-[80px] w-[80px] max-w-[80px] h-full border-r border-slate-100/80 p-1 select-none ${isToday ? 'bg-blue-50/30' : ''}"
+                             data-date="${dateISO}">
+                        </div>
+                    `;
+                });
+
+                // 2. Render Floating Capsules for Unassigned Reservations (room_id === null or undefined)
+                const unassignedReservations = (dbReservations || []).filter(r => (r.room_id === null || r.room_id === undefined) && (!selectedRoomTypeFilter || r.room_type_id === selectedRoomTypeFilter));
+                unassignedReservations.forEach(res => {
+                    const checkIn = res.check_in_date;
+                    const checkOut = res.check_out_date;
+
+                    if (checkOut > minDateStr && checkIn <= maxDateStr) {
+                        const checkInDt = new Date(checkIn + 'T00:00:00');
+                        const checkOutDt = new Date(checkOut + 'T00:00:00');
+                        const gridStartDt = new Date(minDateStr + 'T00:00:00');
+
+                        const startOffsetDays = (checkInDt - gridStartDt) / (1000 * 3600 * 24);
+                        const durationNights = Math.max(1, (checkOutDt - checkInDt) / (1000 * 3600 * 24));
+
+                        let leftPx = (startOffsetDays + 0.5) * CELL_WIDTH;
+                        let widthPx = durationNights * CELL_WIDTH;
+
+                        if (leftPx < 0) {
+                            widthPx += leftPx;
+                            leftPx = 0;
+                        }
+
+                        if (leftPx + widthPx > maxGridWidth) {
+                            widthPx = maxGridWidth - leftPx;
+                        }
+
+                        if (widthPx > 0) {
+                            const source = res.reservation_source || 'Direct';
+                            const displayName = (res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0]?.full_name : res.guest_profiles.full_name) : null) || res.booker_name || 'Guest';
+
+                            let capsuleBgClass = 'bg-yellow-200 text-yellow-900 border-yellow-400 border-dashed hover:bg-yellow-300';
+
+                            tableHTML += `
+                                <div onclick="openEditReservation('${res.id}')"
+                                     data-reservation-id="${res.id}"
+                                     class="absolute top-1.5 bottom-1.5 ${capsuleBgClass} border-2 rounded-md px-2 py-1 text-xs font-semibold flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer transition-all z-20"
+                                     style="left: ${leftPx}px; width: ${widthPx}px;"
+                                     title="${displayName} (${source}) - ${res.check_in_date} s/d ${res.check_out_date} [Unassigned / Belum Dialokasikan]">
+                                    <i class="ph ph-warning-circle text-xs mr-1 shrink-0 text-amber-700"></i>
+                                    <span class="truncate">${displayName} (${source})</span>
+                                </div>
+                            `;
+                        }
+                    }
+                });
+
+                tableHTML += `
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                // Baris Kamar Fisik
                 displayRooms.forEach(room => {
                     const roomTypeName = room.room_types ? (Array.isArray(room.room_types) ? room.room_types[0]?.name : room.room_types.name) : '-';
                     const statusBadge = getStatusBadgeMarkup(room.status);
@@ -4060,12 +4138,21 @@
             const roomNumberSelect = document.getElementById('res-room-number');
 
             if (roomNumberSelect) {
-                if (!selectedRoomTypeId) {
-                    roomNumberSelect.innerHTML = `<option value="">-- Unassigned --</option>`;
+                const currentVal = roomNumberSelect.value;
+                const filteredRooms = selectedRoomTypeId ? roomsCache.filter(r => r.room_type_id === selectedRoomTypeId) : roomsCache;
+
+                let optionsHTML = `<option value="">Belum Dialokasikan</option>`;
+                filteredRooms.forEach(r => {
+                    const upperStatus = (r.status || '').toUpperCase();
+                    const isOOO = upperStatus === 'OOO' || upperStatus === 'OUT OF ORDER';
+                    optionsHTML += `<option value="${r.id}" ${isOOO ? 'disabled' : ''}>Kamar ${r.room_number}${isOOO ? ' (OOO)' : ''}</option>`;
+                });
+                roomNumberSelect.innerHTML = optionsHTML;
+
+                if (currentVal && filteredRooms.some(r => r.id === currentVal)) {
+                    roomNumberSelect.value = currentVal;
                 } else {
-                    const filteredRooms = roomsCache.filter(r => r.room_type_id === selectedRoomTypeId);
-                    roomNumberSelect.innerHTML = `<option value="">-- Unassigned --</option>` +
-                        filteredRooms.map(r => `<option value="${r.id}">Kamar ${r.room_number}</option>`).join('');
+                    roomNumberSelect.value = '';
                 }
             }
 
@@ -5281,6 +5368,7 @@
 
                 alert('Reservasi berhasil dibatalkan!');
                 closeModal();
+                await fetchRooms();
                 await renderTapeChart();
                 fetchCancelList();
             } catch (err) {
@@ -5453,6 +5541,7 @@
                 }
 
                 closeModal();
+                await fetchRooms();
                 await renderTapeChart();
                 fetchCancelList();
 
