@@ -721,9 +721,15 @@
                         </div>
                     </div>
                 </div>
-                <button type="button" onclick="closeFolioModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
-                    <i class="ph ph-x text-2xl"></i>
-                </button>
+                <div class="flex items-center gap-4">
+                    <div class="bg-amber-400 text-slate-900 px-3.5 py-1.5 rounded-lg shadow-sm text-right">
+                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-800 leading-none">Folio Number</div>
+                        <div id="folioHeaderFolioNo" class="font-mono text-xl font-bold text-slate-900 leading-tight">FOL-000000</div>
+                    </div>
+                    <button type="button" onclick="closeFolioModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
+                        <i class="ph ph-x text-2xl"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Body Content -->
@@ -799,9 +805,14 @@
 
             <!-- Footer -->
             <div class="px-6 py-4 border-t border-slate-200 flex justify-between items-center bg-white shrink-0">
-                <button type="button" onclick="closeFolioModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
-                    Close
-                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeFolioModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                        Close
+                    </button>
+                    <button type="button" onclick="handlePrintFolio()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2">
+                        <i class="ph ph-printer text-lg"></i> Print Folio
+                    </button>
+                </div>
                 <button type="button" id="processCheckoutBtn" onclick="handleProcessCheckout()" class="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2">
                     <i class="ph ph-sign-out text-lg"></i> Process Check-out
                 </button>
@@ -5115,9 +5126,16 @@
                 const guestName = (guestProfile ? guestProfile.full_name : null) || res.booker_name || 'Guest';
                 const roomNo = res.rooms ? (Array.isArray(res.rooms) ? res.rooms[0]?.room_number : res.rooms.room_number) : '-';
 
+                // Derive Folio Number
+                const folioNumber = res.folio_number || ('FOL-' + (res.reservation_number ? res.reservation_number.replace(/^RES-/, '') : res.id.slice(0, 8)));
+
                 document.getElementById('folioHeaderGuestName').textContent = guestName;
                 document.getElementById('folioHeaderResNo').innerHTML = `<i class="ph ph-hash"></i> Res #: ${res.reservation_number || res.id.slice(0, 8)}`;
                 document.getElementById('folioHeaderRoomNo').innerHTML = `<i class="ph ph-bed"></i> Room: ${roomNo || '-'}`;
+                const folioHeaderFolioEl = document.getElementById('folioHeaderFolioNo');
+                if (folioHeaderFolioEl) {
+                    folioHeaderFolioEl.textContent = folioNumber;
+                }
 
                 // Calculate Expected Total (checking daily rates breakdown first)
                 let expectedTotal = 0;
@@ -5166,6 +5184,164 @@
             currentFolioReservation = null;
             currentFolioTransactions = [];
             calculatedCurrentBalance = 0;
+        }
+
+        function handlePrintFolio() {
+            if (!currentFolioReservation) {
+                alert('Data reservasi tidak tersedia untuk dicetak.');
+                return;
+            }
+
+            const res = currentFolioReservation;
+            const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
+            const guestName = (guestProfile ? guestProfile.full_name : null) || res.booker_name || 'Guest';
+            const roomNo = res.rooms ? (Array.isArray(res.rooms) ? res.rooms[0]?.room_number : res.rooms.room_number) : '-';
+            const resNo = res.reservation_number || res.id.slice(0, 8);
+            const folioNo = res.folio_number || ('FOL-' + (res.reservation_number ? res.reservation_number.replace(/^RES-/, '') : res.id.slice(0, 8)));
+            const printDate = new Date().toLocaleString('id-ID');
+
+            let totalCharges = 0;
+            let totalPayments = 0;
+
+            const validTxs = (currentFolioTransactions || []).filter(tx => !tx.is_voided);
+            validTxs.forEach(tx => {
+                const type = (tx.transaction_type || 'CHARGE').toUpperCase();
+                const amt = Number(tx.amount || 0);
+                if (type === 'CHARGE') totalCharges += amt;
+                else if (type === 'PAYMENT') totalPayments += amt;
+            });
+
+            const currentBalance = totalCharges - totalPayments;
+
+            const rowsHtml = (currentFolioTransactions || []).map(tx => {
+                const isVoided = tx.is_voided;
+                const type = (tx.transaction_type || 'CHARGE').toUpperCase();
+                const amt = Number(tx.amount || 0);
+                const txDate = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID') : '-';
+                const rowClass = isVoided ? 'line-through text-gray-400' : '';
+
+                let chargeStr = '-';
+                let paymentStr = '-';
+                if (!isVoided) {
+                    if (type === 'CHARGE') chargeStr = `Rp ${amt.toLocaleString('id-ID')}`;
+                    else paymentStr = `Rp ${amt.toLocaleString('id-ID')}`;
+                }
+
+                return `
+                    <tr class="${rowClass}">
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${txDate}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${tx.description || '-'}${isVoided ? ' [VOID]' : ''}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">${tx.qty || 1}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${chargeStr}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${paymentStr}</td>
+                    </tr>
+                `;
+            }).join('') || `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8;">Belum ada transaksi.</td></tr>`;
+
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert('Gagal membuka jendela cetak. Mohon izinkan pop-up di browser Anda.');
+                return;
+            }
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Folio Invoice - ${folioNo}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; margin: 0; padding: 24px; font-size: 13px; }
+                        .header-container { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 16px; border-bottom: 2px solid #0f172a; margin-bottom: 20px; }
+                        .hotel-info h1 { margin: 0 0 4px 0; font-size: 20px; font-weight: 800; color: #0f172a; }
+                        .hotel-info p { margin: 0; color: #64748b; font-size: 12px; }
+                        .reference-box { text-align: right; }
+                        .folio-highlight { font-family: monospace; font-size: 22px; font-weight: 800; color: #0f172a; background: #fef3c7; padding: 4px 10px; border-radius: 6px; border: 1px solid #f59e0b; display: inline-block; }
+                        .res-sub { font-size: 13px; font-weight: 600; color: #475569; margin-top: 6px; }
+                        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+                        .details-item label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; }
+                        .details-item span { font-size: 13px; font-weight: 600; color: #0f172a; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th { background: #f1f5f9; padding: 8px; text-align: left; font-size: 11px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #cbd5e1; }
+                        .summary-box { width: 280px; margin-left: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; }
+                        .summary-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
+                        .summary-row.total { font-weight: 800; font-size: 14px; border-top: 1px solid #cbd5e1; pt-2; margin-top: 6px; padding-top: 6px; color: #0f172a; }
+                        .footer-note { margin-top: 30px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+                        @media print {
+                            body { padding: 0; }
+                            .folio-highlight { background: #fef3c7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header-container">
+                        <div class="hotel-info">
+                            <h1>NG HOTEL MANAGEMENT</h1>
+                            <p>Official Guest Billing & Folio Invoice</p>
+                        </div>
+                        <div class="reference-box">
+                            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">FOLIO NUMBER</div>
+                            <div class="folio-highlight">${folioNo}</div>
+                            <div class="res-sub">Nomor Reservasi: <span style="font-family: monospace;">${resNo}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="details-item">
+                            <label>Nama Tamu</label>
+                            <span>${guestName}</span>
+                        </div>
+                        <div class="details-item">
+                            <label>Nomor Kamar</label>
+                            <span>Kamar ${roomNo}</span>
+                        </div>
+                        <div class="details-item">
+                            <label>Tanggal Inap (Check-in / Check-out)</label>
+                            <span>${res.check_in_date || '-'} s/d ${res.check_out_date || '-'} (${res.nights || 1} Malam)</span>
+                        </div>
+                        <div class="details-item">
+                            <label>Tanggal Cetak</label>
+                            <span>${printDate}</span>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Deskripsi / Kategori</th>
+                                <th style="text-align: center;">Qty</th>
+                                <th style="text-align: right;">Charge (Debit)</th>
+                                <th style="text-align: right;">Payment (Kredit)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="summary-box">
+                        <div class="summary-row">
+                            <span>Total Charge:</span>
+                            <span>Rp ${totalCharges.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Total Payment:</span>
+                            <span>Rp ${totalPayments.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Sisa Tagihan (Balance):</span>
+                            <span>Rp ${currentBalance.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+
+                    <div class="footer-note">
+                        <p>Terima kasih atas kunjungan Anda di NG Hotel. Dokumen ini merupakan bukti tagihan resmi.</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            try { printWindow.print(); } catch(e) {}
         }
 
         async function fetchFolioTransactions(reservationId) {
