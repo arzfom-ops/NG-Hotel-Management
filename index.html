@@ -1123,7 +1123,7 @@
                             <!-- Room Rate -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Room Rate / Night (Rp) <span class="text-red-500">*</span></label>
-                                <input type="number" id="res-room-rate" required step="any" min="0" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary font-bold text-slate-800">
+                                <input type="number" id="res-room-rate" required step="any" min="0" placeholder="0" onchange="syncMasterRateToGrid()" oninput="syncMasterRateToGrid()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary font-bold text-slate-800">
                             </div>
                         </div>
 
@@ -1131,7 +1131,7 @@
                             <!-- Meal Plan -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Meal Plan</label>
-                                <select id="res-meal-plan" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-meal-plan" onchange="syncMasterMealPlanToGrid()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
                                     <option value="">-- None --</option>
                                 </select>
                             </div>
@@ -1187,6 +1187,32 @@
                                     <div id="res-total-preview" class="text-lg font-bold text-primary">Rp 0</div>
                                 </div>
                                 <i class="ph ph-calculator text-2xl text-primary opacity-60"></i>
+                            </div>
+                        </div>
+
+                        <!-- Daily Breakdown Section -->
+                        <div class="mt-4 pt-4 border-t border-slate-200">
+                            <div class="flex justify-between items-center mb-2.5">
+                                <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="ph ph-calendar-blank text-primary text-base"></i> Daily Breakdown (Rincian Harian & Meal Plan)
+                                </h5>
+                                <span class="text-[11px] text-slate-500 font-medium">Atur harga kamar & meal plan per malam</span>
+                            </div>
+                            <div class="overflow-x-auto border border-slate-200 rounded-lg bg-white shadow-2xs">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                                        <tr>
+                                            <th class="py-2 px-3 w-10 text-center">#</th>
+                                            <th class="py-2 px-3">Tanggal Menginap</th>
+                                            <th class="py-2 px-3">Room Rate / Malam (Rp)</th>
+                                            <th class="py-2 px-3">Meal Plan</th>
+                                            <th class="py-2 px-3 text-center w-28">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="daily-breakdown-tbody" class="divide-y divide-slate-100">
+                                        <!-- Dynamic rows rendered by renderDailyBreakdownGrid() -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -4345,7 +4371,130 @@
                 }
             }
 
+            renderDailyBreakdownGrid();
             updateTotalPreview();
+        }
+
+        let mealPlansCache = [];
+
+        function renderDailyBreakdownGrid(existingDailyRates = null) {
+            const tbody = document.getElementById('daily-breakdown-tbody');
+            if (!tbody) return;
+
+            const checkInVal = document.getElementById('res-check-in').value;
+            const checkOutVal = document.getElementById('res-check-out').value;
+            const nights = parseInt(document.getElementById('res-nights').value, 10) || 1;
+            const masterRate = parseFloat(document.getElementById('res-room-rate').value) || 0;
+            const masterMealPlanId = document.getElementById('res-meal-plan').value || '';
+
+            if (!checkInVal) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400 italic">Pilih tanggal Check-in terlebih dahulu.</td></tr>`;
+                return;
+            }
+
+            const checkInDateObj = new Date(checkInVal + 'T00:00:00');
+            let rowsHtml = '';
+
+            const mealOptionsHtml = `<option value="">-- None --</option>` +
+                mealPlansCache.map(mp => `<option value="${mp.id}">${mp.code} - ${mp.name}</option>`).join('');
+
+            for (let i = 0; i < nights; i++) {
+                const stayDateObj = addDays(checkInDateObj, i);
+                const stayDateStr = formatDateISO(stayDateObj);
+                const stayDateFormatted = stayDateObj.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+
+                let rowRate = masterRate;
+                let rowMealPlanId = masterMealPlanId;
+
+                if (existingDailyRates && Array.isArray(existingDailyRates)) {
+                    const found = existingDailyRates.find(dr => dr.stay_date === stayDateStr);
+                    if (found) {
+                        rowRate = found.room_rate !== undefined && found.room_rate !== null ? found.room_rate : masterRate;
+                        rowMealPlanId = found.meal_plan_id || '';
+                    }
+                } else {
+                    // Check if row element already exists in DOM to preserve user edits when nights change or re-render
+                    const existingRateInput = document.getElementById(`daily-rate-${i}`);
+                    const existingMealSelect = document.getElementById(`daily-meal-${i}`);
+                    if (existingRateInput) rowRate = parseFloat(existingRateInput.value) || 0;
+                    if (existingMealSelect) rowMealPlanId = existingMealSelect.value || '';
+                }
+
+                const applyAllBtn = i === 0
+                    ? `<button type="button" onclick="applyFirstRowToAllDailyRates()" class="px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded text-[11px] font-semibold transition-colors flex items-center gap-1 mx-auto" title="Samakan harga & meal plan baris pertama ke semua malam">
+                        <i class="ph ph-copy"></i> Apply to All
+                       </button>`
+                    : `<span class="text-slate-300 text-[10px] italic flex justify-center">-</span>`;
+
+                rowsHtml += `
+                    <tr class="hover:bg-slate-50 transition-colors" data-stay-date="${stayDateStr}">
+                        <td class="py-2 px-3 text-center font-bold text-slate-500">${i + 1}</td>
+                        <td class="py-2 px-3 font-semibold text-slate-700 whitespace-nowrap">
+                            ${stayDateFormatted}
+                            <input type="hidden" class="daily-stay-date" value="${stayDateStr}">
+                        </td>
+                        <td class="py-2 px-3">
+                            <input type="number" id="daily-rate-${i}" step="any" min="0" value="${rowRate}" oninput="updateTotalPreview()" onchange="updateTotalPreview()" class="daily-rate-input w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs font-bold text-slate-800 focus:outline-none focus:border-primary">
+                        </td>
+                        <td class="py-2 px-3">
+                            <select id="daily-meal-${i}" class="daily-meal-select w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-700 bg-white focus:outline-none focus:border-primary">
+                                ${mealOptionsHtml}
+                            </select>
+                        </td>
+                        <td class="py-2 px-3 text-center align-middle">
+                            ${applyAllBtn}
+                        </td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = rowsHtml;
+
+            // Set select values for meal plan
+            for (let i = 0; i < nights; i++) {
+                const stayDateObj = addDays(checkInDateObj, i);
+                const stayDateStr = formatDateISO(stayDateObj);
+                let selVal = masterMealPlanId;
+                if (existingDailyRates && Array.isArray(existingDailyRates)) {
+                    const found = existingDailyRates.find(dr => dr.stay_date === stayDateStr);
+                    if (found) selVal = found.meal_plan_id || '';
+                } else {
+                    const el = document.getElementById(`daily-meal-${i}`);
+                    if (el && el.getAttribute('data-prev-val')) selVal = el.getAttribute('data-prev-val');
+                }
+                const mealSelect = document.getElementById(`daily-meal-${i}`);
+                if (mealSelect) mealSelect.value = selVal;
+            }
+        }
+
+        function applyFirstRowToAllDailyRates() {
+            const firstRateInput = document.getElementById('daily-rate-0');
+            const firstMealSelect = document.getElementById('daily-meal-0');
+            if (!firstRateInput || !firstMealSelect) return;
+
+            const firstRate = firstRateInput.value;
+            const firstMeal = firstMealSelect.value;
+
+            const allRateInputs = document.querySelectorAll('.daily-rate-input');
+            const allMealSelects = document.querySelectorAll('.daily-meal-select');
+
+            allRateInputs.forEach(input => input.value = firstRate);
+            allMealSelects.forEach(select => select.value = firstMeal);
+
+            updateTotalPreview();
+        }
+
+        function syncMasterRateToGrid() {
+            const masterRate = parseFloat(document.getElementById('res-room-rate').value) || 0;
+            const allRateInputs = document.querySelectorAll('.daily-rate-input');
+            allRateInputs.forEach(input => input.value = masterRate);
+            updateTotalPreview();
+        }
+
+        function syncMasterMealPlanToGrid() {
+            const masterMeal = document.getElementById('res-meal-plan').value;
+            const allMealSelects = document.querySelectorAll('.daily-meal-select');
+            allMealSelects.forEach(select => select.value = masterMeal);
         }
 
         async function populateReservationFormDropdowns() {
@@ -4375,6 +4524,7 @@
                 // 3. Meal Plans
                 const { data: mPlans, error: mpErr } = await supabaseClient.from('meal_plans').select('id, code, name').order('code', { ascending: true });
                 if (mpErr) throw mpErr;
+                mealPlansCache = mPlans || [];
                 const mealPlanSelect = document.getElementById('res-meal-plan');
                 if (mealPlanSelect) {
                     mealPlanSelect.innerHTML = `<option value="">-- None --</option>` +
@@ -4506,15 +4656,26 @@
                 }
             }
 
+            syncMasterRateToGrid();
             updateTotalPreview();
         }
 
         function updateTotalPreview() {
-            const roomRate = parseFloat(document.getElementById('res-room-rate').value) || 0;
-            const nights = parseInt(document.getElementById('res-nights').value, 10) || 1;
             const qty = parseInt(document.getElementById('res-qty').value, 10) || 1;
+            const dailyInputs = document.querySelectorAll('.daily-rate-input');
 
-            const total = roomRate * nights * qty;
+            let totalRoomRatesSum = 0;
+            if (dailyInputs.length > 0) {
+                dailyInputs.forEach(input => {
+                    totalRoomRatesSum += parseFloat(input.value) || 0;
+                });
+            } else {
+                const roomRate = parseFloat(document.getElementById('res-room-rate').value) || 0;
+                const nights = parseInt(document.getElementById('res-nights').value, 10) || 1;
+                totalRoomRatesSum = roomRate * nights;
+            }
+
+            const total = totalRoomRatesSum * qty;
             const totalPreviewDiv = document.getElementById('res-total-preview');
             if (totalPreviewDiv) {
                 totalPreviewDiv.textContent = `Rp ${total.toLocaleString('id-ID')}`;
@@ -4707,6 +4868,23 @@
 
                 document.getElementById('res-comment').value = res.comment || '';
 
+                // Fetch daily rates breakdown if exists
+                let dailyRates = null;
+                try {
+                    const { data: drData, error: drErr } = await supabaseClient
+                        .from('reservation_daily_rates')
+                        .select('*')
+                        .eq('reservation_id', res.id)
+                        .order('stay_date', { ascending: true });
+
+                    if (!drErr && drData && drData.length > 0) {
+                        dailyRates = drData;
+                    }
+                } catch (err) {
+                    console.error('Error fetching reservation_daily_rates:', err);
+                }
+
+                renderDailyBreakdownGrid(dailyRates);
                 updateTotalPreview();
 
                 // Status Badge & Footer Buttons configuration
@@ -4941,13 +5119,33 @@
                 document.getElementById('folioHeaderResNo').innerHTML = `<i class="ph ph-hash"></i> Res #: ${res.reservation_number || res.id.slice(0, 8)}`;
                 document.getElementById('folioHeaderRoomNo').innerHTML = `<i class="ph ph-bed"></i> Room: ${roomNo || '-'}`;
 
-                // Calculate Expected Total (room_rate * nights)
-                const roomRate = Number(res.room_rate || 0);
-                const nights = Number(res.nights || 1);
-                const expectedTotal = roomRate * nights;
+                // Calculate Expected Total (checking daily rates breakdown first)
+                let expectedTotal = 0;
+                let breakdownText = '';
+                try {
+                    const { data: drData } = await supabaseClient
+                        .from('reservation_daily_rates')
+                        .select('room_rate')
+                        .eq('reservation_id', res.id);
+
+                    if (drData && drData.length > 0) {
+                        expectedTotal = drData.reduce((sum, item) => sum + Number(item.room_rate || 0), 0);
+                        breakdownText = `(${drData.length} Night${drData.length > 1 ? 's' : ''} Daily Breakdown Sum)`;
+                    } else {
+                        const roomRate = Number(res.room_rate || 0);
+                        const nights = Number(res.nights || 1);
+                        expectedTotal = roomRate * nights;
+                        breakdownText = `(Rp ${roomRate.toLocaleString('id-ID')} x ${nights} Night${nights > 1 ? 's' : ''})`;
+                    }
+                } catch (e) {
+                    const roomRate = Number(res.room_rate || 0);
+                    const nights = Number(res.nights || 1);
+                    expectedTotal = roomRate * nights;
+                    breakdownText = `(Rp ${roomRate.toLocaleString('id-ID')} x ${nights} Night${nights > 1 ? 's' : ''})`;
+                }
 
                 document.getElementById('folioExpectedTotal').textContent = `Rp ${expectedTotal.toLocaleString('id-ID')}`;
-                document.getElementById('folioExpectedBreakdown').textContent = `(Rp ${roomRate.toLocaleString('id-ID')} x ${nights} Night${nights > 1 ? 's' : ''})`;
+                document.getElementById('folioExpectedBreakdown').textContent = breakdownText;
 
                 // Show Folio Modal
                 const folioModal = document.getElementById('folioModal');
@@ -4986,7 +5184,39 @@
 
                 if (error) throw error;
 
-                currentFolioTransactions = data || [];
+                // Check if there are daily rate breakdown records to auto-generate daily room charges if folio charge transactions don't exist yet
+                const { data: drData } = await supabaseClient
+                    .from('reservation_daily_rates')
+                    .select('*')
+                    .eq('reservation_id', reservationId)
+                    .order('stay_date', { ascending: true });
+
+                let txs = data || [];
+
+                // If daily breakdown records exist and no room charge transactions in folio_transactions yet
+                const hasRoomChargesInFolio = txs.some(tx => (tx.transaction_type || 'CHARGE').toUpperCase() === 'CHARGE' && (tx.category === 'Room Rate' || (tx.description && tx.description.includes('Room Charge'))));
+
+                if (drData && drData.length > 0 && !hasRoomChargesInFolio) {
+                    const roomChargeTxs = drData.map(dr => {
+                        const dateObj = new Date(dr.stay_date + 'T00:00:00');
+                        const dateFormatted = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                        return {
+                            id: `auto-daily-${dr.id || dr.stay_date}`,
+                            reservation_id: reservationId,
+                            transaction_type: 'CHARGE',
+                            description: `Room Charge - ${dateFormatted}`,
+                            category: 'Room Rate',
+                            amount: dr.room_rate,
+                            unit_price: dr.room_rate,
+                            qty: 1,
+                            transaction_date: dr.stay_date,
+                            is_auto_generated: true
+                        };
+                    });
+                    txs = [...roomChargeTxs, ...txs];
+                }
+
+                currentFolioTransactions = txs;
                 renderFolioTransactions();
 
             } catch (err) {
@@ -5764,6 +5994,8 @@
                     comment: comment
                 };
 
+                let savedReservationId = editId;
+
                 if (editId) {
                     if (isReactivateMode) {
                         reservationPayload.status = 'Reserved';
@@ -5793,12 +6025,15 @@
 
                     if (insertResErr) throw insertResErr;
 
+                    if (newResData && newResData.length > 0) {
+                        savedReservationId = newResData[0].id;
+                    }
+
                     // 1. Auto-Post Deposit on Create if deposit_amount > 0
-                    if (depositAmount > 0 && newResData && newResData.length > 0) {
-                        const newResId = newResData[0].id;
+                    if (depositAmount > 0 && savedReservationId) {
                         const methodLabel = depositMethod ? `[${depositMethod}]` : '';
                         const depositTxPayload = {
-                            reservation_id: newResId,
+                            reservation_id: savedReservationId,
                             transaction_type: 'PAYMENT',
                             description: `Initial Deposit ${methodLabel}`.trim(),
                             amount: depositAmount,
@@ -5812,6 +6047,50 @@
 
                         if (depositTxErr) {
                             console.error('Error auto-posting deposit to folio_transactions:', depositTxErr);
+                        }
+                    }
+                }
+
+                // 3. Save Daily Breakdown Rates to reservation_daily_rates
+                if (savedReservationId) {
+                    // Collect grid inputs
+                    const rows = document.querySelectorAll('#daily-breakdown-tbody tr');
+                    const dailyRatesPayload = [];
+
+                    rows.forEach(row => {
+                        const stayDateInput = row.querySelector('.daily-stay-date');
+                        const rateInput = row.querySelector('.daily-rate-input');
+                        const mealSelect = row.querySelector('.daily-meal-select');
+
+                        if (stayDateInput && rateInput) {
+                            const sDate = stayDateInput.value;
+                            const rRate = parseFloat(rateInput.value) || 0;
+                            const mPlanId = mealSelect ? (mealSelect.value || null) : null;
+
+                            dailyRatesPayload.push({
+                                reservation_id: savedReservationId,
+                                stay_date: sDate,
+                                room_rate: rRate,
+                                meal_plan_id: mPlanId
+                            });
+                        }
+                    });
+
+                    if (dailyRatesPayload.length > 0) {
+                        // Delete previous records first if edit mode
+                        if (editId) {
+                            await supabaseClient
+                                .from('reservation_daily_rates')
+                                .delete()
+                                .eq('reservation_id', savedReservationId);
+                        }
+
+                        const { error: dailyInsertErr } = await supabaseClient
+                            .from('reservation_daily_rates')
+                            .insert(dailyRatesPayload);
+
+                        if (dailyInsertErr) {
+                            console.error('Error saving reservation_daily_rates:', dailyInsertErr);
                         }
                     }
                 }
