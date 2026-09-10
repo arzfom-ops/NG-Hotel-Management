@@ -1345,16 +1345,18 @@
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
                             <tr>
-                                <th class="py-3 px-4">No. Reservasi</th>
-                                <th class="py-3 px-4">Nama Tamu</th>
-                                <th class="py-3 px-4">Tipe Kamar</th>
-                                <th class="py-3 px-4">Nomor Kamar</th>
-                                <th class="py-3 px-4 text-right">Aksi</th>
+                                <th class="py-3 px-4 whitespace-nowrap">No. Reservasi</th>
+                                <th class="py-3 px-4 whitespace-nowrap">Nama Tamu</th>
+                                <th class="py-3 px-4 whitespace-nowrap">Tanggal Inap</th>
+                                <th class="py-3 px-4 whitespace-nowrap">Tipe Kamar</th>
+                                <th class="py-3 px-4 whitespace-nowrap">Room Rate</th>
+                                <th class="py-3 px-4 whitespace-nowrap">Nomor Kamar</th>
+                                <th class="py-3 px-4 text-right whitespace-nowrap">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="frontdesk-dashboard-tbody" class="divide-y divide-slate-200 text-slate-700">
                             <tr>
-                                <td colspan="5" class="py-6 text-center text-slate-400">
+                                <td colspan="7" class="py-6 text-center text-slate-400">
                                     <i class="ph ph-spinner animate-spin text-xl inline-block mb-1"></i>
                                     <div>Memuat data dashboard...</div>
                                 </td>
@@ -1899,6 +1901,27 @@
             return `${year}-${month}-${day}`;
         }
 
+        function formatStayDatesCompact(checkInStr, checkOutStr) {
+            if (!checkInStr || !checkOutStr) return '-';
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+            const parts1 = String(checkInStr).split('-').map(Number);
+            const parts2 = String(checkOutStr).split('-').map(Number);
+            if (parts1.length < 3 || parts2.length < 3) return '-';
+
+            const [y1, m1, d1] = parts1;
+            const [y2, m2, d2] = parts2;
+
+            const monthStr1 = months[m1 - 1] || '';
+            const monthStr2 = months[m2 - 1] || '';
+
+            if (y1 === y2) {
+                return `${d1} ${monthStr1} - ${d2} ${monthStr2} ${y2}`;
+            } else {
+                return `${d1} ${monthStr1} ${y1} - ${d2} ${monthStr2} ${y2}`;
+            }
+        }
+
         function addDays(dateObj, days) {
             const res = new Date(dateObj);
             res.setDate(res.getDate() + days);
@@ -2008,7 +2031,7 @@
             if (tbody) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="py-6 text-center text-slate-400">
+                        <td colspan="7" class="py-6 text-center text-slate-400">
                             <i class="ph ph-spinner animate-spin text-xl inline-block mb-1"></i>
                             <div>Memuat data dashboard...</div>
                         </td>
@@ -2022,7 +2045,7 @@
                 // Fetch ALL active reservations joined with guest_profiles, room_types, and rooms
                 const { data, error } = await supabaseClient
                     .from('reservations')
-                    .select('id, reservation_number, booker_name, check_in_date, check_out_date, status, room_id, room_type_id, guest_profiles(full_name), room_types(name), rooms(room_number)')
+                    .select('id, reservation_number, booker_name, check_in_date, check_out_date, room_rate, status, room_id, room_type_id, guest_profiles(full_name), room_types(name), rooms(room_number)')
                     .in('status', ['Reserved', 'Checkin']);
 
                 if (error) throw error;
@@ -2053,7 +2076,7 @@
                 if (tbody) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="py-6 text-center text-red-500 font-semibold">
+                            <td colspan="7" class="py-6 text-center text-red-500 font-semibold">
                                 Gagal memuat dashboard: ${err.message}
                             </td>
                         </tr>
@@ -2100,7 +2123,7 @@
 
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="py-8 text-center text-slate-400">
+                        <td colspan="7" class="py-8 text-center text-slate-400">
                             <i class="ph ph-check-circle text-2xl text-slate-300 inline-block mb-1"></i>
                             <div>${emptyMsg}</div>
                         </td>
@@ -2112,7 +2135,9 @@
             tbody.innerHTML = filteredList.map(r => {
                 const resNo = r.reservation_number || r.id.slice(0, 8);
                 const guestName = (r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0]?.full_name : r.guest_profiles.full_name) : null) || r.booker_name || '-';
+                const stayDatesDisplay = formatStayDatesCompact(r.check_in_date, r.check_out_date);
                 const roomTypeName = r.room_types ? (Array.isArray(r.room_types) ? r.room_types[0]?.name : r.room_types.name) : '-';
+                const roomRateDisplay = r.room_rate !== null && r.room_rate !== undefined ? `Rp ${Number(r.room_rate).toLocaleString('id-ID')}` : 'Rp 0';
 
                 const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : null;
                 const roomNoDisplay = roomNo
@@ -2156,11 +2181,13 @@
 
                 return `
                     <tr class="hover:bg-slate-50/80 transition-colors">
-                        <td class="py-3 px-4 font-mono font-semibold text-slate-800">${resNo}</td>
-                        <td class="py-3 px-4 font-medium">${guestName}</td>
-                        <td class="py-3 px-4 text-slate-600">${roomTypeName}</td>
-                        <td class="py-3 px-4">${roomNoDisplay}</td>
-                        <td class="py-3 px-4 text-right space-x-1.5">${mainActionHTML}${editActionHTML}</td>
+                        <td class="py-3 px-4 font-mono font-semibold text-slate-800 whitespace-nowrap">${resNo}</td>
+                        <td class="py-3 px-4 font-medium max-w-[150px] sm:max-w-[200px] truncate" title="${guestName.replace(/"/g, '&quot;')}">${guestName}</td>
+                        <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${stayDatesDisplay}</td>
+                        <td class="py-3 px-4 text-slate-600 max-w-[120px] sm:max-w-[160px] truncate" title="${roomTypeName.replace(/"/g, '&quot;')}">${roomTypeName}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${roomRateDisplay}</td>
+                        <td class="py-3 px-4 whitespace-nowrap">${roomNoDisplay}</td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap space-x-1.5">${mainActionHTML}${editActionHTML}</td>
                     </tr>
                 `;
             }).join('');
