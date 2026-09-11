@@ -1447,6 +1447,151 @@
         </div>
     </div>
 
+    <!-- Modal New Group Reservation -->
+    <div id="groupBookingModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden relative">
+
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                        <i class="ph ph-users-three text-blue-600 text-2xl"></i> <span>+ New Group Reservation</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Buat alokasi grup booking baru & room allotment.</p>
+                </div>
+                <button type="button" onclick="closeGroupBookingModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Body Form -->
+            <form id="groupBookingForm" onsubmit="handleSaveGroupBooking(event)" class="flex-1 overflow-y-auto p-6 space-y-5">
+
+                <!-- Group Info Section -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Group Name -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Grup <span class="text-red-500">*</span></label>
+                        <input type="text" id="group-name" required placeholder="Contoh: Grup Tour Kemenag" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                    </div>
+
+                    <!-- Bill Receiver (Corporate Profiles) -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Bill Receiver (Corporate)</label>
+                        <select id="group-corporate-id" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            <option value="">-- Pilih Corporate (Opsional) --</option>
+                        </select>
+                    </div>
+
+                    <!-- Check-in Date -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Check-in Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="group-checkin" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                    </div>
+
+                    <!-- Check-out Date -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Check-out Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="group-checkout" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                    </div>
+                </div>
+
+                <!-- Room Allotment Section (Repeater) -->
+                <div class="border-t border-slate-200 pt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800">Room Allotment</h4>
+                            <p class="text-xs text-slate-500">Tentukan tipe kamar, jumlah kuota kamar, dan harga kesepakatan.</p>
+                        </div>
+                        <button type="button" onclick="addGroupAllotmentRow()" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-semibold transition-colors flex items-center gap-1">
+                            <i class="ph ph-plus-circle text-sm"></i> + Add Room Type
+                        </button>
+                    </div>
+
+                    <!-- Repeater Table / Rows Container -->
+                    <div class="border border-slate-200 rounded-lg overflow-hidden">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th class="py-2.5 px-3">Tipe Kamar</th>
+                                    <th class="py-2.5 px-3 w-32">Jumlah Kamar</th>
+                                    <th class="py-2.5 px-3 w-40">Harga Kesepakatan</th>
+                                    <th class="py-2.5 px-3 w-12 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="group-allotment-rows" class="divide-y divide-slate-200 bg-white">
+                                <!-- Repeater rows added dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="pt-4 border-t border-slate-200 flex justify-end items-center gap-3">
+                    <button type="button" onclick="closeGroupBookingModal()" class="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm">
+                        <i class="ph ph-floppy-disk text-base"></i> Simpan Group Booking
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Rooming List / Split Reservasi -->
+    <div id="roomingListModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden relative">
+
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+                <div>
+                    <h3 id="roomingListModalTitle" class="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                        <i class="ph ph-scissors text-indigo-600 text-2xl"></i> <span>Rooming List - Split Reservasi</span>
+                    </h3>
+                    <p id="roomingListModalSubTitle" class="text-xs text-slate-500 mt-0.5">Pecah alokasi kuota grup booking ke reservasi per perorangan.</p>
+                </div>
+                <button type="button" onclick="closeRoomingListModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Header Info Card -->
+            <div id="roomingListInfoCard" class="bg-slate-50 border-b border-slate-200 p-4 px-6 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <!-- Info populated dynamically -->
+            </div>
+
+            <!-- Body Form -->
+            <form id="roomingListForm" onsubmit="handleSaveRoomingList(event)" class="flex-1 overflow-y-auto p-6 flex flex-col justify-between space-y-4">
+                <div class="border border-slate-200 rounded-lg overflow-hidden">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                            <tr>
+                                <th class="py-2.5 px-3 w-12 text-center">No</th>
+                                <th class="py-2.5 px-3 w-48">Tipe Kamar</th>
+                                <th class="py-2.5 px-3 w-36">Harga / Malam</th>
+                                <th class="py-2.5 px-3">Nama Tamu <span class="text-slate-400 font-normal">(Editable)</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="rooming-list-rows" class="divide-y divide-slate-200 bg-white">
+                            <!-- Rooming rows auto populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="pt-4 border-t border-slate-200 flex justify-end items-center gap-3 shrink-0">
+                    <button type="button" onclick="closeRoomingListModal()" class="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm">
+                        <i class="ph ph-floppy-disk text-base"></i> Simpan & Split Reservasi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-1 flex flex-col h-full mt-14 md:mt-0 w-full overflow-hidden">
         <!-- Topbar -->
@@ -1520,6 +1665,10 @@
                             <i class="ph ph-sign-out text-base"></i> Departure List
                             <span id="dash-count-departure" class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
                         </button>
+                        <button type="button" onclick="switchDashboardTab('group')" id="dash-tab-btn-group" class="dash-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium py-2.5 px-1 text-sm whitespace-nowrap transition-colors flex items-center gap-2">
+                            <i class="ph ph-users-three text-base"></i> Group Bookings
+                            <span id="dash-count-group" class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                        </button>
                     </nav>
                 </div>
 
@@ -1552,9 +1701,14 @@
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px] flex flex-col">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-medium">Room Allotment</h3>
-                    <button id="openModalBtn" onclick="openModal()" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                        + New Reservation
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="openGroupModalBtn" onclick="openGroupBookingModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 shadow-sm">
+                            <i class="ph ph-users-three text-lg"></i> + New Group Reservation
+                        </button>
+                        <button id="openModalBtn" onclick="openModal()" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
+                            + New Reservation
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Smart Control Bar -->
@@ -2228,7 +2382,8 @@
             const tabs = [
                 { id: 'arrival', btn: 'dash-tab-btn-arrival', count: 'dash-count-arrival' },
                 { id: 'in-house', btn: 'dash-tab-btn-in-house', count: 'dash-count-in-house' },
-                { id: 'departure', btn: 'dash-tab-btn-departure', count: 'dash-count-departure' }
+                { id: 'departure', btn: 'dash-tab-btn-departure', count: 'dash-count-departure' },
+                { id: 'group', btn: 'dash-tab-btn-group', count: 'dash-count-group' }
             ];
 
             tabs.forEach(t => {
@@ -2288,14 +2443,40 @@
                 // 3. Departure List: check_out_date = selectedDateISO AND status = 'Checkin'
                 dashboardData.departure = resList.filter(r => r.check_out_date === selectedDateISO && r.status === 'Checkin');
 
+                // 4. Group Booking List
+                try {
+                    const { data: gbList, error: gbErr } = await supabaseClient
+                        .from('group_bookings')
+                        .select('*, corporate_profiles(company_name), group_allotments(*, room_types(name))')
+                        .order('created_at', { ascending: false });
+
+                    const { data: resGroupData } = await supabaseClient
+                        .from('reservations')
+                        .select('id, group_id')
+                        .not('group_id', 'is', null);
+
+                    const splitGroupIds = new Set((resGroupData || []).map(r => r.group_id));
+
+                    if (!gbErr) {
+                        dashboardData.group = (gbList || []).map(gb => ({
+                            ...gb,
+                            reservations: splitGroupIds.has(gb.id) ? [{ id: 'exists' }] : []
+                        }));
+                    }
+                } catch (e) {
+                    console.error('Error fetching group bookings:', e);
+                }
+
                 // Update count badges
                 const countArr = document.getElementById('dash-count-arrival');
                 const countIn = document.getElementById('dash-count-in-house');
                 const countDep = document.getElementById('dash-count-departure');
+                const countGrp = document.getElementById('dash-count-group');
 
                 if (countArr) countArr.textContent = dashboardData.arrival.length;
                 if (countIn) countIn.textContent = dashboardData.inHouse.length;
                 if (countDep) countDep.textContent = dashboardData.departure.length;
+                if (countGrp) countGrp.textContent = dashboardData.group.length;
 
                 renderDashboardTable();
             } catch (err) {
@@ -2314,7 +2495,113 @@
 
         function renderDashboardTable() {
             const tbody = document.getElementById('frontdesk-dashboard-tbody');
+            const thead = document.getElementById('frontdesk-dashboard-thead');
             if (!tbody) return;
+
+            // Render Table Header depending on active tab
+            if (thead) {
+                if (currentDashboardTab === 'group') {
+                    thead.innerHTML = `
+                        <tr>
+                            <th class="py-3 px-4 whitespace-nowrap">Nama Grup</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Bill Receiver</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Tanggal Inap</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Total Kuota</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Rincian Allotment</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Status Split</th>
+                            <th class="py-3 px-4 text-right whitespace-nowrap">Aksi</th>
+                        </tr>
+                    `;
+                } else {
+                    thead.innerHTML = `
+                        <tr>
+                            <th class="py-3 px-4 whitespace-nowrap">No. Reservasi</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Nama Tamu</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Tanggal Inap</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Tipe Kamar</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Room Rate</th>
+                            <th class="py-3 px-4 whitespace-nowrap">Nomor Kamar</th>
+                            <th class="py-3 px-4 text-right whitespace-nowrap">Aksi</th>
+                        </tr>
+                    `;
+                }
+            }
+
+            // Handle Group Booking tab rendering
+            if (currentDashboardTab === 'group') {
+                let filteredGroups = dashboardData.group || [];
+
+                if (dashboardSearchQuery) {
+                    filteredGroups = filteredGroups.filter(g => {
+                        const name = (g.group_name || '').toLowerCase();
+                        const corp = (g.corporate_profiles ? (Array.isArray(g.corporate_profiles) ? g.corporate_profiles[0]?.company_name : g.corporate_profiles.company_name) : '').toLowerCase();
+                        return name.includes(dashboardSearchQuery) || corp.includes(dashboardSearchQuery);
+                    });
+                }
+
+                if (!filteredGroups || filteredGroups.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-slate-400">
+                                <i class="ph ph-users-three text-2xl text-slate-300 inline-block mb-1"></i>
+                                <div>Belum ada data Group Booking.</div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = filteredGroups.map(gb => {
+                    const groupName = gb.group_name || '-';
+                    const corpName = gb.corporate_profiles ? (Array.isArray(gb.corporate_profiles) ? gb.corporate_profiles[0]?.company_name : gb.corporate_profiles.company_name) : '-';
+
+                    let checkInStr = '-';
+                    let checkOutStr = '-';
+                    let stayDisplay = '-';
+                    try {
+                        if (gb.contact_person && gb.contact_person.startsWith('{')) {
+                            const cpObj = JSON.parse(gb.contact_person);
+                            checkInStr = cpObj.check_in_date || '-';
+                            checkOutStr = cpObj.check_out_date || '-';
+                            stayDisplay = formatStayDatesCompact(checkInStr, checkOutStr);
+                        }
+                    } catch (e) {}
+
+                    const allotments = gb.group_allotments || [];
+                    const totalQuota = allotments.reduce((sum, a) => sum + (a.blocked_qty || 0), 0);
+
+                    const allotmentDetails = allotments.map(a => {
+                        const rtName = a.room_types ? (Array.isArray(a.room_types) ? a.room_types[0]?.name : a.room_types.name) : 'Kamar';
+                        const rateFmt = Number(a.agreed_rate || 0).toLocaleString('id-ID');
+                        return `<span class="inline-block bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs border border-slate-200">${rtName}: <b>${a.blocked_qty}</b> kamar @ Rp ${rateFmt}</span>`;
+                    }).join(' ');
+
+                    const isSplit = Array.isArray(gb.reservations) && gb.reservations.length > 0;
+
+                    const statusBadge = isSplit
+                        ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><i class="ph ph-check-circle"></i> Sudah Di-split</span>`
+                        : `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1"><i class="ph ph-clock"></i> Belum Di-split</span>`;
+
+                    const actionBtn = isSplit
+                        ? `<span class="text-xs text-slate-400 italic">Sudah Di-split</span>`
+                        : `<button type="button" onclick="openSplitReservationModal('${gb.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold transition-colors shadow-sm flex items-center gap-1.5 ml-auto">
+                            <i class="ph ph-scissors text-sm"></i> Split Reservasi
+                           </button>`;
+
+                    return `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 font-bold text-slate-800 whitespace-nowrap">${groupName}</td>
+                            <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${corpName}</td>
+                            <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${stayDisplay}</td>
+                            <td class="py-3 px-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded bg-blue-50 text-blue-700 font-bold border border-blue-200 text-xs">${totalQuota} Kamar</span></td>
+                            <td class="py-3 px-4 text-slate-600">${allotmentDetails || '-'}</td>
+                            <td class="py-3 px-4 whitespace-nowrap">${statusBadge}</td>
+                            <td class="py-3 px-4 text-right whitespace-nowrap">${actionBtn}</td>
+                        </tr>
+                    `;
+                }).join('');
+                return;
+            }
 
             let rawList = [];
             if (currentDashboardTab === 'arrival') rawList = dashboardData.arrival;
@@ -4920,6 +5207,400 @@
                 if (btnDetails) btnDetails.className = 'py-2.5 px-3 text-xs font-bold border-b-2 border-primary text-primary flex items-center gap-1.5 transition-colors';
                 if (containerRouting) containerRouting.classList.add('hidden');
                 if (containerDetails) containerDetails.classList.remove('hidden');
+            }
+        }
+
+
+        // ==========================================
+
+        // ==========================================
+        // ROOMING LIST / SPLIT RESERVATION FUNCTIONS
+        // ==========================================
+        let activeGroupSplitData = null;
+
+        async function openSplitReservationModal(groupId) {
+            try {
+                const { data: gbData, error: gbErr } = await supabaseClient
+                    .from('group_bookings')
+                    .select('*, corporate_profiles(company_name), group_allotments(*, room_types(name))')
+                    .eq('id', groupId)
+                    .single();
+
+                if (gbErr || !gbData) {
+                    alert('Gagal mengambil data Group Booking.');
+                    return;
+                }
+
+                let checkInDate = formatDateISO(new Date());
+                let checkOutDate = formatDateISO(new Date(Date.now() + 86400000));
+                try {
+                    if (gbData.contact_person && gbData.contact_person.startsWith('{')) {
+                        const cpObj = JSON.parse(gbData.contact_person);
+                        checkInDate = cpObj.check_in_date || checkInDate;
+                        checkOutDate = cpObj.check_out_date || checkOutDate;
+                    }
+                } catch (e) {}
+
+                // Expand allotments into individual rooming list items
+                const allotments = gbData.group_allotments || [];
+                const items = [];
+
+                allotments.forEach(a => {
+                    const rtName = a.room_types ? (Array.isArray(a.room_types) ? a.room_types[0]?.name : a.room_types.name) : 'Kamar';
+                    const qty = a.blocked_qty || 0;
+                    for (let i = 0; i < qty; i++) {
+                        items.push({
+                            room_type_id: a.room_type_id,
+                            room_type_name: rtName,
+                            agreed_rate: a.agreed_rate || 0
+                        });
+                    }
+                });
+
+                if (items.length === 0) {
+                    alert('Group Booking ini tidak memiliki alokasi room allotment.');
+                    return;
+                }
+
+                activeGroupSplitData = {
+                    group: gbData,
+                    checkInDate: checkInDate,
+                    checkOutDate: checkOutDate,
+                    items: items
+                };
+
+                // Render Info Card
+                const corpName = gbData.corporate_profiles ? (Array.isArray(gbData.corporate_profiles) ? gbData.corporate_profiles[0]?.company_name : gbData.corporate_profiles.company_name) : '-';
+                const stayFmt = formatStayDatesCompact(checkInDate, checkOutDate);
+                const infoCard = document.getElementById('roomingListInfoCard');
+                if (infoCard) {
+                    infoCard.innerHTML = `
+                        <div>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Grup Booking</span>
+                            <span class="text-sm font-bold text-slate-800">${gbData.group_name}</span>
+                        </div>
+                        <div>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Bill Receiver</span>
+                            <span class="text-sm font-semibold text-slate-700">${corpName}</span>
+                        </div>
+                        <div>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Tanggal Inap</span>
+                            <span class="text-sm font-semibold text-slate-700">${stayFmt}</span>
+                        </div>
+                        <div>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Kuota</span>
+                            <span class="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 rounded font-bold text-xs">${items.length} Kamar</span>
+                        </div>
+                    `;
+                }
+
+                // Render Rooming Rows Table
+                const rowsTbody = document.getElementById('rooming-list-rows');
+                if (rowsTbody) {
+                    rowsTbody.innerHTML = items.map((item, idx) => {
+                        const defaultTbaName = `TBA - ${gbData.group_name} ${idx + 1}`;
+                        const rateFmt = Number(item.agreed_rate || 0).toLocaleString('id-ID');
+                        return `
+                            <tr class="rooming-row" data-rt-id="${item.room_type_id}" data-rate="${item.agreed_rate}">
+                                <td class="py-2.5 px-3 text-center font-bold text-slate-500">${idx + 1}</td>
+                                <td class="py-2.5 px-3 font-semibold text-slate-800">${item.room_type_name}</td>
+                                <td class="py-2.5 px-3 font-mono text-slate-700">Rp ${rateFmt}</td>
+                                <td class="py-2.5 px-3">
+                                    <input type="text" required class="rooming-guest-name w-full px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600" value="${defaultTbaName}">
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                const modal = document.getElementById('roomingListModal');
+                if (modal) modal.classList.remove('hidden');
+
+            } catch (err) {
+                console.error('Error opening split reservation modal:', err);
+                alert('Terjadi kesalahan: ' + err.message);
+            }
+        }
+
+        function closeRoomingListModal() {
+            const modal = document.getElementById('roomingListModal');
+            if (modal) modal.classList.add('hidden');
+            activeGroupSplitData = null;
+        }
+
+        async function handleSaveRoomingList(e) {
+            e.preventDefault();
+
+            if (!activeGroupSplitData) return;
+
+            const rowElements = document.querySelectorAll('#rooming-list-rows tr.rooming-row');
+            if (!rowElements || rowElements.length === 0) return;
+
+            // Calculate stay nights
+            const checkIn = new Date(activeGroupSplitData.checkInDate);
+            const checkOut = new Date(activeGroupSplitData.checkOutDate);
+            let nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+            if (nights <= 0) nights = 1;
+
+            try {
+                for (let i = 0; i < rowElements.length; i++) {
+                    const tr = rowElements[i];
+                    const nameInput = tr.querySelector('.rooming-guest-name');
+                    const guestName = nameInput ? nameInput.value.trim() : `TBA - ${activeGroupSplitData.group.group_name} ${i + 1}`;
+                    const rtId = tr.getAttribute('data-rt-id');
+                    const agreedRate = parseFloat(tr.getAttribute('data-rate')) || 0;
+
+                    // a) Insert new guest profile in guest_profiles
+                    const { data: gData, error: gErr } = await supabaseClient
+                        .from('guest_profiles')
+                        .insert([{ full_name: guestName }])
+                        .select();
+
+                    if (gErr) throw gErr;
+                    if (!gData || gData.length === 0) throw new Error('Gagal membuat profil tamu.');
+
+                    const guestProfileId = gData[0].id;
+
+                    // b) Insert new reservation in reservations
+                    const resNo = 'RES-' + Date.now().toString().slice(-6) + Math.floor(100 + Math.random() * 900);
+                    const resPayload = {
+                        reservation_number: resNo,
+                        check_in_date: activeGroupSplitData.checkInDate,
+                        check_out_date: activeGroupSplitData.checkOutDate,
+                        nights: nights,
+                        room_type_id: rtId,
+                        room_id: null,
+                        room_rate: agreedRate,
+                        status: 'Reserved',
+                        guest_profile_id: guestProfileId,
+                        booker_name: activeGroupSplitData.group.group_name,
+                        group_id: activeGroupSplitData.group.id,
+                        corporate_id: activeGroupSplitData.group.corporate_id || null,
+                        reservation_source: 'Walk-in'
+                    };
+
+                    const { error: rErr } = await supabaseClient
+                        .from('reservations')
+                        .insert([resPayload]);
+
+                    if (rErr) throw rErr;
+                }
+
+                alert(`Berhasil memecah kuota grup "${activeGroupSplitData.group.group_name}" menjadi ${rowElements.length} reservasi perorangan!`);
+                closeRoomingListModal();
+                await fetchFrontdeskDashboard();
+                switchDashboardTab('arrival');
+
+            } catch (err) {
+                console.error('Error saving rooming list reservations:', err);
+                alert('Gagal menyimpan rooming list: ' + (err.message || err));
+            }
+        }
+
+        // GROUP BOOKING FUNCTIONS
+        // ==========================================
+        async function openGroupBookingModal() {
+            const modal = document.getElementById('groupBookingModal');
+            if (!modal) return;
+
+            // Reset inputs
+            document.getElementById('group-name').value = '';
+
+            // Set default dates
+            const todayStr = formatDateISO(new Date());
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = formatDateISO(tomorrow);
+
+            document.getElementById('group-checkin').value = todayStr;
+            document.getElementById('group-checkout').value = tomorrowStr;
+
+            // Populate Corporate dropdown
+            const corpSelect = document.getElementById('group-corporate-id');
+            if (corpSelect) {
+                corpSelect.innerHTML = '<option value="">-- Pilih Corporate (Opsional) --</option>';
+                try {
+                    const { data: cProfiles } = await supabaseClient.from('corporate_profiles').select('id, company_name').order('company_name', { ascending: true });
+                    if (cProfiles && cProfiles.length > 0) {
+                        cProfiles.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.id;
+                            opt.textContent = c.company_name;
+                            corpSelect.appendChild(opt);
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error populating corporate profiles for group:', e);
+                }
+            }
+
+            // Clear and add 1 default allotment row
+            const rowsContainer = document.getElementById('group-allotment-rows');
+            if (rowsContainer) {
+                rowsContainer.innerHTML = '';
+                await addGroupAllotmentRow();
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeGroupBookingModal() {
+            const modal = document.getElementById('groupBookingModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function addGroupAllotmentRow() {
+            const rowsContainer = document.getElementById('group-allotment-rows');
+            if (!rowsContainer) return;
+
+            let roomTypes = [];
+            try {
+                const { data } = await supabaseClient.from('room_types').select('id, name, base_price').order('name', { ascending: true });
+                roomTypes = data || [];
+            } catch (e) {
+                console.error('Error fetching room types for group allotment:', e);
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = 'group-allotment-item';
+
+            let typeOptionsHTML = roomTypes.map(rt => `<option value="${rt.id}" data-price="${rt.base_price}">${rt.name} - Rp ${Number(rt.base_price || 0).toLocaleString('id-ID')}</option>`).join('');
+
+            const firstPrice = roomTypes.length > 0 ? (roomTypes[0].base_price || 0) : 0;
+
+            tr.innerHTML = `
+                <td class="py-2 px-3">
+                    <select onchange="handleGroupRoomTypeChange(this)" class="group-room-type-id w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:outline-none focus:border-primary">
+                        ${typeOptionsHTML}
+                    </select>
+                </td>
+                <td class="py-2 px-3">
+                    <input type="number" min="1" value="1" class="group-blocked-qty w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:outline-none focus:border-primary">
+                </td>
+                <td class="py-2 px-3">
+                    <input type="number" min="0" value="${firstPrice}" class="group-agreed-rate w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:outline-none focus:border-primary">
+                </td>
+                <td class="py-2 px-3 text-center">
+                    <button type="button" onclick="removeGroupAllotmentRow(this)" class="p-1 text-slate-400 hover:text-red-600 transition-colors">
+                        <i class="ph ph-trash text-base"></i>
+                    </button>
+                </td>
+            `;
+
+            rowsContainer.appendChild(tr);
+        }
+
+        function handleGroupRoomTypeChange(selectEl) {
+            const tr = selectEl.closest('tr');
+            if (!tr) return;
+            const selectedOpt = selectEl.options[selectEl.selectedIndex];
+            if (selectedOpt) {
+                const price = selectedOpt.getAttribute('data-price') || 0;
+                const rateInput = tr.querySelector('.group-agreed-rate');
+                if (rateInput) rateInput.value = price;
+            }
+        }
+
+        function removeGroupAllotmentRow(btn) {
+            const tr = btn.closest('tr');
+            const rowsContainer = document.getElementById('group-allotment-rows');
+            if (rowsContainer && rowsContainer.children.length > 1) {
+                if (tr) tr.remove();
+            } else {
+                alert('Group booking harus memiliki minimal 1 tipe kamar dalam Room Allotment.');
+            }
+        }
+
+        async function handleSaveGroupBooking(e) {
+            e.preventDefault();
+
+            const groupName = document.getElementById('group-name').value.trim();
+            const corporateId = document.getElementById('group-corporate-id').value || null;
+            const checkIn = document.getElementById('group-checkin').value;
+            const checkOut = document.getElementById('group-checkout').value;
+
+            if (!groupName) {
+                alert('Mohon isi Nama Grup.');
+                return;
+            }
+            if (!checkIn || !checkOut) {
+                alert('Mohon isi Tanggal Check-in dan Check-out.');
+                return;
+            }
+            if (new Date(checkOut) <= new Date(checkIn)) {
+                alert('Tanggal Check-out harus setelah Tanggal Check-in.');
+                return;
+            }
+
+            // Collect Repeater rows
+            const rowElements = document.querySelectorAll('#group-allotment-rows tr.group-allotment-item');
+            const allotments = [];
+
+            rowElements.forEach(tr => {
+                const rtSelect = tr.querySelector('.group-room-type-id');
+                const qtyInput = tr.querySelector('.group-blocked-qty');
+                const rateInput = tr.querySelector('.group-agreed-rate');
+
+                if (rtSelect && qtyInput && rateInput) {
+                    const rtId = rtSelect.value;
+                    const qty = parseInt(qtyInput.value, 10) || 0;
+                    const rate = parseFloat(rateInput.value) || 0;
+
+                    if (rtId && qty > 0) {
+                        allotments.push({
+                            room_type_id: rtId,
+                            blocked_qty: qty,
+                            agreed_rate: rate
+                        });
+                    }
+                }
+            });
+
+            if (allotments.length === 0) {
+                alert('Mohon masukkan minimal 1 Room Allotment dengan jumlah kamar > 0.');
+                return;
+            }
+
+            try {
+                // Store check_in_date and check_out_date in contact_person JSON
+                const contactPersonPayload = JSON.stringify({ check_in_date: checkIn, check_out_date: checkOut });
+
+                // 1. Insert group_bookings
+                const { data: gbData, error: gbErr } = await supabaseClient
+                    .from('group_bookings')
+                    .insert([{
+                        group_name: groupName,
+                        corporate_id: corporateId,
+                        contact_person: contactPersonPayload
+                    }])
+                    .select();
+
+                if (gbErr) throw gbErr;
+                if (!gbData || gbData.length === 0) throw new Error('Gagal menyimpan data group booking.');
+
+                const newGroupId = gbData[0].id;
+
+                // 2. Insert group_allotments
+                const allotmentPayloads = allotments.map(a => ({
+                    group_id: newGroupId,
+                    room_type_id: a.room_type_id,
+                    blocked_qty: a.blocked_qty,
+                    agreed_rate: a.agreed_rate
+                }));
+
+                const { error: gaErr } = await supabaseClient
+                    .from('group_allotments')
+                    .insert(allotmentPayloads);
+
+                if (gaErr) throw gaErr;
+
+                alert(`Group Booking "${groupName}" berhasil disimpan!`);
+                closeGroupBookingModal();
+                await fetchFrontdeskDashboard();
+
+            } catch (err) {
+                console.error('Error saving group booking:', err);
+                alert('Gagal menyimpan Group Booking: ' + (err.message || err));
             }
         }
 
