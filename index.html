@@ -2548,7 +2548,7 @@
                 // Fetch ALL active reservations joined with guest_profiles, room_types, and rooms
                 const { data, error } = await supabaseClient
                     .from('reservations')
-                    .select('id, reservation_number, booker_name, check_in_date, check_out_date, room_rate, status, room_id, room_type_id, guest_profiles(full_name), room_types(name), rooms(room_number)')
+                    .select('id, reservation_number, booking_reference, booker_name, check_in_date, check_out_date, room_rate, status, room_id, room_type_id, guest_profiles(full_name), room_types(name), rooms(room_number)')
                     .in('status', ['Reserved', 'Checkin']);
 
                 if (error) throw error;
@@ -2735,15 +2735,16 @@
                 filteredList = filteredList.filter(r => r.room_type_id === dashboardRoomTypeFilter);
             }
 
-            // Apply Smart Search Filter (Res No, Guest Name, Room No)
+            // Apply Smart Search Filter (Res No, Booking Ref, Guest Name, Room No)
             if (dashboardSearchQuery) {
                 filteredList = filteredList.filter(r => {
                     const resNo = (r.reservation_number || r.id || '').toLowerCase();
+                    const bookingRef = (r.booking_reference || '').toLowerCase();
                     const guestName = ((r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0]?.full_name : r.guest_profiles.full_name) : null) || r.booker_name || '').toLowerCase();
                     const roomNo = (r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '') || '';
                     const roomNoStr = String(roomNo).toLowerCase();
 
-                    return resNo.includes(dashboardSearchQuery) || guestName.includes(dashboardSearchQuery) || roomNoStr.includes(dashboardSearchQuery);
+                    return resNo.includes(dashboardSearchQuery) || bookingRef.includes(dashboardSearchQuery) || guestName.includes(dashboardSearchQuery) || roomNoStr.includes(dashboardSearchQuery);
                 });
             }
 
@@ -6144,63 +6145,125 @@
         let currentMasterGroup = null;
         let currentMasterTransactions = [];
 
-        async function checkAndUpdateMasterFolioHeader(groupId) {
+        async function checkAndUpdateMasterFolioHeader(res) {
             const container = document.getElementById('masterFolioHeaderActionContainer');
             if (!container) return;
 
-            if (!groupId) {
+            if (!res) {
                 container.classList.add('hidden');
                 container.innerHTML = '';
                 return;
             }
 
-            try {
-                const { data: groupData, error } = await supabaseClient
-                    .from('group_bookings')
-                    .select('id, folio_number, group_name')
-                    .eq('id', groupId)
-                    .single();
+            const groupId = res.group_id;
+            const bookingRef = res.booking_reference;
 
-                if (error || !groupData) {
-                    container.classList.add('hidden');
-                    container.innerHTML = '';
-                    return;
+            try {
+                let existingMaster = null;
+
+                // 1. Check master_folios table first
+                if (groupId) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('*')
+                        .eq('group_id', groupId)
+                        .maybeSingle();
+                    existingMaster = data;
+                }
+                if (!existingMaster && bookingRef) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('*')
+                        .eq('booking_reference', bookingRef)
+                        .maybeSingle();
+                    existingMaster = data;
                 }
 
-                container.classList.remove('hidden');
+                // 2. Check fallback legacy group_bookings.folio_number if groupId
+                let legacyGroupFolio = null;
+                if (!existingMaster && groupId) {
+                    const { data: gbData } = await supabaseClient
+                        .from('group_bookings')
+                        .select('id, folio_number')
+                        .eq('id', groupId)
+                        .maybeSingle();
+                    if (gbData && gbData.folio_number) {
+                        legacyGroupFolio = gbData.folio_number;
+                    }
+                }
 
-                if (groupData.folio_number) {
+                if (existingMaster || legacyGroupFolio) {
+                    container.classList.remove('hidden');
+                    const masterId = existingMaster ? existingMaster.id : null;
                     container.innerHTML = `
-                        <button type="button" onclick="openMasterFolioModal('${groupData.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5">
+                        <button type="button" onclick="openMasterFolioModal('${groupId || ''}', '${bookingRef || ''}', '${masterId || ''}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
                             <i class="ph ph-folder-open text-base"></i> Open Master Folio
                         </button>
                     `;
-                } else {
+                    return;
+                }
+
+                // 3. If no master folio exists, check if qualifies for Create Master Folio
+                let qualifies = false;
+                if (groupId) {
+                    qualifies = true;
+                } else if (bookingRef) {
+                    const { data: matchedRes } = await supabaseClient
+                        .from('reservations')
+                        .select('id')
+                        .eq('booking_reference', bookingRef);
+                    if (matchedRes && matchedRes.length > 1) {
+                        qualifies = true;
+                    }
+                }
+
+                if (qualifies) {
+                    container.classList.remove('hidden');
                     container.innerHTML = `
-                        <button type="button" onclick="handleCreateMasterFolio('${groupData.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5">
+                        <button type="button" onclick="handleCreateMasterFolio('${groupId || ''}', '${bookingRef || ''}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
                             <i class="ph ph-plus-circle text-base"></i> Create Master Folio
                         </button>
                     `;
+                } else {
+                    container.classList.add('hidden');
+                    container.innerHTML = '';
                 }
+
             } catch (err) {
-                console.error('Error checking master folio:', err);
+                console.error('Error checking master folio header:', err);
                 container.classList.add('hidden');
                 container.innerHTML = '';
             }
         }
 
-        async function handleCreateMasterFolio(groupId) {
-            if (!groupId) return;
+        async function handleCreateMasterFolio(groupId, bookingRef) {
+            if (!groupId && !bookingRef) return;
             try {
                 const generatedFolioNo = 'MFOL-' + String(Date.now()).slice(-6);
-                const { error } = await supabaseClient
-                    .from('group_bookings')
-                    .update({ folio_number: generatedFolioNo })
-                    .eq('id', groupId);
+
+                const { data: newMaster, error } = await supabaseClient
+                    .from('master_folios')
+                    .insert([{
+                        folio_number: generatedFolioNo,
+                        group_id: groupId || null,
+                        booking_reference: bookingRef || null
+                    }])
+                    .select()
+                    .single();
 
                 if (error) throw error;
 
-                await checkAndUpdateMasterFolioHeader(groupId);
+                // Also update group_bookings if groupId exists
+                if (groupId) {
+                    await supabaseClient
+                        .from('group_bookings')
+                        .update({ folio_number: generatedFolioNo })
+                        .eq('id', groupId);
+                }
+
+                if (currentFolioReservation) {
+                    await checkAndUpdateMasterFolioHeader(currentFolioReservation);
+                }
                 alert(`Master Folio berhasil dibuat dengan Nomor: ${generatedFolioNo}`);
             } catch (err) {
                 console.error('Error creating master folio:', err);
@@ -6226,8 +6289,10 @@
             if (!currentFolioReservation) return;
 
             const groupId = currentFolioReservation.group_id;
-            if (!groupId) {
-                alert('Reservasi ini tidak terhubung dengan Grup.');
+            const bookingRef = currentFolioReservation.booking_reference;
+
+            if (!groupId && !bookingRef) {
+                alert('Reservasi ini tidak terhubung dengan Grup atau Booking Reference.');
                 return;
             }
 
@@ -6237,16 +6302,59 @@
                 return;
             }
 
-            if (!confirm(`Pindahkan ${checkedBoxes.length} transaksi yang dipilih ke Master Folio?`)) {
-                return;
-            }
-
             try {
+                // Find or create Master Folio ID
+                let masterFolioId = null;
+                if (groupId) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('id')
+                        .eq('group_id', groupId)
+                        .maybeSingle();
+                    if (data) masterFolioId = data.id;
+                }
+                if (!masterFolioId && bookingRef) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('id')
+                        .eq('booking_reference', bookingRef)
+                        .maybeSingle();
+                    if (data) masterFolioId = data.id;
+                }
+
+                // If master_folios record does not exist yet, auto-create one
+                if (!masterFolioId) {
+                    const generatedFolioNo = 'MFOL-' + String(Date.now()).slice(-6);
+                    const { data: newMaster, error: createErr } = await supabaseClient
+                        .from('master_folios')
+                        .insert([{
+                            folio_number: generatedFolioNo,
+                            group_id: groupId || null,
+                            booking_reference: bookingRef || null
+                        }])
+                        .select()
+                        .single();
+
+                    if (createErr) throw createErr;
+                    masterFolioId = newMaster.id;
+
+                    if (groupId) {
+                        await supabaseClient
+                            .from('group_bookings')
+                            .update({ folio_number: generatedFolioNo })
+                            .eq('id', groupId);
+                    }
+                }
+
+                if (!confirm(`Pindahkan ${checkedBoxes.length} transaksi yang dipilih ke Master Folio?`)) {
+                    return;
+                }
+
                 const selectedIds = checkedBoxes.map(cb => cb.value);
                 const realDbIds = selectedIds.filter(id => !id.startsWith('auto-daily-'));
                 const autoDailyIds = selectedIds.filter(id => id.startsWith('auto-daily-'));
 
-                // Handle auto-generated daily charges first: insert into folio_transactions with reservation_id = NULL and group_id = groupId
+                // Handle auto-generated daily charges first: insert into folio_transactions with reservation_id = NULL, master_folio_id = masterFolioId, group_id = groupId
                 if (autoDailyIds.length > 0) {
                     const autoDailyTxsToInsert = [];
                     autoDailyIds.forEach(autoId => {
@@ -6254,7 +6362,8 @@
                         if (txObj) {
                             autoDailyTxsToInsert.push({
                                 reservation_id: null,
-                                group_id: groupId,
+                                master_folio_id: masterFolioId,
+                                group_id: groupId || null,
                                 transaction_type: txObj.transaction_type || 'CHARGE',
                                 description: txObj.description,
                                 category: txObj.category || 'Room Rate',
@@ -6274,18 +6383,20 @@
                     }
                 }
 
-                // Handle standard transactions: update reservation_id = NULL and group_id = groupId
+                // Handle standard transactions: update reservation_id = NULL, master_folio_id = masterFolioId, group_id = groupId
                 if (realDbIds.length > 0) {
                     const { error: updErr } = await supabaseClient
                         .from('folio_transactions')
                         .update({
                             reservation_id: null,
-                            group_id: groupId
+                            master_folio_id: masterFolioId,
+                            group_id: groupId || null
                         })
                         .in('id', realDbIds);
                     if (updErr) throw updErr;
                 }
 
+                await checkAndUpdateMasterFolioHeader(currentFolioReservation);
                 // Refresh personal folio transactions
                 await fetchFolioTransactions(currentFolioReservation.id);
                 alert(`${selectedIds.length} transaksi berhasil dipindahkan ke Master Folio.`);
@@ -6296,34 +6407,75 @@
             }
         }
 
-        async function openMasterFolioModal(groupId) {
+        async function openMasterFolioModal(groupId, bookingRef, masterId) {
             try {
-                const { data: gb, error } = await supabaseClient
-                    .from('group_bookings')
-                    .select('*, corporate_profiles(company_name)')
-                    .eq('id', groupId)
-                    .single();
+                let masterRecord = null;
+                if (masterId) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('*')
+                        .eq('id', masterId)
+                        .maybeSingle();
+                    masterRecord = data;
+                }
+                if (!masterRecord && groupId) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('*')
+                        .eq('group_id', groupId)
+                        .maybeSingle();
+                    masterRecord = data;
+                }
+                if (!masterRecord && bookingRef) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('*')
+                        .eq('booking_reference', bookingRef)
+                        .maybeSingle();
+                    masterRecord = data;
+                }
 
-                if (error || !gb) throw new Error('Data Master Group tidak ditemukan.');
+                let gb = null;
+                if (groupId) {
+                    const { data } = await supabaseClient
+                        .from('group_bookings')
+                        .select('*, corporate_profiles(company_name)')
+                        .eq('id', groupId)
+                        .maybeSingle();
+                    gb = data;
+                }
 
-                currentMasterGroup = gb;
-
-                const corpName = gb.corporate_profiles ? (Array.isArray(gb.corporate_profiles) ? gb.corporate_profiles[0]?.company_name : gb.corporate_profiles.company_name) : 'Non-Corporate';
-                const folioNumber = gb.folio_number || ('MFOL-' + gb.id.slice(0, 8));
+                currentMasterGroup = {
+                    id: masterRecord?.id || groupId,
+                    master_folio_id: masterRecord?.id || null,
+                    group_id: groupId || masterRecord?.group_id || null,
+                    booking_reference: bookingRef || masterRecord?.booking_reference || null,
+                    folio_number: masterRecord?.folio_number || gb?.folio_number || ('MFOL-' + (masterRecord?.id || groupId || bookingRef).slice(0, 8)),
+                    group_name: gb?.group_name || (bookingRef ? `OTA Ref: ${bookingRef}` : 'Master Folio'),
+                    corporate_name: gb?.corporate_profiles ? (Array.isArray(gb.corporate_profiles) ? gb.corporate_profiles[0]?.company_name : gb.corporate_profiles.company_name) : null
+                };
 
                 const headerNameEl = document.getElementById('masterFolioHeaderGroupName');
-                if (headerNameEl) headerNameEl.textContent = gb.group_name || 'Group Booking';
+                if (headerNameEl) headerNameEl.textContent = currentMasterGroup.group_name;
 
                 const headerCorpEl = document.getElementById('masterFolioHeaderCorp');
-                if (headerCorpEl) headerCorpEl.innerHTML = `<i class="ph ph-briefcase"></i> Corporate: ${corpName || '-'}`;
+                if (headerCorpEl) {
+                    if (currentMasterGroup.corporate_name) {
+                        headerCorpEl.innerHTML = `<i class="ph ph-briefcase"></i> Corporate: ${currentMasterGroup.corporate_name}`;
+                    } else if (currentMasterGroup.booking_reference) {
+                        headerCorpEl.innerHTML = `<i class="ph ph-tag"></i> Ref: ${currentMasterGroup.booking_reference}`;
+                    } else {
+                        headerCorpEl.innerHTML = `<i class="ph ph-briefcase"></i> Corporate: -`;
+                    }
+                }
 
                 const headerFolioEl = document.getElementById('masterFolioHeaderFolioNo');
-                if (headerFolioEl) headerFolioEl.textContent = folioNumber;
+                if (headerFolioEl) headerFolioEl.textContent = currentMasterGroup.folio_number;
 
                 const masterModal = document.getElementById('masterFolioModal');
                 if (masterModal) masterModal.classList.remove('hidden');
 
-                await fetchMasterFolioTransactions(groupId);
+                await fetchMasterFolioTransactions(currentMasterGroup);
 
             } catch (err) {
                 console.error('Error opening master folio:', err);
@@ -6338,17 +6490,24 @@
             currentMasterTransactions = [];
         }
 
-        async function fetchMasterFolioTransactions(groupId) {
+        async function fetchMasterFolioTransactions(masterInfo) {
             const tbody = document.getElementById('masterFolioTransactionsTbody');
             if (!tbody) return;
 
             tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Loading master transactions...</td></tr>`;
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('folio_transactions')
-                    .select('*')
-                    .eq('group_id', groupId)
+                let query = supabaseClient.from('folio_transactions').select('*');
+
+                if (masterInfo.master_folio_id) {
+                    query = query.eq('master_folio_id', masterInfo.master_folio_id);
+                } else if (masterInfo.group_id) {
+                    query = query.eq('group_id', masterInfo.group_id);
+                } else {
+                    query = query.eq('id', '00000000-0000-0000-0000-000000000000'); // empty fallback
+                }
+
+                const { data, error } = await query
                     .order('transaction_date', { ascending: true })
                     .order('created_at', { ascending: true });
 
@@ -6421,7 +6580,12 @@
 
                     const actionContent = isVoided
                         ? ''
-                        : `<button onclick="handleVoidMasterTransaction('${tx.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Void Transaction"><i class="ph ph-trash text-lg"></i></button>`;
+                        : `<div class="flex items-center justify-end gap-1.5">
+                            <button onclick="handleMoveBackToPersonalFolio('${tx.id}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer" title="Move Back to Personal Folio">
+                                <i class="ph ph-arrow-u-down-left"></i> Move Back
+                            </button>
+                            <button onclick="handleVoidMasterTransaction('${tx.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Void Transaction"><i class="ph ph-trash text-lg"></i></button>
+                           </div>`;
 
                     return `
                         <tr class="${rowClass}" ${titleAttr}>
@@ -6462,6 +6626,69 @@
             }
         }
 
+        async function handleMoveBackToPersonalFolio(transactionId) {
+            if (!transactionId || !currentMasterGroup) return;
+
+            try {
+                // Fetch linked active reservations for this master group / booking reference
+                let query = supabaseClient.from('reservations').select('id, reservation_number, booker_name, rooms(room_number), guest_profiles(full_name)');
+
+                if (currentMasterGroup.group_id) {
+                    query = query.eq('group_id', currentMasterGroup.group_id);
+                } else if (currentMasterGroup.booking_reference) {
+                    query = query.eq('booking_reference', currentMasterGroup.booking_reference);
+                }
+
+                const { data: resList, error: resErr } = await query;
+                if (resErr) throw resErr;
+
+                if (!resList || resList.length === 0) {
+                    alert('Tidak ditemukan kamar/reservasi terkait untuk mengembalikan transaksi.');
+                    return;
+                }
+
+                let targetResId = null;
+
+                if (resList.length === 1) {
+                    targetResId = resList[0].id;
+                } else {
+                    let promptMsg = "Pilih nomor urut reservasi/kamar tujuan:\n";
+                    resList.forEach((r, idx) => {
+                        const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : 'Unassigned';
+                        const gName = (r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0]?.full_name : r.guest_profiles.full_name) : null) || r.booker_name || 'Guest';
+                        promptMsg += `${idx + 1}. Kamar ${roomNo} - ${gName} (${r.reservation_number || r.id.slice(0, 8)})\n`;
+                    });
+
+                    const choice = prompt(promptMsg);
+                    if (!choice) return;
+                    const choiceIdx = parseInt(choice) - 1;
+                    if (isNaN(choiceIdx) || choiceIdx < 0 || choiceIdx >= resList.length) {
+                        alert('Pilihan tidak valid.');
+                        return;
+                    }
+                    targetResId = resList[choiceIdx].id;
+                }
+
+                // Update transaction: set reservation_id = targetResId, master_folio_id = NULL
+                const { error: updErr } = await supabaseClient
+                    .from('folio_transactions')
+                    .update({
+                        reservation_id: targetResId,
+                        master_folio_id: null
+                    })
+                    .eq('id', transactionId);
+
+                if (updErr) throw updErr;
+
+                alert('Transaksi berhasil dikembalikan ke Folio Pribadi.');
+                await fetchMasterFolioTransactions(currentMasterGroup);
+
+            } catch (err) {
+                console.error('Error moving transaction back to personal folio:', err);
+                alert('Gagal mengembalikan transaksi: ' + err.message);
+            }
+        }
+
         async function handleVoidMasterTransaction(transactionId) {
             if (!transactionId) return;
 
@@ -6482,8 +6709,8 @@
 
                 if (error) throw error;
 
-                if (currentMasterGroup && currentMasterGroup.id) {
-                    await fetchMasterFolioTransactions(currentMasterGroup.id);
+                if (currentMasterGroup) {
+                    await fetchMasterFolioTransactions(currentMasterGroup);
                 }
             } catch (err) {
                 console.error('Error voiding master transaction:', err);
@@ -6600,9 +6827,9 @@
             if (!currentMasterGroup) return;
 
             const gb = currentMasterGroup;
-            const folioNo = gb.folio_number || ('MFOL-' + gb.id.slice(0, 8));
-            const groupName = gb.group_name || 'Group Booking';
-            const corpName = gb.corporate_profiles ? (Array.isArray(gb.corporate_profiles) ? gb.corporate_profiles[0]?.company_name : gb.corporate_profiles.company_name) : 'Non-Corporate';
+            const folioNo = gb.folio_number || ('MFOL-' + (gb.id ? gb.id.slice(0, 8) : '000000'));
+            const groupName = gb.group_name || 'Master Folio';
+            const corpName = gb.corporate_name || (gb.booking_reference ? `OTA Ref: ${gb.booking_reference}` : 'Non-Corporate');
             const printDate = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
 
             let totalCharges = 0;
@@ -6802,8 +7029,8 @@
                 document.getElementById('folioExpectedTotal').textContent = `Rp ${expectedTotal.toLocaleString('id-ID')}`;
                 document.getElementById('folioExpectedBreakdown').textContent = breakdownText;
 
-                // Check & Update Master Folio Header button if part of a group
-                await checkAndUpdateMasterFolioHeader(res.group_id);
+                // Check & Update Master Folio Header button if part of a group or multi-room booking reference
+                await checkAndUpdateMasterFolioHeader(res);
 
                 // Show Folio Modal
                 const folioModal = document.getElementById('folioModal');
@@ -7440,7 +7667,8 @@
 
             const payload = {
                 reservation_id: isMasterMode ? null : currentFolioReservation.id,
-                group_id: isMasterMode ? currentMasterGroup.id : (currentFolioReservation ? currentFolioReservation.group_id : null),
+                master_folio_id: isMasterMode ? currentMasterGroup.master_folio_id : null,
+                group_id: isMasterMode ? (currentMasterGroup.group_id || null) : (currentFolioReservation ? currentFolioReservation.group_id : null),
                 transaction_type: txType,
                 description: description,
                 category: category,
@@ -7466,7 +7694,7 @@
 
                 closeFolioTransactionModal();
                 if (isMasterMode) {
-                    await fetchMasterFolioTransactions(currentMasterGroup.id);
+                    await fetchMasterFolioTransactions(currentMasterGroup);
                 } else {
                     await fetchFolioTransactions(currentFolioReservation.id);
                 }
