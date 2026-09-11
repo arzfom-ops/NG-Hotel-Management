@@ -60,6 +60,9 @@
             <a href="#" onclick="switchView('housekeeping')" id="nav-housekeeping" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
                 <i class="ph ph-broom text-xl"></i> Housekeeping
             </a>
+            <a href="#" onclick="switchView('corporate')" id="nav-corporate" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+                <i class="ph ph-buildings text-xl"></i> Corporate / Travel Agent
+            </a>
             <!-- Reports Section -->
             <div class="pt-2">
                 <div class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Reports</div>
@@ -74,6 +77,57 @@
             </a>
         </div>
     </aside>
+
+    <!-- Modal Add / Edit Corporate Profile -->
+    <div id="corporateModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="corporateModalTitle" class="text-lg font-semibold text-slate-800">Add Corporate Profile</h3>
+                <button type="button" onclick="closeCorporateModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+            <form id="corporateForm" onsubmit="handleSaveCorporate(event)" class="space-y-4">
+                <input type="hidden" id="edit-corporate-id">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Nama Perusahaan <span class="text-red-500">*</span></label>
+                    <input type="text" id="corpCompanyName" required placeholder="e.g. PT Nusantara Jaya" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">NPWP</label>
+                        <input type="text" id="corpNpwp" placeholder="01.234.567.8-012.000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">PIC Name</label>
+                        <input type="text" id="corpPicName" placeholder="Nama Person in Charge" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Alamat Billing</label>
+                    <textarea id="corpBillingAddress" rows="2" placeholder="Alamat penagihan perusahaan..." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Term of Payment (Hari)</label>
+                        <input type="number" id="corpTermOfPayment" min="0" value="30" placeholder="30" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Credit Limit (Rp)</label>
+                        <input type="number" id="corpCreditLimit" min="0" step="any" value="0" placeholder="50000000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeCorporateModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" id="corporateSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Modal Add Bed Type -->
     <div id="bedTypeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
@@ -959,10 +1013,23 @@
                 </button>
             </div>
 
+            <!-- Modal Tab Navigation -->
+            <div class="px-6 border-b border-slate-200 bg-slate-50 flex space-x-4 shrink-0">
+                <button type="button" id="res-tab-btn-details" onclick="switchReservationTab('details')" class="py-2.5 px-3 text-xs font-bold border-b-2 border-primary text-primary flex items-center gap-1.5 transition-colors">
+                    <i class="ph ph-user-list text-base"></i> Reservation Details
+                </button>
+                <button type="button" id="res-tab-btn-routing" onclick="switchReservationTab('routing')" class="py-2.5 px-3 text-xs font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors">
+                    <i class="ph ph-arrows-split text-base"></i> Folio Routing (Master Bill)
+                </button>
+            </div>
+
             <!-- Form Content -->
             <form id="reservationForm" onsubmit="handleSaveReservation(event)" class="flex-1 overflow-y-auto p-6 space-y-6">
                 <input type="hidden" id="edit-reservation-id">
                 <input type="hidden" id="res-guest-profile-id">
+
+                <!-- TAB 1 CONTAINER: Reservation Details -->
+                <div id="res-tab-container-details" class="space-y-6">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -974,10 +1041,19 @@
                             </h4>
                         </div>
 
-                        <!-- Reserve Name / Booker Name -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">Reserve Name / Booker Name</label>
-                            <input type="text" id="res-booker-name" placeholder="Nama Pemesan / Booker" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <!-- Guest Type & Reserve Name -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Guest Type <span class="text-red-500">*</span></label>
+                                <select id="res-guest-type" onchange="handleGuestTypeChange()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option value="Staying Guest">Staying Guest</option>
+                                    <option value="Non-Staying Guest">Non-Staying Guest (NSG)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Reserve / Booker Name</label>
+                                <input type="text" id="res-booker-name" placeholder="Nama Pemesan / Booker" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
                         </div>
 
                         <!-- Guest Name Autocomplete -->
@@ -1176,6 +1252,14 @@
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Voucher Number</label>
                                 <input type="text" id="res-voucher" placeholder="e.g. VCH-1234" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
                             </div>
+
+                            <!-- Bill Receiver (Corporate) -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Bill Receiver (Corporate)</label>
+                                <select id="res-corporate-id" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                    <option value="">-- Personal / Individual --</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
@@ -1265,6 +1349,68 @@
                         </p>
                     </div>
 
+                </div>
+
+                </div>
+
+                <!-- TAB 2 CONTAINER: Folio Routing (Dual-Listbox UI) -->
+                <div id="res-tab-container-routing" class="hidden space-y-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start justify-between gap-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-blue-900 flex items-center gap-1.5">
+                                <i class="ph ph-arrows-split text-lg text-primary"></i> Master Bill Routing Rules
+                            </h4>
+                            <p class="text-xs text-blue-700 mt-0.5">
+                                Tentukan artikel dan kategori mana saja yang biaya penagihannya akan ditransfer ke Master Bill / Corporate. Double-click atau pilih artikel lalu klik tombol panah.
+                            </p>
+                        </div>
+                        <button type="button" onclick="handleSaveFolioRouting()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 shrink-0">
+                            <i class="ph ph-floppy-disk text-base"></i> Simpan Routing Rules
+                        </button>
+                    </div>
+
+                    <!-- Dual Listbox Layout -->
+                    <div class="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
+
+                        <!-- Left Box: Available Articles -->
+                        <div class="md:col-span-5 bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col h-[380px]">
+                            <div class="pb-2 border-b border-slate-200 mb-3 flex justify-between items-center">
+                                <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="ph ph-list-plus text-slate-500 text-sm"></i> Available Articles (Kiri)
+                                </h5>
+                                <span class="text-[10px] text-slate-400">Kategori & Artikel</span>
+                            </div>
+                            <select id="res-routing-available" multiple ondblclick="moveSelectedRouting('right')" class="w-full flex-1 border border-slate-200 rounded-lg p-2 text-xs text-slate-700 focus:outline-none focus:border-primary bg-white overflow-y-auto cursor-pointer select-none">
+                                <!-- Options populated dynamically -->
+                            </select>
+                            <p class="text-[10px] text-slate-400 mt-2 text-center">Double-click artikel untuk memindahkan ke Master Bill</p>
+                        </div>
+
+                        <!-- Center Action Buttons -->
+                        <div class="md:col-span-1 flex md:flex-col justify-center items-center gap-2">
+                            <button type="button" onclick="moveSelectedRouting('right')" class="w-10 h-10 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-bold shadow-xs transition-colors flex items-center justify-center cursor-pointer" title="Route to Master">
+                                <i class="ph ph-arrow-right text-lg"></i>
+                            </button>
+                            <button type="button" onclick="moveSelectedRouting('left')" class="w-10 h-10 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-bold shadow-xs transition-colors flex items-center justify-center cursor-pointer" title="Remove from Master">
+                                <i class="ph ph-arrow-left text-lg"></i>
+                            </button>
+                        </div>
+
+                        <!-- Right Box: Routed to Master -->
+                        <div class="md:col-span-5 bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col h-[380px]">
+                            <div class="pb-2 border-b border-slate-200 mb-3 flex justify-between items-center">
+                                <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="ph ph-check-square-offset text-emerald-600 text-sm"></i> Routed to Master (Kanan)
+                                </h5>
+                                <span class="text-[10px] text-emerald-600 font-semibold">Ditanggung Group</span>
+                            </div>
+                            <select id="res-routing-routed" multiple ondblclick="moveSelectedRouting('left')" class="w-full flex-1 border border-slate-200 rounded-lg p-2 text-xs text-slate-700 focus:outline-none focus:border-primary bg-white overflow-y-auto cursor-pointer select-none">
+                                <!-- Options populated dynamically -->
+                            </select>
+                            <p class="text-[10px] text-slate-400 mt-2 text-center">Double-click artikel untuk menghapus dari Master Bill</p>
+                        </div>
+
+                    </div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -1473,6 +1619,50 @@
                         <i class="ph ph-spinner animate-spin text-3xl inline-block mb-2"></i>
                         <div>Memuat data kamar housekeeping...</div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area: Corporate Profiles (B2B) View -->
+        <div id="corporate-view" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px] flex flex-col">
+                <div class="mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Corporate & Travel Agent Profiles</h2>
+                        <p class="text-sm text-slate-500 mt-1">Kelola data profil perusahaan B2B, term of payment, dan credit limit.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="fetchCorporateProfiles()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5">
+                            <i class="ph ph-arrows-clockwise text-base"></i> Refresh
+                        </button>
+                        <button type="button" onclick="openCorporateModal()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+                            <i class="ph ph-plus-circle text-lg"></i> + Tambah Perusahaan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border border-slate-200 rounded-lg overflow-x-auto flex-1">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                            <tr>
+                                <th class="py-3 px-4">Nama Perusahaan</th>
+                                <th class="py-3 px-4">NPWP</th>
+                                <th class="py-3 px-4">Alamat Billing</th>
+                                <th class="py-3 px-4">PIC</th>
+                                <th class="py-3 px-4">Term of Payment</th>
+                                <th class="py-3 px-4">Credit Limit</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corporate-list-tbody" class="divide-y divide-slate-200 text-slate-700">
+                            <tr>
+                                <td colspan="7" class="py-8 text-center text-slate-400">
+                                    <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
+                                    <div>Memuat data corporate...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -4560,18 +4750,37 @@
                         (pMethods || []).map(pm => `<option value="${pm.id}">${pm.name} (${pm.method_type})</option>`).join('');
                 }
 
+                // 6. Corporate Profiles (Bill Receiver)
+                const { data: cProfiles, error: cpErr } = await supabaseClient.from('corporate_profiles').select('id, company_name').order('company_name', { ascending: true });
+                if (cpErr) throw cpErr;
+                const corporateSelect = document.getElementById('res-corporate-id');
+                if (corporateSelect) {
+                    corporateSelect.innerHTML = `<option value="">-- Personal / Individual --</option>` +
+                        (cProfiles || []).map(cp => `<option value="${cp.id}">${cp.company_name}</option>`).join('');
+                }
+
             } catch (err) {
                 console.error('Error populating reservation form dropdowns:', err);
             }
         }
 
+        function handleGuestTypeChange() {
+            handleRoomTypeChange();
+        }
+
         function handleRoomTypeChange() {
             const selectedRoomTypeId = document.getElementById('res-room-type').value;
+            const guestTypeVal = document.getElementById('res-guest-type') ? document.getElementById('res-guest-type').value : 'Staying Guest';
             const roomNumberSelect = document.getElementById('res-room-number');
 
             if (roomNumberSelect) {
                 const currentVal = roomNumberSelect.value;
-                const filteredRooms = selectedRoomTypeId ? roomsCache.filter(r => r.room_type_id === selectedRoomTypeId) : roomsCache;
+                let filteredRooms = selectedRoomTypeId ? roomsCache.filter(r => r.room_type_id === selectedRoomTypeId) : roomsCache;
+
+                if (guestTypeVal === 'Non-Staying Guest') {
+                    // Filter only rooms starting with "PM-" (Paymaster)
+                    filteredRooms = filteredRooms.filter(r => (r.room_number || '').toUpperCase().startsWith('PM-'));
+                }
 
                 let optionsHTML = `<option value="">Belum Dialokasikan</option>`;
                 filteredRooms.forEach(r => {
@@ -4693,8 +4902,30 @@
             }
         }
 
+        function switchReservationTab(tabName) {
+            const btnDetails = document.getElementById('res-tab-btn-details');
+            const btnRouting = document.getElementById('res-tab-btn-routing');
+            const containerDetails = document.getElementById('res-tab-container-details');
+            const containerRouting = document.getElementById('res-tab-container-routing');
+
+            if (tabName === 'routing') {
+                if (btnDetails) btnDetails.className = 'py-2.5 px-3 text-xs font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors';
+                if (btnRouting) btnRouting.className = 'py-2.5 px-3 text-xs font-bold border-b-2 border-primary text-primary flex items-center gap-1.5 transition-colors';
+                if (containerDetails) containerDetails.classList.add('hidden');
+                if (containerRouting) containerRouting.classList.remove('hidden');
+
+                populateFolioRoutingDualList();
+            } else {
+                if (btnRouting) btnRouting.className = 'py-2.5 px-3 text-xs font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5 transition-colors';
+                if (btnDetails) btnDetails.className = 'py-2.5 px-3 text-xs font-bold border-b-2 border-primary text-primary flex items-center gap-1.5 transition-colors';
+                if (containerRouting) containerRouting.classList.add('hidden');
+                if (containerDetails) containerDetails.classList.remove('hidden');
+            }
+        }
+
         async function openModal() {
             await populateReservationFormDropdowns();
+            switchReservationTab('details');
 
             // Reset IDs
             document.getElementById('edit-reservation-id').value = '';
@@ -4750,6 +4981,12 @@
             if (depositLockedMsg) depositLockedMsg.classList.add('hidden');
 
             document.getElementById('res-source').value = 'Direct';
+            const guestTypeSelect = document.getElementById('res-guest-type');
+            if (guestTypeSelect) {
+                guestTypeSelect.value = 'Staying Guest';
+            }
+            const corpSelect = document.getElementById('res-corporate-id');
+            if (corpSelect) corpSelect.value = '';
 
             document.getElementById('res-booker-name').value = '';
             clearSelectedGuest();
@@ -4796,6 +5033,7 @@
         async function openEditReservation(id) {
             isReactivateMode = false;
             await populateReservationFormDropdowns();
+            switchReservationTab('details');
 
             try {
                 const { data: res, error } = await supabaseClient
@@ -4859,6 +5097,7 @@
                 document.getElementById('res-segment').value = res.segment_id || '';
                 document.getElementById('res-source').value = res.reservation_source || 'Direct';
                 document.getElementById('res-voucher').value = res.voucher_number || '';
+                document.getElementById('res-corporate-id').value = res.corporate_id || '';
                 document.getElementById('res-qty').value = res.qty || 1;
                 document.getElementById('res-extrabed').value = res.extrabed_qty || 0;
 
@@ -6138,6 +6377,7 @@
                 const segmentId = document.getElementById('res-segment').value || null;
                 const reservationSource = document.getElementById('res-source').value || 'Direct';
                 const voucherNumber = document.getElementById('res-voucher').value.trim() || null;
+                const corporateId = document.getElementById('res-corporate-id').value || null;
                 const qty = parseInt(document.getElementById('res-qty').value, 10) || 1;
                 const extrabedQty = parseInt(document.getElementById('res-extrabed').value, 10) || 0;
 
@@ -6165,6 +6405,7 @@
                     segment_id: segmentId,
                     reservation_source: reservationSource,
                     voucher_number: voucherNumber,
+                    corporate_id: corporateId,
                     deposit_amount: depositAmount,
                     deposit_method: depositMethod,
                     comment: comment
@@ -6268,6 +6509,29 @@
                         if (dailyInsertErr) {
                             console.error('Error saving reservation_daily_rates:', dailyInsertErr);
                         }
+                    }
+                }
+
+                // 4. Save folio routing rules if set
+                if (savedReservationId && folioRoutingRulesState && folioRoutingRulesState.length > 0) {
+                    try {
+                        await supabaseClient
+                            .from('folio_routing_rules')
+                            .delete()
+                            .eq('source_reservation_id', savedReservationId);
+
+                        const insertPayload = folioRoutingRulesState.map(rule => ({
+                            source_reservation_id: savedReservationId,
+                            route_type: rule.route_type,
+                            category_name: rule.category_name,
+                            article_id: rule.article_id
+                        }));
+
+                        await supabaseClient
+                            .from('folio_routing_rules')
+                            .insert(insertPayload);
+                    } catch (rErr) {
+                        console.error('Error auto-saving routing rules:', rErr);
                     }
                 }
 
@@ -6564,6 +6828,7 @@
             const frontdeskTopbar = document.getElementById('frontdesk-topbar');
             const frontdeskView = document.getElementById('frontdesk-view');
             const housekeepingView = document.getElementById('housekeeping-view');
+            const corporateView = document.getElementById('corporate-view');
             const cancelListView = document.getElementById('cancel-list-view');
             const adminSettingsView = document.getElementById('admin-settings-view');
 
@@ -6571,10 +6836,11 @@
             const navFrontdesk = document.getElementById('nav-frontdesk');
             const navReservations = document.getElementById('nav-reservations');
             const navHousekeeping = document.getElementById('nav-housekeeping');
+            const navCorporate = document.getElementById('nav-corporate');
             const navCancelList = document.getElementById('nav-cancel-list');
             const navSettings = document.getElementById('nav-settings');
 
-            const allNavBtns = [navOverview, navFrontdesk, navReservations, navHousekeeping, navCancelList, navSettings];
+            const allNavBtns = [navOverview, navFrontdesk, navReservations, navHousekeeping, navCorporate, navCancelList, navSettings];
             allNavBtns.forEach(btn => {
                 if (btn) btn.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
             });
@@ -6583,10 +6849,25 @@
                 if (frontdeskTopbar) frontdeskTopbar.classList.add('hidden');
                 if (frontdeskView) frontdeskView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
+                if (corporateView) corporateView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.remove('hidden');
 
                 if (navSettings) navSettings.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+            } else if (viewName === 'corporate') {
+                if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+                const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+                if (topbarHeader) topbarHeader.textContent = "Corporate / Travel Agent Profiles";
+
+                if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (housekeepingView) housekeepingView.classList.add('hidden');
+                if (cancelListView) cancelListView.classList.add('hidden');
+                if (adminSettingsView) adminSettingsView.classList.add('hidden');
+                if (corporateView) corporateView.classList.remove('hidden');
+
+                if (navCorporate) navCorporate.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+
+                fetchCorporateProfiles();
             } else if (viewName === 'cancel-list') {
                 if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
                 const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
@@ -6594,6 +6875,7 @@
 
                 if (frontdeskView) frontdeskView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
+                if (corporateView) corporateView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.remove('hidden');
 
@@ -6606,6 +6888,7 @@
                 if (topbarHeader) topbarHeader.textContent = "Housekeeping / Room Status";
 
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (corporateView) corporateView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.remove('hidden');
@@ -6620,6 +6903,7 @@
 
                 if (frontdeskView) frontdeskView.classList.remove('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
+                if (corporateView) corporateView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
 
@@ -6634,6 +6918,347 @@
             const sidebar = document.getElementById('sidebar');
             if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.add('-translate-x-full');
+            }
+        }
+
+        // --- Corporate Profiles (B2B) JS Logic ---
+        async function fetchCorporateProfiles() {
+            try {
+                const tbody = document.getElementById('corporate-list-tbody');
+                if (!tbody) return;
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-slate-400">
+                            <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
+                            <div>Memuat data corporate...</div>
+                        </td>
+                    </tr>
+                `;
+
+                const { data, error } = await supabaseClient
+                    .from('corporate_profiles')
+                    .select('*')
+                    .order('company_name', { ascending: true });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-slate-400">
+                                Belum ada data corporate / travel agent.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = data.map(corp => {
+                    const companyName = corp.company_name || '-';
+                    const npwp = corp.npwp || '-';
+                    const billingAddress = corp.billing_address || '-';
+                    const picName = corp.pic_name || '-';
+                    const termOfPayment = corp.term_of_payment ? `${corp.term_of_payment} Hari` : '-';
+                    const creditLimit = corp.credit_limit ? `Rp ${parseFloat(corp.credit_limit).toLocaleString('id-ID')}` : 'Rp 0';
+
+                    const escapedName = (corp.company_name || '').replace(/'/g, "\\'");
+                    const escapedNpwp = (corp.npwp || '').replace(/'/g, "\\'");
+                    const escapedAddr = (corp.billing_address || '').replace(/'/g, "\\'").replace(/\n/g, "\\n");
+                    const escapedPic = (corp.pic_name || '').replace(/'/g, "\\'");
+
+                    return `
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="py-3.5 px-4 font-semibold text-slate-800">${companyName}</td>
+                            <td class="py-3.5 px-4 font-mono text-xs text-slate-600">${npwp}</td>
+                            <td class="py-3.5 px-4 text-xs text-slate-600 max-w-xs truncate" title="${billingAddress}">${billingAddress}</td>
+                            <td class="py-3.5 px-4 text-xs font-medium text-slate-700">${picName}</td>
+                            <td class="py-3.5 px-4 text-xs text-slate-600">${termOfPayment}</td>
+                            <td class="py-3.5 px-4 font-bold text-slate-800 text-xs">${creditLimit}</td>
+                            <td class="py-3.5 px-4 text-right space-x-2">
+                                <button onclick="openEditCorporate('${corp.id}', '${escapedName}', '${escapedNpwp}', '${escapedAddr}', '${escapedPic}', ${corp.term_of_payment || 30}, ${corp.credit_limit || 0})" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                <button onclick="deleteCorporate('${corp.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Hapus"><i class="ph ph-trash text-lg"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Error fetching corporate profiles:', err);
+                alert('Gagal memuat profil corporate: ' + err.message);
+            }
+        }
+
+        function openCorporateModal() {
+            document.getElementById('edit-corporate-id').value = '';
+            document.getElementById('corpCompanyName').value = '';
+            document.getElementById('corpNpwp').value = '';
+            document.getElementById('corpPicName').value = '';
+            document.getElementById('corpBillingAddress').value = '';
+            document.getElementById('corpTermOfPayment').value = '30';
+            document.getElementById('corpCreditLimit').value = '0';
+
+            document.getElementById('corporateModalTitle').textContent = 'Add Corporate Profile';
+            document.getElementById('corporateSubmitBtn').textContent = 'Simpan';
+
+            document.getElementById('corporateModal').classList.remove('hidden');
+        }
+
+        function openEditCorporate(id, companyName, npwp, billingAddress, picName, termOfPayment, creditLimit) {
+            document.getElementById('edit-corporate-id').value = id;
+            document.getElementById('corpCompanyName').value = companyName || '';
+            document.getElementById('corpNpwp').value = npwp || '';
+            document.getElementById('corpPicName').value = picName || '';
+            document.getElementById('corpBillingAddress').value = billingAddress || '';
+            document.getElementById('corpTermOfPayment').value = termOfPayment !== undefined ? termOfPayment : 30;
+            document.getElementById('corpCreditLimit').value = creditLimit !== undefined ? creditLimit : 0;
+
+            document.getElementById('corporateModalTitle').textContent = 'Edit Corporate Profile';
+            document.getElementById('corporateSubmitBtn').textContent = 'Update';
+
+            document.getElementById('corporateModal').classList.remove('hidden');
+        }
+
+        function closeCorporateModal() {
+            document.getElementById('corporateModal').classList.add('hidden');
+            document.getElementById('corporateForm').reset();
+            document.getElementById('edit-corporate-id').value = '';
+        }
+
+        async function handleSaveCorporate(event) {
+            event.preventDefault();
+
+            const editId = document.getElementById('edit-corporate-id').value;
+            const companyName = document.getElementById('corpCompanyName').value.trim();
+            const npwp = document.getElementById('corpNpwp').value.trim() || null;
+            const picName = document.getElementById('corpPicName').value.trim() || null;
+            const billingAddress = document.getElementById('corpBillingAddress').value.trim() || null;
+            const termOfPayment = parseInt(document.getElementById('corpTermOfPayment').value, 10) || 0;
+            const creditLimit = parseFloat(document.getElementById('corpCreditLimit').value) || 0;
+
+            if (!companyName) {
+                alert('Nama Perusahaan wajib diisi!');
+                return;
+            }
+
+            const payload = {
+                company_name: companyName,
+                npwp: npwp,
+                pic_name: picName,
+                billing_address: billingAddress,
+                term_of_payment: termOfPayment,
+                credit_limit: creditLimit
+            };
+
+            try {
+                if (editId) {
+                    const { error } = await supabaseClient
+                        .from('corporate_profiles')
+                        .update(payload)
+                        .eq('id', editId);
+                    if (error) throw error;
+                    alert('Profil Perusahaan berhasil diperbarui!');
+                } else {
+                    const { error } = await supabaseClient
+                        .from('corporate_profiles')
+                        .insert([payload]);
+                    if (error) throw error;
+                    alert('Profil Perusahaan berhasil ditambahkan!');
+                }
+
+                closeCorporateModal();
+                fetchCorporateProfiles();
+            } catch (err) {
+                console.error('Error saving corporate profile:', err);
+                alert('Gagal menyimpan profil perusahaan: ' + err.message);
+            }
+        }
+
+        async function deleteCorporate(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus profil perusahaan ini?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('corporate_profiles')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                alert('Profil Perusahaan berhasil dihapus!');
+                fetchCorporateProfiles();
+            } catch (err) {
+                console.error('Error deleting corporate profile:', err);
+                alert('Gagal menghapus profil perusahaan: ' + err.message);
+            }
+        }
+
+        // --- Master Bill Routing (Folio Transfer) JS Logic ---
+        let folioRoutingAvailableArticles = [];
+        let folioRoutingRulesState = [];
+
+        async function populateFolioRoutingDualList() {
+            const availSelect = document.getElementById('res-routing-available');
+            const routedSelect = document.getElementById('res-routing-routed');
+            if (!availSelect || !routedSelect) return;
+
+            availSelect.innerHTML = `<option disabled class="text-slate-400">Memuat artikel...</option>`;
+            routedSelect.innerHTML = `<option disabled class="text-slate-400">Memuat rules...</option>`;
+
+            try {
+                // Build available articles array
+                // 1. Kategori Umum
+                const categories = [
+                    { id: 'CAT-ROOM', type: 'CATEGORY', category: 'Room', name: '[Kategori] All Room Charges' },
+                    { id: 'CAT-FB', type: 'CATEGORY', category: 'F&B', name: '[Kategori] All F&B Charges' }
+                ];
+
+                // 2. Extra Charges spesifik
+                const { data: eCharges } = await supabaseClient
+                    .from('extra_charges')
+                    .select('id, name, category, price')
+                    .order('name', { ascending: true });
+
+                const articles = (eCharges || []).map(ec => ({
+                    id: ec.id,
+                    type: 'ARTICLE',
+                    category: ec.category || 'General',
+                    name: `[Artikel] ${ec.name} (${ec.category || 'Charge'}) - Rp ${parseFloat(ec.price || 0).toLocaleString('id-ID')}`
+                }));
+
+                folioRoutingAvailableArticles = [...categories, ...articles];
+
+                // Fetch existing routing rules for this reservation if in Edit mode
+                const editResId = document.getElementById('edit-reservation-id').value;
+                folioRoutingRulesState = [];
+
+                if (editResId) {
+                    const { data: existingRules, error: rErr } = await supabaseClient
+                        .from('folio_routing_rules')
+                        .select('*');
+
+                    if (!rErr && existingRules) {
+                        // Check rules matching source_reservation_id or fallback
+                        const resRules = existingRules.filter(r => r.source_reservation_id === editResId);
+                        folioRoutingRulesState = resRules;
+                    }
+                }
+
+                renderRoutingDualList();
+
+            } catch (err) {
+                console.error('Error populating folio routing dual list:', err);
+                availSelect.innerHTML = `<option disabled class="text-red-500">Gagal memuat artikel</option>`;
+                routedSelect.innerHTML = `<option disabled class="text-red-500">Gagal memuat rules</option>`;
+            }
+        }
+
+        function renderRoutingDualList() {
+            const availSelect = document.getElementById('res-routing-available');
+            const routedSelect = document.getElementById('res-routing-routed');
+            if (!availSelect || !routedSelect) return;
+
+            // Determine which items are currently routed
+            const routedKeys = new Set();
+            folioRoutingRulesState.forEach(rule => {
+                if (rule.route_type === 'CATEGORY' && rule.category_name) {
+                    routedKeys.add(`CAT-${rule.category_name.toUpperCase()}`);
+                } else if (rule.route_type === 'ARTICLE' && rule.article_id) {
+                    routedKeys.add(rule.article_id);
+                }
+            });
+
+            let availHTML = '';
+            let routedHTML = '';
+
+            folioRoutingAvailableArticles.forEach(item => {
+                const isRouted = routedKeys.has(item.id) ||
+                                (item.type === 'CATEGORY' && (routedKeys.has(`CAT-${item.category.toUpperCase()}`) || routedKeys.has(item.id)));
+
+                if (isRouted) {
+                    routedHTML += `<option value="${item.id}" data-type="${item.type}" data-category="${item.category}" class="py-1 px-2 border-b border-slate-100 hover:bg-emerald-50">${item.name}</option>`;
+                } else {
+                    availHTML += `<option value="${item.id}" data-type="${item.type}" data-category="${item.category}" class="py-1 px-2 border-b border-slate-100 hover:bg-blue-50">${item.name}</option>`;
+                }
+            });
+
+            availSelect.innerHTML = availHTML || `<option disabled class="text-slate-400 p-2">Semua artikel telah ditransfer ke Master</option>`;
+            routedSelect.innerHTML = routedHTML || `<option disabled class="text-slate-400 p-2">Belum ada artikel yang ditransfer</option>`;
+        }
+
+        function moveSelectedRouting(direction) {
+            const availSelect = document.getElementById('res-routing-available');
+            const routedSelect = document.getElementById('res-routing-routed');
+
+            if (direction === 'right') {
+                const selectedOptions = Array.from(availSelect.selectedOptions).filter(opt => !opt.disabled);
+                if (selectedOptions.length === 0) return;
+
+                selectedOptions.forEach(opt => {
+                    const itemId = opt.value;
+                    const itemObj = folioRoutingAvailableArticles.find(i => i.id === itemId);
+                    if (itemObj) {
+                        const ruleObj = {
+                            route_type: itemObj.type,
+                            category_name: itemObj.type === 'CATEGORY' ? itemObj.category : (itemObj.category || 'General'),
+                            article_id: itemObj.type === 'ARTICLE' ? itemObj.id : null
+                        };
+                        folioRoutingRulesState.push(ruleObj);
+                    }
+                });
+            } else if (direction === 'left') {
+                const selectedOptions = Array.from(routedSelect.selectedOptions).filter(opt => !opt.disabled);
+                if (selectedOptions.length === 0) return;
+
+                const removedIds = new Set(selectedOptions.map(opt => opt.value));
+                folioRoutingRulesState = folioRoutingRulesState.filter(rule => {
+                    if (rule.route_type === 'CATEGORY' && rule.category_name) {
+                        return !removedIds.has(`CAT-${rule.category_name.toUpperCase()}`);
+                    } else if (rule.route_type === 'ARTICLE' && rule.article_id) {
+                        return !removedIds.has(rule.article_id);
+                    }
+                    return true;
+                });
+            }
+
+            renderRoutingDualList();
+        }
+
+        async function handleSaveFolioRouting() {
+            const editResId = document.getElementById('edit-reservation-id').value;
+            if (!editResId) {
+                alert('Routing rules akan otomatis tersimpan saat Anda menyimpan Reservasi.');
+                return;
+            }
+
+            try {
+                // Delete existing rules for this source reservation
+                const { error: delErr } = await supabaseClient
+                    .from('folio_routing_rules')
+                    .delete()
+                    .eq('source_reservation_id', editResId);
+
+                if (delErr) throw delErr;
+
+                // Prepare new rules insert payload
+                if (folioRoutingRulesState.length > 0) {
+                    const insertPayload = folioRoutingRulesState.map(rule => ({
+                        source_reservation_id: editResId,
+                        route_type: rule.route_type,
+                        category_name: rule.category_name,
+                        article_id: rule.article_id
+                    }));
+
+                    const { error: insErr } = await supabaseClient
+                        .from('folio_routing_rules')
+                        .insert(insertPayload);
+
+                    if (insErr) throw insErr;
+                }
+
+                alert('Attribut Folio Routing Rules berhasil disimpan!');
+            } catch (err) {
+                console.error('Error saving folio routing rules:', err);
+                alert('Gagal menyimpan Master Bill Routing Rules: ' + err.message);
             }
         }
 
