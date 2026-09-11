@@ -776,6 +776,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
+                    <div id="masterFolioHeaderActionContainer" class="hidden"></div>
                     <div class="bg-amber-400 text-slate-900 px-3.5 py-1.5 rounded-lg shadow-sm text-right">
                         <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-800 leading-none">Folio Number</div>
                         <div id="folioHeaderFolioNo" class="font-mono text-xl font-bold text-slate-900 leading-tight">FOL-000000</div>
@@ -822,6 +823,9 @@
                         <i class="ph ph-list-bullets text-lg text-primary"></i> Transaction History
                     </h4>
                     <div class="flex items-center gap-2">
+                        <button type="button" id="btnMoveToMaster" onclick="handleMoveToMasterFolio()" disabled class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                            <i class="ph ph-arrows-out-line-horizontal text-base"></i> Move to Master Folio
+                        </button>
                         <button type="button" onclick="openAddChargeModal()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
                             <i class="ph ph-plus-circle text-base"></i> + Add Charge
                         </button>
@@ -837,6 +841,9 @@
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider sticky top-0 border-b border-slate-200 text-[11px]">
                                 <tr>
+                                    <th class="p-3 text-center w-8">
+                                        <input type="checkbox" id="selectAllFolioTx" onchange="toggleSelectAllFolioTx(this)" class="rounded border-slate-300 text-primary focus:ring-primary">
+                                    </th>
                                     <th class="p-3">Date</th>
                                     <th class="p-3">Type</th>
                                     <th class="p-3">Description / Category</th>
@@ -870,6 +877,120 @@
                 <button type="button" id="processCheckoutBtn" onclick="handleProcessCheckout()" class="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2">
                     <i class="ph ph-sign-out text-lg"></i> Process Check-out
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Master Folio / Billing System -->
+    <div id="masterFolioModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden relative">
+
+            <!-- Header Info -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-indigo-950 text-white shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-amber-500/20 text-amber-400 rounded-lg">
+                        <i class="ph ph-buildings text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold flex items-center gap-2" id="masterFolioHeaderGroupName">
+                            Group Name Loading...
+                        </h3>
+                        <div class="flex items-center gap-4 text-xs text-slate-300 mt-0.5">
+                            <span id="masterFolioHeaderCorp"><i class="ph ph-briefcase"></i> Corporate: -</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="bg-amber-400 text-slate-900 px-3.5 py-1.5 rounded-lg shadow-sm text-right">
+                        <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-800 leading-none">Master Folio Number</div>
+                        <div id="masterFolioHeaderFolioNo" class="font-mono text-xl font-bold text-slate-900 leading-tight">MFOL-000000</div>
+                    </div>
+                    <button type="button" onclick="closeMasterFolioModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
+                        <i class="ph ph-x text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body Content -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-50">
+
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Total Charges Card -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Charges (Group)</p>
+                            <h4 class="text-2xl font-bold text-slate-800 mt-1" id="masterFolioTotalCharge">Rp 0</h4>
+                            <p class="text-xs text-slate-400 mt-1">Transferred & Master Charges</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl font-bold">
+                            <i class="ph ph-receipt"></i>
+                        </div>
+                    </div>
+
+                    <!-- Current Balance Card -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Balance</p>
+                            <h4 class="text-2xl font-bold mt-1 text-slate-800" id="masterFolioCurrentBalance">Rp 0</h4>
+                            <p class="text-xs text-slate-400 mt-1">Total Charge - Total Payment</p>
+                        </div>
+                        <div id="masterFolioBalanceIcon" class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-2xl font-bold">
+                            <i class="ph ph-scales"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="flex items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                    <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="ph ph-list-bullets text-lg text-primary"></i> Master Folio Transactions
+                    </h4>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="openMasterAddChargeModal()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                            <i class="ph ph-plus-circle text-base"></i> + Add Master Charge
+                        </button>
+                        <button type="button" onclick="openMasterAddPaymentModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                            <i class="ph ph-plus-circle text-base"></i> + Add Master Payment
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transaction Table -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto max-h-72">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider sticky top-0 border-b border-slate-200 text-[11px]">
+                                <tr>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Description / Category</th>
+                                    <th class="p-3 text-center">Qty</th>
+                                    <th class="p-3 text-right">Unit Price</th>
+                                    <th class="p-3 text-right">Total</th>
+                                    <th class="p-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="masterFolioTransactionsTbody" class="divide-y divide-slate-100 font-medium">
+                                <tr>
+                                    <td colspan="7" class="p-4 text-center text-slate-400">Loading master transactions...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="px-6 py-4 border-t border-slate-200 flex justify-between items-center bg-white shrink-0">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeMasterFolioModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                        Close
+                    </button>
+                    <button type="button" onclick="handlePrintMasterFolio()" class="px-5 py-2.5 bg-indigo-900 hover:bg-indigo-950 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2">
+                        <i class="ph ph-printer text-lg"></i> Print Group Invoice
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -6020,6 +6141,602 @@
         let currentFolioTransactions = [];
         let calculatedCurrentBalance = 0;
 
+        let currentMasterGroup = null;
+        let currentMasterTransactions = [];
+
+        async function checkAndUpdateMasterFolioHeader(groupId) {
+            const container = document.getElementById('masterFolioHeaderActionContainer');
+            if (!container) return;
+
+            if (!groupId) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            try {
+                const { data: groupData, error } = await supabaseClient
+                    .from('group_bookings')
+                    .select('id, folio_number, group_name')
+                    .eq('id', groupId)
+                    .single();
+
+                if (error || !groupData) {
+                    container.classList.add('hidden');
+                    container.innerHTML = '';
+                    return;
+                }
+
+                container.classList.remove('hidden');
+
+                if (groupData.folio_number) {
+                    container.innerHTML = `
+                        <button type="button" onclick="openMasterFolioModal('${groupData.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5">
+                            <i class="ph ph-folder-open text-base"></i> Open Master Folio
+                        </button>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <button type="button" onclick="handleCreateMasterFolio('${groupData.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5">
+                            <i class="ph ph-plus-circle text-base"></i> Create Master Folio
+                        </button>
+                    `;
+                }
+            } catch (err) {
+                console.error('Error checking master folio:', err);
+                container.classList.add('hidden');
+                container.innerHTML = '';
+            }
+        }
+
+        async function handleCreateMasterFolio(groupId) {
+            if (!groupId) return;
+            try {
+                const generatedFolioNo = 'MFOL-' + String(Date.now()).slice(-6);
+                const { error } = await supabaseClient
+                    .from('group_bookings')
+                    .update({ folio_number: generatedFolioNo })
+                    .eq('id', groupId);
+
+                if (error) throw error;
+
+                await checkAndUpdateMasterFolioHeader(groupId);
+                alert(`Master Folio berhasil dibuat dengan Nomor: ${generatedFolioNo}`);
+            } catch (err) {
+                console.error('Error creating master folio:', err);
+                alert('Gagal membuat Master Folio: ' + err.message);
+            }
+        }
+
+        function toggleSelectAllFolioTx(masterCb) {
+            const checkboxes = document.querySelectorAll('.folio-tx-cb:not([disabled])');
+            checkboxes.forEach(cb => { cb.checked = masterCb.checked; });
+            onFolioTxCheckboxChange();
+        }
+
+        function onFolioTxCheckboxChange() {
+            const checkedBoxes = document.querySelectorAll('.folio-tx-cb:checked');
+            const btnMove = document.getElementById('btnMoveToMaster');
+            if (btnMove) {
+                btnMove.disabled = checkedBoxes.length === 0;
+            }
+        }
+
+        async function handleMoveToMasterFolio() {
+            if (!currentFolioReservation) return;
+
+            const groupId = currentFolioReservation.group_id;
+            if (!groupId) {
+                alert('Reservasi ini tidak terhubung dengan Grup.');
+                return;
+            }
+
+            const checkedBoxes = Array.from(document.querySelectorAll('.folio-tx-cb:checked'));
+            if (checkedBoxes.length === 0) {
+                alert('Pilih minimal satu transaksi untuk dipindahkan.');
+                return;
+            }
+
+            if (!confirm(`Pindahkan ${checkedBoxes.length} transaksi yang dipilih ke Master Folio?`)) {
+                return;
+            }
+
+            try {
+                const selectedIds = checkedBoxes.map(cb => cb.value);
+                const realDbIds = selectedIds.filter(id => !id.startsWith('auto-daily-'));
+                const autoDailyIds = selectedIds.filter(id => id.startsWith('auto-daily-'));
+
+                // Handle auto-generated daily charges first: insert into folio_transactions with reservation_id = NULL and group_id = groupId
+                if (autoDailyIds.length > 0) {
+                    const autoDailyTxsToInsert = [];
+                    autoDailyIds.forEach(autoId => {
+                        const txObj = currentFolioTransactions.find(t => t.id === autoId);
+                        if (txObj) {
+                            autoDailyTxsToInsert.push({
+                                reservation_id: null,
+                                group_id: groupId,
+                                transaction_type: txObj.transaction_type || 'CHARGE',
+                                description: txObj.description,
+                                category: txObj.category || 'Room Rate',
+                                amount: txObj.amount,
+                                unit_price: txObj.unit_price,
+                                qty: txObj.qty || 1,
+                                transaction_date: txObj.transaction_date || new Date().toISOString().split('T')[0]
+                            });
+                        }
+                    });
+
+                    if (autoDailyTxsToInsert.length > 0) {
+                        const { error: insErr } = await supabaseClient
+                            .from('folio_transactions')
+                            .insert(autoDailyTxsToInsert);
+                        if (insErr) throw insErr;
+                    }
+                }
+
+                // Handle standard transactions: update reservation_id = NULL and group_id = groupId
+                if (realDbIds.length > 0) {
+                    const { error: updErr } = await supabaseClient
+                        .from('folio_transactions')
+                        .update({
+                            reservation_id: null,
+                            group_id: groupId
+                        })
+                        .in('id', realDbIds);
+                    if (updErr) throw updErr;
+                }
+
+                // Refresh personal folio transactions
+                await fetchFolioTransactions(currentFolioReservation.id);
+                alert(`${selectedIds.length} transaksi berhasil dipindahkan ke Master Folio.`);
+
+            } catch (err) {
+                console.error('Error moving transactions to master folio:', err);
+                alert('Gagal memindahkan transaksi: ' + err.message);
+            }
+        }
+
+        async function openMasterFolioModal(groupId) {
+            try {
+                const { data: gb, error } = await supabaseClient
+                    .from('group_bookings')
+                    .select('*, corporate_profiles(company_name)')
+                    .eq('id', groupId)
+                    .single();
+
+                if (error || !gb) throw new Error('Data Master Group tidak ditemukan.');
+
+                currentMasterGroup = gb;
+
+                const corpName = gb.corporate_profiles ? (Array.isArray(gb.corporate_profiles) ? gb.corporate_profiles[0]?.company_name : gb.corporate_profiles.company_name) : 'Non-Corporate';
+                const folioNumber = gb.folio_number || ('MFOL-' + gb.id.slice(0, 8));
+
+                const headerNameEl = document.getElementById('masterFolioHeaderGroupName');
+                if (headerNameEl) headerNameEl.textContent = gb.group_name || 'Group Booking';
+
+                const headerCorpEl = document.getElementById('masterFolioHeaderCorp');
+                if (headerCorpEl) headerCorpEl.innerHTML = `<i class="ph ph-briefcase"></i> Corporate: ${corpName || '-'}`;
+
+                const headerFolioEl = document.getElementById('masterFolioHeaderFolioNo');
+                if (headerFolioEl) headerFolioEl.textContent = folioNumber;
+
+                const masterModal = document.getElementById('masterFolioModal');
+                if (masterModal) masterModal.classList.remove('hidden');
+
+                await fetchMasterFolioTransactions(groupId);
+
+            } catch (err) {
+                console.error('Error opening master folio:', err);
+                alert('Gagal membuka Master Folio: ' + err.message);
+            }
+        }
+
+        function closeMasterFolioModal() {
+            const masterModal = document.getElementById('masterFolioModal');
+            if (masterModal) masterModal.classList.add('hidden');
+            currentMasterGroup = null;
+            currentMasterTransactions = [];
+        }
+
+        async function fetchMasterFolioTransactions(groupId) {
+            const tbody = document.getElementById('masterFolioTransactionsTbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Loading master transactions...</td></tr>`;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('folio_transactions')
+                    .select('*')
+                    .eq('group_id', groupId)
+                    .order('transaction_date', { ascending: true })
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                currentMasterTransactions = data || [];
+                renderMasterFolioTransactions();
+
+            } catch (err) {
+                console.error('Error fetching master folio transactions:', err);
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500 font-semibold">Gagal memuat transaksi master: ${err.message}</td></tr>`;
+            }
+        }
+
+        function renderMasterFolioTransactions() {
+            const tbody = document.getElementById('masterFolioTransactionsTbody');
+            if (!tbody) return;
+
+            let totalCharge = 0;
+            let totalPayment = 0;
+
+            if (currentMasterTransactions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada transaksi di Master Folio ini.</td></tr>`;
+            } else {
+                tbody.innerHTML = currentMasterTransactions.map(tx => {
+                    const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
+                    const amount = Number(tx.amount || 0);
+                    const isVoided = tx.is_voided === true;
+
+                    if (!isVoided) {
+                        if (txType === 'CHARGE') {
+                            totalCharge += amount;
+                        } else if (txType === 'PAYMENT') {
+                            totalPayment += amount;
+                        }
+                    }
+
+                    let typeBadge = txType === 'CHARGE'
+                        ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700">CHARGE</span>`
+                        : `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700">PAYMENT</span>`;
+
+                    if (isVoided) {
+                        typeBadge += `<span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-600 text-white">[VOID]</span>`;
+                    }
+
+                    const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
+
+                    const qtyDisplay = txType === 'CHARGE' ? (tx.qty || 1) : '-';
+                    const unitPriceDisplay = txType === 'CHARGE'
+                        ? `Rp ${Number(tx.unit_price || tx.amount || 0).toLocaleString('id-ID')}`
+                        : '-';
+
+                    const descColorClass = isVoided ? 'text-slate-400 line-through' : 'text-slate-800';
+                    let descContent = `<div class="font-medium ${descColorClass}">${tx.description || '-'}</div>`;
+                    if (txType === 'CHARGE' && tx.category) {
+                        descContent += `<div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">${tx.category}</div>`;
+                    } else if (txType === 'PAYMENT' && tx.reference_number) {
+                        descContent += `<div class="text-[10px] text-slate-400">Ref: ${tx.reference_number}</div>`;
+                    }
+
+                    const rowClass = isVoided
+                        ? 'text-slate-400 bg-slate-50/50'
+                        : 'hover:bg-slate-50 transition-colors';
+
+                    const titleAttr = isVoided && tx.void_reason ? `title="${tx.void_reason.replace(/"/g, '&quot;')}"` : '';
+
+                    const amountColorClass = isVoided
+                        ? 'text-slate-400 line-through'
+                        : (txType === 'CHARGE' ? 'text-slate-800' : 'text-emerald-600');
+
+                    const actionContent = isVoided
+                        ? ''
+                        : `<button onclick="handleVoidMasterTransaction('${tx.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Void Transaction"><i class="ph ph-trash text-lg"></i></button>`;
+
+                    return `
+                        <tr class="${rowClass}" ${titleAttr}>
+                            <td class="p-3 text-slate-600 whitespace-nowrap">${dateStr}</td>
+                            <td class="p-3">${typeBadge}</td>
+                            <td class="p-3">${descContent}</td>
+                            <td class="p-3 text-center font-semibold ${isVoided ? 'text-slate-400' : 'text-slate-700'}">${qtyDisplay}</td>
+                            <td class="p-3 text-right ${isVoided ? 'text-slate-400' : 'text-slate-600'}">${unitPriceDisplay}</td>
+                            <td class="p-3 text-right font-bold ${amountColorClass}">
+                                ${txType === 'CHARGE' ? '' : '-' }Rp ${amount.toLocaleString('id-ID')}
+                            </td>
+                            <td class="p-3 text-right whitespace-nowrap">${actionContent}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            const currentBalance = totalCharge - totalPayment;
+
+            const totalChargeEl = document.getElementById('masterFolioTotalCharge');
+            if (totalChargeEl) totalChargeEl.textContent = `Rp ${totalCharge.toLocaleString('id-ID')}`;
+
+            const balanceEl = document.getElementById('masterFolioCurrentBalance');
+            const balanceIcon = document.getElementById('masterFolioBalanceIcon');
+
+            if (balanceEl) {
+                balanceEl.textContent = `Rp ${currentBalance.toLocaleString('id-ID')}`;
+                if (currentBalance > 0) {
+                    balanceEl.className = 'text-2xl font-bold mt-1 text-red-600';
+                    if (balanceIcon) balanceIcon.className = 'w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-2xl font-bold';
+                } else if (currentBalance < 0) {
+                    balanceEl.className = 'text-2xl font-bold mt-1 text-amber-600';
+                    if (balanceIcon) balanceIcon.className = 'w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-2xl font-bold';
+                } else {
+                    balanceEl.className = 'text-2xl font-bold mt-1 text-emerald-600';
+                    if (balanceIcon) balanceIcon.className = 'w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-2xl font-bold';
+                }
+            }
+        }
+
+        async function handleVoidMasterTransaction(transactionId) {
+            if (!transactionId) return;
+
+            const voidReason = prompt("Masukkan alasan pembatalan (wajib diisi):");
+            if (voidReason === null || voidReason.trim() === "") {
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('folio_transactions')
+                    .update({
+                        is_voided: true,
+                        void_reason: voidReason.trim(),
+                        voided_at: new Date().toISOString()
+                    })
+                    .eq('id', transactionId);
+
+                if (error) throw error;
+
+                if (currentMasterGroup && currentMasterGroup.id) {
+                    await fetchMasterFolioTransactions(currentMasterGroup.id);
+                }
+            } catch (err) {
+                console.error('Error voiding master transaction:', err);
+                alert('Gagal membatalkan transaksi: ' + err.message);
+            }
+        }
+
+        async function openMasterAddChargeModal() {
+            if (!currentMasterGroup) return;
+            // Temporarily set currentFolioReservation to a dummy with group_id for modal compatibility if needed, or open tx modal
+            const txModal = document.getElementById('folioTransactionModal');
+            document.getElementById('folio-tx-type').value = 'CHARGE';
+            document.getElementById('folioTxModalTitle').innerHTML = `<i class="ph ph-plus-circle text-xl text-red-600"></i> + Add Master Charge (Group)`;
+
+            document.getElementById('folio-tx-charge-item-container').classList.remove('hidden');
+            document.getElementById('folio-tx-qty-price-container').classList.remove('hidden');
+            document.getElementById('folio-tx-desc-container').classList.add('hidden');
+            document.getElementById('folio-tx-payment-method-container').classList.add('hidden');
+            document.getElementById('folio-tx-ref-container').classList.add('hidden');
+
+            const amountInput = document.getElementById('folio-tx-amount');
+            if (amountInput) amountInput.setAttribute('readonly', 'readonly');
+
+            const qtyInput = document.getElementById('folio-tx-qty');
+            if (qtyInput) qtyInput.value = 1;
+
+            const chargeSelect = document.getElementById('folio-tx-charge-item');
+            if (chargeSelect) {
+                chargeSelect.innerHTML = `<option value="">Loading extra charges...</option>`;
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('extra_charges')
+                        .select('*')
+                        .order('name', { ascending: true });
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        chargeSelect.innerHTML = data.map(item => `
+                            <option value="${item.id}" data-price="${item.price || item.unit_price || 0}" data-name="${item.name}" data-category="${item.category || 'Others'}">
+                                ${item.name} (${item.category || 'Others'}) - Rp ${Number(item.price || item.unit_price || 0).toLocaleString('id-ID')}
+                            </option>
+                        `).join('') + `<option value="custom">+ Custom Charge Item...</option>`;
+                        handleChargeItemSelectChange();
+                    } else {
+                        chargeSelect.innerHTML = `<option value="custom">+ Custom Charge Item...</option>`;
+                        handleChargeItemSelectChange();
+                    }
+                } catch (e) {
+                    chargeSelect.innerHTML = `<option value="custom">+ Custom Charge Item...</option>`;
+                    handleChargeItemSelectChange();
+                }
+            }
+
+            // Flag as master charge mode
+            txModal.dataset.isMasterMode = "true";
+            if (txModal) txModal.classList.remove('hidden');
+        }
+
+        async function openMasterAddPaymentModal() {
+            if (!currentMasterGroup) return;
+            const txModal = document.getElementById('folioTransactionModal');
+            document.getElementById('folio-tx-type').value = 'PAYMENT';
+            document.getElementById('folioTxModalTitle').innerHTML = `<i class="ph ph-plus-circle text-xl text-emerald-600"></i> + Add Master Payment (Group)`;
+
+            document.getElementById('folio-tx-charge-item-container').classList.add('hidden');
+            document.getElementById('folio-tx-qty-price-container').classList.add('hidden');
+            document.getElementById('folio-tx-custom-category-container').classList.add('hidden');
+            document.getElementById('folio-tx-custom-desc-container').classList.add('hidden');
+            document.getElementById('folio-tx-desc-container').classList.remove('hidden');
+            document.getElementById('folio-tx-payment-method-container').classList.remove('hidden');
+            document.getElementById('folio-tx-ref-container').classList.remove('hidden');
+
+            const amountInput = document.getElementById('folio-tx-amount');
+            if (amountInput) {
+                amountInput.removeAttribute('readonly');
+                amountInput.value = '';
+            }
+
+            const descInput = document.getElementById('folio-tx-description');
+            if (descInput) descInput.value = '';
+
+            const refInput = document.getElementById('folio-tx-reference');
+            if (refInput) refInput.value = '';
+
+            const pmSelect = document.getElementById('folio-tx-payment-method');
+            if (pmSelect) {
+                pmSelect.innerHTML = `<option value="">Loading payment methods...</option>`;
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('payment_methods')
+                        .select('*')
+                        .order('name', { ascending: true });
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        pmSelect.innerHTML = data.map(item => `
+                            <option value="${item.name}">${item.name}</option>
+                        `).join('');
+                    } else {
+                        pmSelect.innerHTML = `<option value="Cash">Cash</option><option value="Bank Transfer">Bank Transfer</option><option value="Credit Card">Credit Card</option>`;
+                    }
+                } catch (e) {
+                    pmSelect.innerHTML = `<option value="Cash">Cash</option><option value="Bank Transfer">Bank Transfer</option><option value="Credit Card">Credit Card</option>`;
+                }
+            }
+
+            txModal.dataset.isMasterMode = "true";
+            if (txModal) txModal.classList.remove('hidden');
+        }
+
+        function handlePrintMasterFolio() {
+            if (!currentMasterGroup) return;
+
+            const gb = currentMasterGroup;
+            const folioNo = gb.folio_number || ('MFOL-' + gb.id.slice(0, 8));
+            const groupName = gb.group_name || 'Group Booking';
+            const corpName = gb.corporate_profiles ? (Array.isArray(gb.corporate_profiles) ? gb.corporate_profiles[0]?.company_name : gb.corporate_profiles.company_name) : 'Non-Corporate';
+            const printDate = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+
+            let totalCharges = 0;
+            let totalPayments = 0;
+
+            const rowsHtml = currentMasterTransactions.map(tx => {
+                const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
+                const amount = Number(tx.amount || 0);
+                const isVoided = tx.is_voided === true;
+
+                if (!isVoided) {
+                    if (txType === 'CHARGE') totalCharges += amount;
+                    else if (txType === 'PAYMENT') totalPayments += amount;
+                }
+
+                const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+                const chargeDisplay = txType === 'CHARGE' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
+                const paymentDisplay = txType === 'PAYMENT' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
+                const desc = isVoided ? `<span style="text-decoration: line-through; color: #94a3b8;">${tx.description || '-'} [VOID]</span>` : (tx.description || '-');
+
+                return `
+                    <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+                        <td style="padding: 6px 8px;">${dateStr}</td>
+                        <td style="padding: 6px 8px;">${desc}</td>
+                        <td style="padding: 6px 8px; text-align: center;">${txType === 'CHARGE' ? (tx.qty || 1) : '-'}</td>
+                        <td style="padding: 6px 8px; text-align: right;">${chargeDisplay}</td>
+                        <td style="padding: 6px 8px; text-align: right;">${paymentDisplay}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const currentBalance = totalCharges - totalPayments;
+
+            const printWindow = window.open('', '_blank', 'width=800,height=900');
+            if (!printWindow) {
+                alert('Pop-up terblokir. Izinkan pop-up untuk mencetak Master Folio.');
+                return;
+            }
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Master Folio Invoice - ${groupName}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #1e293b; background: #fff; }
+                        .header-container { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; }
+                        .hotel-info h1 { margin: 0; font-size: 20px; color: #0f172a; }
+                        .hotel-info p { margin: 2px 0 0; font-size: 11px; color: #64748b; }
+                        .reference-box { text-align: right; }
+                        .folio-highlight { background: #e0e7ff; color: #3730a3; padding: 4px 10px; font-weight: 800; font-family: monospace; font-size: 16px; border-radius: 4px; display: inline-block; }
+                        .res-sub { font-size: 11px; color: #64748b; margin-top: 4px; }
+                        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+                        .details-item label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; }
+                        .details-item span { font-size: 13px; font-weight: 600; color: #0f172a; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th { background: #f1f5f9; padding: 8px; text-align: left; font-size: 11px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #cbd5e1; }
+                        .summary-box { width: 280px; margin-left: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; }
+                        .summary-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; }
+                        .summary-row.total { font-weight: 800; font-size: 14px; border-top: 1px solid #cbd5e1; margin-top: 6px; padding-top: 6px; color: #0f172a; }
+                        .footer-note { margin-top: 30px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+                        @media print {
+                            body { padding: 0; }
+                            .folio-highlight { background: #e0e7ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header-container">
+                        <div class="hotel-info">
+                            <h1>NG HOTEL MANAGEMENT</h1>
+                            <p>Official Group Master Billing & Invoice</p>
+                        </div>
+                        <div class="reference-box">
+                            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">MASTER FOLIO NUMBER</div>
+                            <div class="folio-highlight">${folioNo}</div>
+                        </div>
+                    </div>
+
+                    <div class="details-grid">
+                        <div class="details-item">
+                            <label>Nama Grup</label>
+                            <span>${groupName}</span>
+                        </div>
+                        <div class="details-item">
+                            <label>Perusahaan / Corporate</label>
+                            <span>${corpName}</span>
+                        </div>
+                        <div class="details-item">
+                            <label>Tanggal Cetak</label>
+                            <span>${printDate}</span>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Deskripsi / Kategori</th>
+                                <th style="text-align: center;">Qty</th>
+                                <th style="text-align: right;">Charge (Debit)</th>
+                                <th style="text-align: right;">Payment (Kredit)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="summary-box">
+                        <div class="summary-row">
+                            <span>Total Charge:</span>
+                            <span>Rp ${totalCharges.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Total Payment:</span>
+                            <span>Rp ${totalPayments.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Sisa Tagihan (Balance):</span>
+                            <span>Rp ${currentBalance.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+
+                    <div class="footer-note">
+                        <p>Terima kasih atas kerjasama grup Anda di NG Hotel. Dokumen ini merupakan bukti tagihan induk resmi.</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            try { printWindow.print(); } catch(e) {}
+        }
+
         async function handleOpenFolioFromEdit() {
             const resId = document.getElementById('edit-reservation-id').value;
             if (!resId) return;
@@ -6084,6 +6801,9 @@
 
                 document.getElementById('folioExpectedTotal').textContent = `Rp ${expectedTotal.toLocaleString('id-ID')}`;
                 document.getElementById('folioExpectedBreakdown').textContent = breakdownText;
+
+                // Check & Update Master Folio Header button if part of a group
+                await checkAndUpdateMasterFolioHeader(res.group_id);
 
                 // Show Folio Modal
                 const folioModal = document.getElementById('folioModal');
@@ -6410,8 +7130,12 @@
                         ? ''
                         : `<button onclick="handleVoidTransaction('${tx.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Void Transaction"><i class="ph ph-trash text-lg"></i></button>`;
 
+                    const checkboxDisabled = isVoided ? 'disabled' : '';
                     return `
                         <tr class="${rowClass}" ${titleAttr}>
+                            <td class="p-3 text-center">
+                                <input type="checkbox" value="${tx.id}" ${checkboxDisabled} onchange="onFolioTxCheckboxChange()" class="folio-tx-cb rounded border-slate-300 text-primary focus:ring-primary">
+                            </td>
                             <td class="p-3 text-slate-600 whitespace-nowrap">${dateStr}</td>
                             <td class="p-3">${typeBadge}</td>
                             <td class="p-3">${descContent}</td>
@@ -6425,6 +7149,11 @@
                     `;
                 }).join('');
             }
+
+            // Reset selectAll checkbox and move button state
+            const selectAllEl = document.getElementById('selectAllFolioTx');
+            if (selectAllEl) selectAllEl.checked = false;
+            onFolioTxCheckboxChange();
 
             calculatedCurrentBalance = totalCharge - totalPayment;
             const balanceEl = document.getElementById('folioCurrentBalance');
@@ -6644,14 +7373,21 @@
 
         function closeFolioTransactionModal() {
             const txModal = document.getElementById('folioTransactionModal');
-            if (txModal) txModal.classList.add('hidden');
+            if (txModal) {
+                txModal.classList.add('hidden');
+                delete txModal.dataset.isMasterMode;
+            }
             const form = document.getElementById('folioTransactionForm');
             if (form) form.reset();
         }
 
         async function handleSaveFolioTransaction(e) {
             e.preventDefault();
-            if (!currentFolioReservation) return;
+            const txModal = document.getElementById('folioTransactionModal');
+            const isMasterMode = txModal && txModal.dataset.isMasterMode === "true";
+
+            if (!isMasterMode && !currentFolioReservation) return;
+            if (isMasterMode && !currentMasterGroup) return;
 
             const txType = document.getElementById('folio-tx-type').value;
             let description = '';
@@ -6703,7 +7439,8 @@
             }
 
             const payload = {
-                reservation_id: currentFolioReservation.id,
+                reservation_id: isMasterMode ? null : currentFolioReservation.id,
+                group_id: isMasterMode ? currentMasterGroup.id : (currentFolioReservation ? currentFolioReservation.group_id : null),
                 transaction_type: txType,
                 description: description,
                 category: category,
@@ -6728,7 +7465,11 @@
                 if (error) throw error;
 
                 closeFolioTransactionModal();
-                await fetchFolioTransactions(currentFolioReservation.id);
+                if (isMasterMode) {
+                    await fetchMasterFolioTransactions(currentMasterGroup.id);
+                } else {
+                    await fetchFolioTransactions(currentFolioReservation.id);
+                }
 
             } catch (err) {
                 console.error('Error saving folio transaction:', err);
