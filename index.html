@@ -6354,7 +6354,7 @@
                 const realDbIds = selectedIds.filter(id => !id.startsWith('auto-daily-'));
                 const autoDailyIds = selectedIds.filter(id => id.startsWith('auto-daily-'));
 
-                // Handle auto-generated daily charges first: insert into folio_transactions with reservation_id = NULL, master_folio_id = masterFolioId, group_id = groupId
+                // Handle auto-generated daily charges first: insert into folio_transactions with reservation_id = NULL, master_folio_id = masterFolioId
                 if (autoDailyIds.length > 0) {
                     const autoDailyTxsToInsert = [];
                     autoDailyIds.forEach(autoId => {
@@ -6363,7 +6363,6 @@
                             autoDailyTxsToInsert.push({
                                 reservation_id: null,
                                 master_folio_id: masterFolioId,
-                                group_id: groupId || null,
                                 transaction_type: txObj.transaction_type || 'CHARGE',
                                 description: txObj.description,
                                 category: txObj.category || 'Room Rate',
@@ -6383,14 +6382,13 @@
                     }
                 }
 
-                // Handle standard transactions: update reservation_id = NULL, master_folio_id = masterFolioId, group_id = groupId
+                // Handle standard transactions: update reservation_id = NULL, master_folio_id = masterFolioId
                 if (realDbIds.length > 0) {
                     const { error: updErr } = await supabaseClient
                         .from('folio_transactions')
                         .update({
                             reservation_id: null,
-                            master_folio_id: masterFolioId,
-                            group_id: groupId || null
+                            master_folio_id: masterFolioId
                         })
                         .in('id', realDbIds);
                     if (updErr) throw updErr;
@@ -6499,10 +6497,9 @@
             try {
                 let query = supabaseClient.from('folio_transactions').select('*');
 
-                if (masterInfo.master_folio_id) {
-                    query = query.eq('master_folio_id', masterInfo.master_folio_id);
-                } else if (masterInfo.group_id) {
-                    query = query.eq('group_id', masterInfo.group_id);
+                const mId = masterInfo.master_folio_id || masterInfo.id;
+                if (mId) {
+                    query = query.eq('master_folio_id', mId);
                 } else {
                     query = query.eq('id', '00000000-0000-0000-0000-000000000000'); // empty fallback
                 }
@@ -7667,8 +7664,7 @@
 
             const payload = {
                 reservation_id: isMasterMode ? null : currentFolioReservation.id,
-                master_folio_id: isMasterMode ? currentMasterGroup.master_folio_id : null,
-                group_id: isMasterMode ? (currentMasterGroup.group_id || null) : (currentFolioReservation ? currentFolioReservation.group_id : null),
+                master_folio_id: isMasterMode ? (currentMasterGroup.master_folio_id || currentMasterGroup.id) : null,
                 transaction_type: txType,
                 description: description,
                 category: category,
