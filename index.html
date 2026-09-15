@@ -6583,46 +6583,16 @@
                 }
 
                 const selectedIds = checkedBoxes.map(cb => cb.value);
-                const realDbIds = selectedIds.filter(id => !id.startsWith('auto-daily-'));
-                const autoDailyIds = selectedIds.filter(id => id.startsWith('auto-daily-'));
-
-                // Handle auto-generated daily charges first: insert into folio_transactions with reservation_id = NULL, master_folio_id = masterFolioId
-                if (autoDailyIds.length > 0) {
-                    const autoDailyTxsToInsert = [];
-                    autoDailyIds.forEach(autoId => {
-                        const txObj = currentFolioTransactions.find(t => t.id === autoId);
-                        if (txObj) {
-                            autoDailyTxsToInsert.push({
-                                reservation_id: null,
-                                master_folio_id: masterFolioId,
-                                transaction_type: txObj.transaction_type || 'CHARGE',
-                                description: txObj.description,
-                                category: txObj.category || 'Room Rate',
-                                amount: txObj.amount,
-                                unit_price: txObj.unit_price,
-                                qty: txObj.qty || 1,
-                                transaction_date: txObj.transaction_date || new Date().toISOString().split('T')[0]
-                            });
-                        }
-                    });
-
-                    if (autoDailyTxsToInsert.length > 0) {
-                        const { error: insErr } = await supabaseClient
-                            .from('folio_transactions')
-                            .insert(autoDailyTxsToInsert);
-                        if (insErr) throw insErr;
-                    }
-                }
 
                 // Handle standard transactions: update reservation_id = NULL, master_folio_id = masterFolioId
-                if (realDbIds.length > 0) {
+                if (selectedIds.length > 0) {
                     const { error: updErr } = await supabaseClient
                         .from('folio_transactions')
                         .update({
                             reservation_id: null,
                             master_folio_id: masterFolioId
                         })
-                        .in('id', realDbIds);
+                        .in('id', selectedIds);
                     if (updErr) throw updErr;
                 }
 
@@ -7456,39 +7426,7 @@
 
                 if (error) throw error;
 
-                // Check if there are daily rate breakdown records to auto-generate daily room charges if folio charge transactions don't exist yet
-                const { data: drData } = await supabaseClient
-                    .from('reservation_daily_rates')
-                    .select('*')
-                    .eq('reservation_id', reservationId)
-                    .order('stay_date', { ascending: true });
-
-                let txs = data || [];
-
-                // If daily breakdown records exist and no room charge transactions in folio_transactions yet
-                const hasRoomChargesInFolio = txs.some(tx => (tx.transaction_type || 'CHARGE').toUpperCase() === 'CHARGE' && (tx.category === 'Room Rate' || (tx.description && tx.description.includes('Room Charge'))));
-
-                if (drData && drData.length > 0 && !hasRoomChargesInFolio) {
-                    const roomChargeTxs = drData.map(dr => {
-                        const dateObj = new Date(dr.stay_date + 'T00:00:00');
-                        const dateFormatted = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-                        return {
-                            id: `auto-daily-${dr.id || dr.stay_date}`,
-                            reservation_id: reservationId,
-                            transaction_type: 'CHARGE',
-                            description: `Room Charge - ${dateFormatted}`,
-                            category: 'Room Rate',
-                            amount: dr.room_rate,
-                            unit_price: dr.room_rate,
-                            qty: 1,
-                            transaction_date: dr.stay_date,
-                            is_auto_generated: true
-                        };
-                    });
-                    txs = [...roomChargeTxs, ...txs];
-                }
-
-                currentFolioTransactions = txs;
+                currentFolioTransactions = data || [];
                 renderFolioTransactions();
 
             } catch (err) {
