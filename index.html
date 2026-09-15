@@ -57,6 +57,9 @@
             <a href="#" onclick="switchView('frontdesk')" id="nav-reservations" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
                 <i class="ph ph-calendar-check text-xl"></i> Reservations
             </a>
+            <a href="#" onclick="switchView('room-forecast')" id="nav-room-forecast" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+                <i class="ph ph-chart-line-up text-xl"></i> Room Forecast
+            </a>
             <a href="#" onclick="switchView('housekeeping')" id="nav-housekeeping" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
                 <i class="ph ph-broom text-xl"></i> Housekeeping
             </a>
@@ -1938,6 +1941,41 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area: Room Forecast View -->
+        <div id="room-forecast-view" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px] flex flex-col space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Room Forecast</h2>
+                        <p class="text-sm text-slate-500 mt-0.5">Perkiraan keterisian dan ketersediaan kamar 14 hari ke depan.</p>
+                    </div>
+                    <button type="button" onclick="renderRoomForecast()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer">
+                        <i class="ph ph-arrows-clockwise text-base"></i> Refresh Forecast
+                    </button>
+                </div>
+
+                <!-- Date Filter Control -->
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <label for="forecast-date-picker" class="text-xs font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap">Start Date:</label>
+                        <input type="date" id="forecast-date-picker" onchange="handleForecastDateChange(this.value)" class="px-3 py-1.5 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white text-slate-700 shadow-2xs font-medium">
+                    </div>
+                    <div class="text-xs text-slate-500 flex items-center gap-2">
+                        <span class="inline-block w-3 h-3 bg-red-100 border border-red-300 rounded-sm"></span>
+                        <span>Background merah muda indikator <strong>High Occupancy Alert (&gt; 90%)</strong></span>
+                    </div>
+                </div>
+
+                <!-- Forecast Table Matrix Container -->
+                <div id="forecast-table-container" class="border border-slate-200 rounded-lg overflow-x-auto">
+                    <div class="p-8 text-center text-slate-400">
+                        <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
+                        <div>Memuat data Room Forecast...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -8392,6 +8430,230 @@
             }
         }
 
+        // --- Room Forecast JS Logic ---
+        let forecastStartDate = new Date();
+
+        function handleForecastDateChange(val) {
+            if (!val) return;
+            forecastStartDate = new Date(val);
+            renderRoomForecast();
+        }
+
+        async function renderRoomForecast() {
+            const container = document.getElementById('forecast-table-container');
+            const datepicker = document.getElementById('forecast-date-picker');
+
+            if (!container) return;
+
+            if (datepicker && !datepicker.value) {
+                datepicker.value = formatDateISO(forecastStartDate);
+            } else if (datepicker && datepicker.value) {
+                forecastStartDate = new Date(datepicker.value);
+            }
+
+            container.innerHTML = `
+                <div class="p-8 text-center text-slate-400">
+                    <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
+                    <div>Memuat data Room Forecast...</div>
+                </div>
+            `;
+
+            try {
+                // Generate 14 days list from forecastStartDate
+                const daysCount = 14;
+                const datesList = [];
+                for (let i = 0; i < daysCount; i++) {
+                    datesList.push(addDays(forecastStartDate, i));
+                }
+
+                const minDateStr = formatDateISO(datesList[0]);
+                const maxDateStr = formatDateISO(datesList[datesList.length - 1]);
+
+                // 1. Fetch total rooms count from DB or roomsCache
+                let totalRoomsCount = 0;
+                if (roomsCache && roomsCache.length > 0) {
+                    totalRoomsCount = roomsCache.length;
+                } else {
+                    const { data: roomsData, error: roomsErr } = await supabaseClient
+                        .from('rooms')
+                        .select('id, status');
+                    if (roomsErr) throw roomsErr;
+                    totalRoomsCount = roomsData ? roomsData.length : 0;
+                }
+
+                // 2. Fetch OOO / OOS room blocks overlapping 14 days
+                const { data: roomBlocks, error: blocksErr } = await supabaseClient
+                    .from('room_blocks')
+                    .select('id, room_id, start_date, end_date, block_type')
+                    .lte('start_date', maxDateStr)
+                    .gte('end_date', minDateStr);
+                if (blocksErr) console.error('Error fetching room_blocks for forecast:', blocksErr);
+
+                // 3. Fetch active reservations overlapping 14 days (Reserved, Checkin)
+                const { data: resData, error: resErr } = await supabaseClient
+                    .from('reservations')
+                    .select('id, check_in_date, check_out_date, qty, reservation_source, segment_id, status')
+                    .in('status', ['Reserved', 'Checkin'])
+                    .lt('check_in_date', addDaysISO(maxDateStr, 1))
+                    .gte('check_out_date', minDateStr);
+                if (resErr) throw resErr;
+
+                // Daily metrics calculation for each of the 14 days
+                const metrics = {
+                    roomTotal: [],
+                    ooo: [],
+                    available: [],
+                    occupied: [],
+                    sold: [],
+                    occupancyPct: []
+                };
+
+                const activeBlocks = roomBlocks || [];
+                const activeReservations = resData || [];
+
+                datesList.forEach(d => {
+                    const dateISO = formatDateISO(d);
+
+                    // Total Rooms
+                    const roomTotalVal = totalRoomsCount;
+
+                    // Out of Order: blocks active on dateISO (start_date <= dateISO <= end_date)
+                    const oooCount = activeBlocks.filter(b => {
+                        const s = b.start_date;
+                        const e = b.end_date;
+                        return dateISO >= s && dateISO <= e;
+                    }).length;
+
+                    // Room Available = Total - Out of Order
+                    const availableVal = Math.max(0, roomTotalVal - oooCount);
+
+                    // Room Occupied = reservations active on dateISO (check_in_date <= dateISO < check_out_date)
+                    let occupiedCount = 0;
+                    let complimentCount = 0;
+
+                    activeReservations.forEach(r => {
+                        if (r.check_in_date <= dateISO && dateISO < r.check_out_date) {
+                            const qty = r.qty || 1;
+                            occupiedCount += qty;
+
+                            const sourceStr = (r.reservation_source || '').toLowerCase();
+                            const segmentStr = (r.segment_id || '').toLowerCase();
+                            if (sourceStr.includes('compliment') || sourceStr.includes('house use') || segmentStr.includes('compliment')) {
+                                complimentCount += qty;
+                            }
+                        }
+                    });
+
+                    // Room Sold = Occupied - Compliment
+                    const soldVal = Math.max(0, occupiedCount - complimentCount);
+
+                    // % Occupancy = (Occupied / Available) * 100
+                    let occPct = 0;
+                    if (availableVal > 0) {
+                        occPct = (occupiedCount / availableVal) * 100;
+                    }
+
+                    metrics.roomTotal.push(roomTotalVal);
+                    metrics.ooo.push(oooCount);
+                    metrics.available.push(availableVal);
+                    metrics.occupied.push(occupiedCount);
+                    metrics.sold.push(soldVal);
+                    metrics.occupancyPct.push(occPct);
+                });
+
+                // Build Matrix HTML Table
+                let tableHTML = `
+                    <table class="w-full border-collapse bg-white text-left select-none text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200">
+                                <th class="sticky left-0 z-20 bg-slate-50 border-r border-slate-200 p-3 min-w-[180px] w-[180px] font-bold text-xs text-slate-500 uppercase tracking-wider">
+                                    Metric / Tanggal
+                                </th>
+                `;
+
+                datesList.forEach((d, idx) => {
+                    const dayStr = d.toLocaleDateString('id-ID', { weekday: 'short' });
+                    const dateNumStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                    const isToday = formatDateISO(d) === formatDateISO(todayDate);
+
+                    tableHTML += `
+                        <th class="p-2.5 text-center border-r border-slate-200 min-w-[85px] max-w-[85px] ${isToday ? 'bg-blue-50 font-bold text-primary' : 'text-slate-700'}">
+                            <div class="text-[10px] uppercase tracking-wider text-slate-400">Hari ${idx + 1} (${dayStr})</div>
+                            <div class="text-xs font-bold mt-0.5">${dateNumStr}</div>
+                        </th>
+                    `;
+                });
+
+                tableHTML += `
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 text-slate-700">
+                `;
+
+                // Row configurations
+                const rowsConfig = [
+                    { label: 'Room Total', key: 'roomTotal', class: 'font-medium text-slate-700 bg-white' },
+                    { label: 'Out of Order', key: 'ooo', class: 'font-medium text-slate-600 bg-slate-50/50' },
+                    { label: 'Room Available', key: 'available', class: 'font-bold text-slate-800 bg-white' },
+                    { label: 'Room Occupied', key: 'occupied', class: 'font-medium text-blue-700 bg-slate-50/50' },
+                    { label: 'Room Sold', key: 'sold', class: 'font-medium text-slate-700 bg-white' },
+                    { label: '% Occupancy', key: 'occupancyPct', isPercentage: true, class: 'font-bold text-slate-900 bg-slate-50/70' }
+                ];
+
+                rowsConfig.forEach(row => {
+                    tableHTML += `
+                        <tr class="${row.class}">
+                            <td class="sticky left-0 z-10 bg-inherit border-r border-slate-200 px-3 py-2.5 font-semibold text-xs text-slate-800">
+                                ${row.label}
+                            </td>
+                    `;
+
+                    metrics[row.key].forEach((val, idx) => {
+                        let cellBg = '';
+                        let displayVal = val;
+
+                        if (row.isPercentage) {
+                            displayVal = val.toFixed(1) + '%';
+                            if (val > 90) {
+                                cellBg = 'bg-red-100 text-red-700 font-bold'; // High Occupancy Alert (>90%)
+                            }
+                        }
+
+                        tableHTML += `
+                            <td class="px-2 py-2.5 text-center border-r border-slate-200 ${cellBg}">
+                                ${displayVal}
+                            </td>
+                        `;
+                    });
+
+                    tableHTML += `</tr>`;
+                });
+
+                tableHTML += `
+                        </tbody>
+                    </table>
+                `;
+
+                container.innerHTML = tableHTML;
+
+            } catch (err) {
+                console.error('Error rendering Room Forecast:', err);
+                container.innerHTML = `
+                    <div class="p-8 text-center text-red-500">
+                        <i class="ph ph-warning-circle text-2xl inline-block mb-2"></i>
+                        <div>Gagal memuat Room Forecast: ${err.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Helper function addDaysISO if needed
+        function addDaysISO(dateStr, days) {
+            const d = new Date(dateStr);
+            d.setDate(d.getDate() + days);
+            return formatDateISO(d);
+        }
+
         // Cancel List Fetch
         async function fetchCancelList() {
             const tbody = document.getElementById('cancel-list-tbody');
@@ -8667,6 +8929,7 @@
         async function switchView(viewName) {
             const frontdeskTopbar = document.getElementById('frontdesk-topbar');
             const frontdeskView = document.getElementById('frontdesk-view');
+            const roomForecastView = document.getElementById('room-forecast-view');
             const housekeepingView = document.getElementById('housekeeping-view');
             const corporateView = document.getElementById('corporate-view');
             const cancelListView = document.getElementById('cancel-list-view');
@@ -8675,12 +8938,13 @@
             const navOverview = document.getElementById('nav-overview');
             const navFrontdesk = document.getElementById('nav-frontdesk');
             const navReservations = document.getElementById('nav-reservations');
+            const navRoomForecast = document.getElementById('nav-room-forecast');
             const navHousekeeping = document.getElementById('nav-housekeeping');
             const navCorporate = document.getElementById('nav-corporate');
             const navCancelList = document.getElementById('nav-cancel-list');
             const navSettings = document.getElementById('nav-settings');
 
-            const allNavBtns = [navOverview, navFrontdesk, navReservations, navHousekeeping, navCorporate, navCancelList, navSettings];
+            const allNavBtns = [navOverview, navFrontdesk, navReservations, navRoomForecast, navHousekeeping, navCorporate, navCancelList, navSettings];
             allNavBtns.forEach(btn => {
                 if (btn) btn.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
             });
@@ -8688,18 +8952,35 @@
             if (viewName === 'settings') {
                 if (frontdeskTopbar) frontdeskTopbar.classList.add('hidden');
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
                 if (corporateView) corporateView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.remove('hidden');
 
                 if (navSettings) navSettings.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+            } else if (viewName === 'room-forecast') {
+                if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+                const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+                if (topbarHeader) topbarHeader.textContent = "Frontdesk / Room Forecast";
+
+                if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (housekeepingView) housekeepingView.classList.add('hidden');
+                if (corporateView) corporateView.classList.add('hidden');
+                if (cancelListView) cancelListView.classList.add('hidden');
+                if (adminSettingsView) adminSettingsView.classList.add('hidden');
+                if (roomForecastView) roomForecastView.classList.remove('hidden');
+
+                if (navRoomForecast) navRoomForecast.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+
+                renderRoomForecast();
             } else if (viewName === 'corporate') {
                 if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
                 const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
                 if (topbarHeader) topbarHeader.textContent = "Corporate / Travel Agent Profiles";
 
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
@@ -8714,6 +8995,7 @@
                 if (topbarHeader) topbarHeader.textContent = "Reports / Cancel List";
 
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
                 if (corporateView) corporateView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
@@ -8728,6 +9010,7 @@
                 if (topbarHeader) topbarHeader.textContent = "Housekeeping / Room Status";
 
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (corporateView) corporateView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
@@ -8742,6 +9025,7 @@
                 if (topbarHeader) topbarHeader.textContent = "Frontdesk / Tape Chart";
 
                 if (frontdeskView) frontdeskView.classList.remove('hidden');
+                if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
                 if (corporateView) corporateView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
