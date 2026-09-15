@@ -1462,37 +1462,72 @@
                     <div class="bg-slate-50/70 border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm md:col-span-2">
                         <div class="pb-2 border-b border-slate-200 flex justify-between items-center">
                             <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i class="ph ph-credit-card text-primary text-lg"></i> D. Deposit & Status
+                                <i class="ph ph-credit-card text-primary text-lg"></i> D. Deposit History & Status
                             </h4>
                             <div id="res-status-badge" class="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold">
                                 <i class="ph ph-check-circle text-sm"></i> <span id="res-status-text">Status: Reserved</span>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                            <!-- Deposit Amount -->
-                            <div>
-                                <label class="block text-xs font-medium text-slate-700 mb-1">Deposit Amount (Rp)</label>
-                                <input type="number" id="res-deposit-amount" step="any" min="0" value="0" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed">
+                        <!-- Deposit History List/Table -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h5 class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Deposit History</h5>
+                                <button type="button" onclick="toggleAddDepositForm()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer">
+                                    <i class="ph ph-plus text-sm"></i> Add Deposit
+                                </button>
                             </div>
 
-                            <!-- Payment Method -->
-                            <div>
-                                <label class="block text-xs font-medium text-slate-700 mb-1">Payment Method</label>
-                                <select id="res-payment-method" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed">
-                                    <option value="">-- Select Payment Method --</option>
-                                </select>
+                            <!-- Inline Form to Add Deposit -->
+                            <div id="res-add-deposit-form" class="hidden p-3 bg-white border border-slate-200 rounded-lg space-y-3 shadow-xs">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-700 mb-1">Nominal Deposit (Rp)</label>
+                                        <input type="number" id="res-new-deposit-amount" min="0" placeholder="0" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-700 mb-1">Payment Method</label>
+                                        <select id="res-new-deposit-method" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                            <option value="">-- Select Payment Method --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end gap-2">
+                                    <button type="button" onclick="toggleAddDepositForm(false)" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-xs font-medium transition-colors">Batal</button>
+                                    <button type="button" onclick="handleAddDepositSubmit()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-medium transition-colors">Simpan Deposit</button>
+                                </div>
                             </div>
 
-                            <!-- Comment -->
-                            <div class="sm:col-span-2 md:col-span-1">
-                                <label class="block text-xs font-medium text-slate-700 mb-1">Reservation Comment / Special Request</label>
-                                <textarea id="res-comment" rows="1" placeholder="Catatan khusus reservasi..." class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                            <!-- Table of Deposit History -->
+                            <div class="overflow-x-auto border border-slate-200 rounded-lg bg-white">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                                        <tr>
+                                            <th class="p-2.5">Tanggal</th>
+                                            <th class="p-2.5">Metode Pembayaran</th>
+                                            <th class="p-2.5 text-right">Nominal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="res-deposit-history-tbody">
+                                        <tr>
+                                            <td colspan="3" class="p-3 text-center text-slate-400">Belum ada deposit recorded.</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot class="bg-slate-50/50 border-t border-slate-200 font-bold text-slate-800">
+                                        <tr>
+                                            <td colspan="2" class="p-2.5 text-right uppercase">Total Deposit:</td>
+                                            <td id="res-deposit-total-text" class="p-2.5 text-right text-emerald-700 font-bold">Rp 0</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
                             </div>
                         </div>
-                        <p id="res-deposit-locked-msg" class="text-[11px] text-amber-600 font-medium hidden">
-                            <i class="ph ph-lock text-xs align-middle"></i> Deposit is locked. To add more payments, please use the Open Folio button.
-                        </p>
+
+                        <!-- Reservation Comment -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Reservation Comment / Special Request</label>
+                            <textarea id="res-comment" rows="2" placeholder="Catatan khusus reservasi..." class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                        </div>
                     </div>
 
                 </div>
@@ -2526,6 +2561,7 @@
         let roomsCache = [];
         let roomTypesCache = [];
         let ratePlansCache = [];
+        let pendingNewReservationDeposits = [];
 
         // Global State for Frontdesk Dashboard
         let currentDashboardTab = 'arrival';
@@ -5322,12 +5358,16 @@
                 }
 
                 // 5. Payment Methods
-                const { data: pMethods, error: pmErr } = await supabaseClient.from('payment_methods').select('id, name, method_type').eq('is_active', true).order('name', { ascending: true });
+                const { data: pMethods, error: pmErr } = await supabaseClient.from('payment_methods').select('id, name, type, method_type').eq('is_active', true).order('name', { ascending: true });
                 if (pmErr) throw pmErr;
-                const paymentMethodSelect = document.getElementById('res-payment-method');
+                const paymentMethodSelect = document.getElementById('res-new-deposit-method');
                 if (paymentMethodSelect) {
                     paymentMethodSelect.innerHTML = `<option value="">-- Select Payment Method --</option>` +
-                        (pMethods || []).map(pm => `<option value="${pm.id}">${pm.name} (${pm.method_type})</option>`).join('');
+                        (pMethods || []).map(pm => {
+                            const mType = pm.type || pm.method_type || '';
+                            const label = mType ? `${pm.name} - ${mType}` : pm.name;
+                            return `<option value="${pm.id}">${label}</option>`;
+                        }).join('');
                 }
 
                 // 6. Corporate Profiles (Bill Receiver)
@@ -6325,8 +6365,11 @@
             await populateReservationFormDropdowns();
             switchReservationTab('details');
 
-            // Reset IDs
+            // Reset IDs and pending deposits
             document.getElementById('edit-reservation-id').value = '';
+            pendingNewReservationDeposits = [];
+            toggleAddDepositForm(false);
+            renderReservationDepositHistory([]);
 
             // Modal Header (New Mode)
             const titleIcon = document.getElementById('reservationModalIcon');
@@ -6582,6 +6625,172 @@
             }
         }
 
+        function toggleAddDepositForm(show) {
+            const formContainer = document.getElementById('res-add-deposit-form');
+            if (!formContainer) return;
+
+            if (show === undefined) {
+                formContainer.classList.toggle('hidden');
+            } else if (show) {
+                formContainer.classList.remove('hidden');
+            } else {
+                formContainer.classList.add('hidden');
+            }
+
+            if (!formContainer.classList.contains('hidden')) {
+                const amtInput = document.getElementById('res-new-deposit-amount');
+                if (amtInput) amtInput.value = '';
+                const pmSelect = document.getElementById('res-new-deposit-method');
+                if (pmSelect) pmSelect.value = '';
+            }
+        }
+
+        async function fetchAndRenderReservationDepositHistory(reservationId) {
+            const tbody = document.getElementById('res-deposit-history-tbody');
+            const totalText = document.getElementById('res-deposit-total-text');
+            if (!tbody) return;
+
+            if (!reservationId) {
+                renderReservationDepositHistory([]);
+                return;
+            }
+
+            tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-slate-400">Loading deposit history...</td></tr>`;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('folio_transactions')
+                    .select('*, payment_methods:payment_method_id(id, name, type, method_type)')
+                    .eq('reservation_id', reservationId)
+                    .eq('transaction_type', 'PAYMENT')
+                    .order('transaction_date', { ascending: true });
+
+                if (error) throw error;
+
+                renderReservationDepositHistory(data || []);
+            } catch (err) {
+                console.error('Error fetching deposit history:', err);
+                tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-red-500">Gagal memuat history deposit: ${err.message}</td></tr>`;
+                if (totalText) totalText.textContent = 'Rp 0';
+            }
+        }
+
+        function renderReservationDepositHistory(deposits) {
+            const tbody = document.getElementById('res-deposit-history-tbody');
+            const totalText = document.getElementById('res-deposit-total-text');
+            if (!tbody) return;
+
+            let total = 0;
+
+            if (!deposits || deposits.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-slate-400">Belum ada deposit recorded.</td></tr>`;
+            } else {
+                tbody.innerHTML = deposits.map(d => {
+                    const isVoided = d.is_voided === true;
+                    const amt = Number(d.amount || 0);
+                    if (!isVoided) total += amt;
+
+                    const dateStr = d.transaction_date ? new Date(d.transaction_date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
+
+                    let pmName = '';
+                    let pmType = '';
+                    if (d.payment_methods) {
+                        const pmObj = Array.isArray(d.payment_methods) ? d.payment_methods[0] : d.payment_methods;
+                        if (pmObj) {
+                            pmName = pmObj.name || '';
+                            pmType = pmObj.type || pmObj.method_type || '';
+                        }
+                    }
+
+                    let methodDisplay = '';
+                    if (pmName && pmType) {
+                        methodDisplay = `${pmName} (${pmType})`;
+                    } else if (pmName) {
+                        methodDisplay = pmName;
+                    } else if (d.reference_number) {
+                        methodDisplay = d.reference_number;
+                    } else {
+                        methodDisplay = 'Deposit';
+                    }
+
+                    const strikeClass = isVoided ? 'line-through text-slate-400' : '';
+                    const voidBadge = isVoided ? '<span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-600 text-white">[VOID]</span>' : '';
+
+                    return `
+                        <tr class="hover:bg-slate-50 border-b border-slate-100 last:border-none">
+                            <td class="p-2.5 text-slate-600 whitespace-nowrap ${strikeClass}">${dateStr}</td>
+                            <td class="p-2.5 font-medium text-slate-800 ${strikeClass}">${methodDisplay} ${voidBadge}</td>
+                            <td class="p-2.5 text-right font-semibold ${isVoided ? 'text-slate-400 line-through' : 'text-emerald-600'}">Rp ${amt.toLocaleString('id-ID')}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            if (totalText) {
+                totalText.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+            }
+        }
+
+        async function handleAddDepositSubmit() {
+            const editId = document.getElementById('edit-reservation-id').value;
+
+            const amountInput = document.getElementById('res-new-deposit-amount');
+            const pmSelect = document.getElementById('res-new-deposit-method');
+
+            const amount = parseFloat(amountInput ? amountInput.value : 0) || 0;
+            const paymentMethodId = pmSelect ? pmSelect.value : null;
+
+            if (isNaN(amount) || amount <= 0) {
+                alert('Nominal deposit harus lebih besar dari 0.');
+                return;
+            }
+
+            if (!paymentMethodId) {
+                alert('Pilih Metode Pembayaran terlebih dahulu.');
+                return;
+            }
+
+            const txPayload = {
+                reservation_id: editId || null,
+                transaction_type: 'PAYMENT',
+                description: 'Deposit',
+                amount: amount,
+                payment_method_id: paymentMethodId,
+                transaction_date: new Date().toISOString()
+            };
+
+            try {
+                if (editId) {
+                    const { error } = await supabaseClient
+                        .from('folio_transactions')
+                        .insert([txPayload]);
+
+                    if (error) throw error;
+
+                    alert('Deposit berhasil ditambahkan!');
+                    toggleAddDepositForm(false);
+                    await fetchAndRenderReservationDepositHistory(editId);
+                } else {
+                    // Get PM label for pending UI render
+                    const selectedOption = pmSelect.options[pmSelect.selectedIndex];
+                    const pmLabel = selectedOption ? selectedOption.text : 'Deposit';
+
+                    pendingNewReservationDeposits.push({
+                        amount: amount,
+                        payment_method_id: paymentMethodId,
+                        transaction_date: txPayload.transaction_date,
+                        payment_methods: { name: pmLabel.split(' - ')[0], type: pmLabel.split(' - ')[1] || '' }
+                    });
+
+                    toggleAddDepositForm(false);
+                    renderReservationDepositHistory(pendingNewReservationDeposits);
+                }
+            } catch (err) {
+                console.error('Error adding deposit:', err);
+                alert('Gagal menambahkan deposit: ' + err.message);
+            }
+        }
+
         function closeModal() {
             const modal = document.getElementById('reservationModal');
             if (modal) {
@@ -6592,12 +6801,9 @@
             if (form) {
                 form.reset();
             }
-            const depositAmtEl = document.getElementById('res-deposit-amount');
-            const depositMethodEl = document.getElementById('res-payment-method');
-            const depositLockedMsg = document.getElementById('res-deposit-locked-msg');
-            if (depositAmtEl) depositAmtEl.disabled = false;
-            if (depositMethodEl) depositMethodEl.disabled = false;
-            if (depositLockedMsg) depositLockedMsg.classList.add('hidden');
+                pendingNewReservationDeposits = [];
+            toggleAddDepositForm(false);
+            renderReservationDepositHistory([]);
 
             clearSelectedGuest();
         }
@@ -7060,7 +7266,7 @@
             tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Loading master transactions...</td></tr>`;
 
             try {
-                let query = supabaseClient.from('folio_transactions').select('*');
+                let query = supabaseClient.from('folio_transactions').select('*, payment_methods:payment_method_id(id, name, type, method_type)');
 
                 const mId = masterInfo.master_folio_id || masterInfo.id;
                 if (mId) {
@@ -7123,10 +7329,32 @@
                         : '-';
 
                     const descColorClass = isVoided ? 'text-slate-400 line-through' : 'text-slate-800';
-                    let descContent = `<div class="font-medium ${descColorClass}">${tx.description || '-'}</div>`;
+                    let formattedDesc = tx.description || '-';
+
+                    if (txType === 'PAYMENT') {
+                        let pmObj = null;
+                        if (tx.payment_methods) {
+                            pmObj = Array.isArray(tx.payment_methods) ? tx.payment_methods[0] : tx.payment_methods;
+                        }
+                        if (pmObj && (pmObj.name || pmObj.type || pmObj.method_type)) {
+                            const pmName = pmObj.name || '';
+                            const pmType = pmObj.type || pmObj.method_type || '';
+                            formattedDesc = pmType ? `Deposit - ${pmName} (${pmType})` : `Deposit - ${pmName}`;
+                        } else {
+                            // Sanitize any bracketed UUID or legacy text format
+                            let cleaned = formattedDesc.replace(/\s*\[[0-9a-fA-F-]{36}\]/g, '').trim();
+                            if (cleaned.toLowerCase() === 'initial deposit' || cleaned.toLowerCase() === 'payment') {
+                                formattedDesc = 'Deposit';
+                            } else {
+                                formattedDesc = cleaned;
+                            }
+                        }
+                    }
+
+                    let descContent = `<div class="font-medium ${descColorClass}">${formattedDesc}</div>`;
                     if (txType === 'CHARGE' && tx.category) {
                         descContent += `<div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">${tx.category}</div>`;
-                    } else if (txType === 'PAYMENT' && tx.reference_number) {
+                    } else if (txType === 'PAYMENT' && tx.reference_number && !tx.reference_number.match(/^[0-9a-fA-F-]{36}$/)) {
                         descContent += `<div class="text-[10px] text-slate-400">Ref: ${tx.reference_number}</div>`;
                     }
 
@@ -7782,7 +8010,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('folio_transactions')
-                    .select('*')
+                    .select('*, payment_methods:payment_method_id(id, name, type, method_type)')
                     .eq('reservation_id', reservationId)
                     .order('transaction_date', { ascending: true })
                     .order('created_at', { ascending: true });
@@ -7866,10 +8094,31 @@
                         : '-';
 
                     const descColorClass = isVoided ? 'text-slate-400 line-through' : 'text-slate-800';
-                    let descContent = `<div class="font-medium ${descColorClass}">${tx.description || '-'}</div>`;
+                    let formattedDesc = tx.description || '-';
+
+                    if (txType === 'PAYMENT') {
+                        let pmObj = null;
+                        if (tx.payment_methods) {
+                            pmObj = Array.isArray(tx.payment_methods) ? tx.payment_methods[0] : tx.payment_methods;
+                        }
+                        if (pmObj && (pmObj.name || pmObj.type || pmObj.method_type)) {
+                            const pmName = pmObj.name || '';
+                            const pmType = pmObj.type || pmObj.method_type || '';
+                            formattedDesc = pmType ? `Deposit - ${pmName} (${pmType})` : `Deposit - ${pmName}`;
+                        } else {
+                            let cleaned = formattedDesc.replace(/\s*\[[0-9a-fA-F-]{36}\]/g, '').trim();
+                            if (cleaned.toLowerCase() === 'initial deposit' || cleaned.toLowerCase() === 'payment') {
+                                formattedDesc = 'Deposit';
+                            } else {
+                                formattedDesc = cleaned;
+                            }
+                        }
+                    }
+
+                    let descContent = `<div class="font-medium ${descColorClass}">${formattedDesc}</div>`;
                     if (txType === 'CHARGE' && tx.category) {
                         descContent += `<div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">${tx.category}</div>`;
-                    } else if (txType === 'PAYMENT' && tx.reference_number) {
+                    } else if (txType === 'PAYMENT' && tx.reference_number && !tx.reference_number.match(/^[0-9a-fA-F-]{36}$/)) {
                         descContent += `<div class="text-[10px] text-slate-400">Ref: ${tx.reference_number}</div>`;
                     }
 
@@ -8625,24 +8874,23 @@
                         savedReservationId = newResData[0].id;
                     }
 
-                    // 1. Auto-Post Deposit on Create if deposit_amount > 0
-                    if (depositAmount > 0 && savedReservationId) {
-                        const methodLabel = depositMethod ? `[${depositMethod}]` : '';
-                        const depositTxPayload = {
+                    // 1. Auto-Post Pending Deposits on Create
+                    if (savedReservationId && pendingNewReservationDeposits && pendingNewReservationDeposits.length > 0) {
+                        const txPayloads = pendingNewReservationDeposits.map(d => ({
                             reservation_id: savedReservationId,
                             transaction_type: 'PAYMENT',
-                            description: `Initial Deposit ${methodLabel}`.trim(),
-                            amount: depositAmount,
-                            reference_number: depositMethod || null,
-                            transaction_date: new Date().toISOString()
-                        };
+                            description: 'Deposit',
+                            amount: d.amount,
+                            payment_method_id: d.payment_method_id,
+                            transaction_date: d.transaction_date || new Date().toISOString()
+                        }));
 
                         const { error: depositTxErr } = await supabaseClient
                             .from('folio_transactions')
-                            .insert([depositTxPayload]);
+                            .insert(txPayloads);
 
                         if (depositTxErr) {
-                            console.error('Error auto-posting deposit to folio_transactions:', depositTxErr);
+                            console.error('Error auto-posting pending deposits to folio_transactions:', depositTxErr);
                         }
                     }
                 }
