@@ -998,6 +998,28 @@
         </div>
     </div>
 
+    <!-- Modal Group Deposit Error (NSG Required) -->
+    <div id="groupDepositErrorModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative border border-red-100">
+            <div class="p-6 text-center space-y-4">
+                <div class="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-3xl shrink-0">
+                    <i class="ph ph-warning-circle"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-red-800">Pembatalan Grup Ditolak</h3>
+                    <p class="text-sm text-slate-700 mt-2 leading-relaxed">
+                        Grup tidak bisa dibatalkan karena memiliki deposit aktif. Harap buat akun Non-Stay Guest (NSG) dan pindahkan dana secara manual terlebih dahulu.
+                    </p>
+                </div>
+                <div class="pt-2">
+                    <button type="button" onclick="closeGroupDepositErrorModal()" class="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">
+                        Mengerti
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Cancel Deposit Settlement -->
     <div id="cancelDepositModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative border border-slate-100">
@@ -2735,17 +2757,48 @@
                         return `<span class="inline-block bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs border border-slate-200">${rtName}: <b>${a.blocked_qty}</b> kamar @ Rp ${rateFmt}</span>`;
                     }).join(' ');
 
+                    let groupStatus = gb.status || null;
+                    if (!groupStatus && gb.contact_person && gb.contact_person.startsWith('{')) {
+                        try {
+                            const cpObj = JSON.parse(gb.contact_person);
+                            if (cpObj.status) groupStatus = cpObj.status;
+                        } catch (e) {}
+                    }
+
+                    const isCancelled = groupStatus === 'Cancelled';
                     const isSplit = Array.isArray(gb.reservations) && gb.reservations.length > 0;
 
-                    const statusBadge = isSplit
-                        ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><i class="ph ph-check-circle"></i> Sudah Di-split</span>`
-                        : `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1"><i class="ph ph-clock"></i> Belum Di-split</span>`;
+                    let statusBadge = '';
+                    if (isCancelled) {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200 inline-flex items-center gap-1"><i class="ph ph-x-circle"></i> Cancelled</span>`;
+                    } else if (isSplit) {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><i class="ph ph-check-circle"></i> Sudah Di-split</span>`;
+                    } else {
+                        statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1"><i class="ph ph-clock"></i> Belum Di-split</span>`;
+                    }
 
-                    const actionBtn = isSplit
-                        ? `<span class="text-xs text-slate-400 italic">Sudah Di-split</span>`
-                        : `<button type="button" onclick="openSplitReservationModal('${gb.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold transition-colors shadow-sm flex items-center gap-1.5 ml-auto">
-                            <i class="ph ph-scissors text-sm"></i> Split Reservasi
-                           </button>`;
+                    let actionBtn = '';
+                    if (isCancelled) {
+                        actionBtn = `<span class="text-xs text-red-500 italic font-semibold">Dibatalkan</span>`;
+                    } else {
+                        const splitBtnHtml = !isSplit
+                            ? `<button type="button" onclick="openSplitReservationModal('${gb.id}')" title="Split Reservasi" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold transition-colors shadow-sm flex items-center gap-1">
+                                <i class="ph ph-scissors text-sm"></i> Split
+                               </button>`
+                            : '';
+
+                        actionBtn = `
+                            <div class="flex items-center justify-end gap-1.5">
+                                ${splitBtnHtml}
+                                <button type="button" onclick="openEditGroupBookingModal('${gb.id}')" title="Edit Group Booking" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded text-xs font-semibold transition-colors border border-slate-300 shadow-sm flex items-center gap-1">
+                                    <i class="ph ph-pencil-simple text-sm text-blue-600"></i> Edit
+                                </button>
+                                <button type="button" onclick="handleCancelGroupBooking('${gb.id}')" title="Cancel Group Booking" class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs font-semibold transition-colors border border-red-200 shadow-sm flex items-center gap-1">
+                                    <i class="ph ph-x-circle text-sm text-red-600"></i> Cancel
+                                </button>
+                            </div>
+                        `;
+                    }
 
                     return `
                         <tr class="hover:bg-slate-50 transition-colors">
@@ -5753,14 +5806,18 @@
 
         // GROUP BOOKING FUNCTIONS
         // ==========================================
+        let editingGroupId = null;
+
         async function openGroupBookingModal() {
+            editingGroupId = null;
             const modal = document.getElementById('groupBookingModal');
             if (!modal) return;
 
-            // Reset inputs
+            const modalTitle = modal.querySelector('h3 span');
+            if (modalTitle) modalTitle.textContent = '+ New Group Reservation';
+
             document.getElementById('group-name').value = '';
 
-            // Set default dates
             const todayStr = formatDateISO(new Date());
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -5769,26 +5826,8 @@
             document.getElementById('group-checkin').value = todayStr;
             document.getElementById('group-checkout').value = tomorrowStr;
 
-            // Populate Corporate dropdown
-            const corpSelect = document.getElementById('group-corporate-id');
-            if (corpSelect) {
-                corpSelect.innerHTML = '<option value="">-- Pilih Corporate (Opsional) --</option>';
-                try {
-                    const { data: cProfiles } = await supabaseClient.from('corporate_profiles').select('id, company_name').order('company_name', { ascending: true });
-                    if (cProfiles && cProfiles.length > 0) {
-                        cProfiles.forEach(c => {
-                            const opt = document.createElement('option');
-                            opt.value = c.id;
-                            opt.textContent = c.company_name;
-                            corpSelect.appendChild(opt);
-                        });
-                    }
-                } catch (e) {
-                    console.error('Error populating corporate profiles for group:', e);
-                }
-            }
+            await populateGroupCorporateDropdown();
 
-            // Clear and add 1 default allotment row
             const rowsContainer = document.getElementById('group-allotment-rows');
             if (rowsContainer) {
                 rowsContainer.innerHTML = '';
@@ -5798,12 +5837,94 @@
             modal.classList.remove('hidden');
         }
 
+        async function openEditGroupBookingModal(groupId) {
+            editingGroupId = groupId;
+            const modal = document.getElementById('groupBookingModal');
+            if (!modal) return;
+
+            const modalTitle = modal.querySelector('h3 span');
+            if (modalTitle) modalTitle.textContent = 'Edit Group Reservation';
+
+            try {
+                const { data: gb, error: gbErr } = await supabaseClient
+                    .from('group_bookings')
+                    .select('*, group_allotments(*)')
+                    .eq('id', groupId)
+                    .single();
+
+                if (gbErr || !gb) {
+                    alert('Gagal memuat data grup booking.');
+                    return;
+                }
+
+                document.getElementById('group-name').value = gb.group_name || '';
+
+                let checkInVal = formatDateISO(new Date());
+                let checkOutVal = formatDateISO(new Date(Date.now() + 86400000));
+
+                if (gb.contact_person && gb.contact_person.startsWith('{')) {
+                    try {
+                        const cpObj = JSON.parse(gb.contact_person);
+                        checkInVal = cpObj.check_in_date || checkInVal;
+                        checkOutVal = cpObj.check_out_date || checkOutVal;
+                    } catch (e) {}
+                }
+
+                document.getElementById('group-checkin').value = checkInVal;
+                document.getElementById('group-checkout').value = checkOutVal;
+
+                await populateGroupCorporateDropdown(gb.corporate_id);
+
+                const rowsContainer = document.getElementById('group-allotment-rows');
+                if (rowsContainer) {
+                    rowsContainer.innerHTML = '';
+                    const allotments = gb.group_allotments || [];
+                    if (allotments.length > 0) {
+                        for (const alt of allotments) {
+                            await addGroupAllotmentRow(alt.room_type_id, alt.blocked_qty, alt.agreed_rate);
+                        }
+                    } else {
+                        await addGroupAllotmentRow();
+                    }
+                }
+
+                modal.classList.remove('hidden');
+
+            } catch (err) {
+                console.error('Error opening edit group booking modal:', err);
+                alert('Gagal memuat data grup: ' + (err.message || err));
+            }
+        }
+
+        async function populateGroupCorporateDropdown(selectedCorpId = null) {
+            const corpSelect = document.getElementById('group-corporate-id');
+            if (!corpSelect) return;
+            corpSelect.innerHTML = '<option value="">-- Pilih Corporate (Opsional) --</option>';
+            try {
+                const { data: cProfiles } = await supabaseClient.from('corporate_profiles').select('id, company_name').order('company_name', { ascending: true });
+                if (cProfiles && cProfiles.length > 0) {
+                    cProfiles.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.company_name;
+                        if (selectedCorpId && c.id === selectedCorpId) {
+                            opt.selected = true;
+                        }
+                        corpSelect.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error('Error populating corporate profiles for group:', e);
+            }
+        }
+
         function closeGroupBookingModal() {
+            editingGroupId = null;
             const modal = document.getElementById('groupBookingModal');
             if (modal) modal.classList.add('hidden');
         }
 
-        async function addGroupAllotmentRow() {
+        async function addGroupAllotmentRow(selectedRoomTypeId = null, initialQty = 1, initialRate = null) {
             const rowsContainer = document.getElementById('group-allotment-rows');
             if (!rowsContainer) return;
 
@@ -5818,9 +5939,13 @@
             const tr = document.createElement('tr');
             tr.className = 'group-allotment-item';
 
-            let typeOptionsHTML = roomTypes.map(rt => `<option value="${rt.id}" data-price="${rt.base_price}">${rt.name} - Rp ${Number(rt.base_price || 0).toLocaleString('id-ID')}</option>`).join('');
+            let typeOptionsHTML = roomTypes.map(rt => {
+                const isSel = selectedRoomTypeId && rt.id === selectedRoomTypeId ? 'selected' : '';
+                return `<option value="${rt.id}" data-price="${rt.base_price}" ${isSel}>${rt.name} - Rp ${Number(rt.base_price || 0).toLocaleString('id-ID')}</option>`;
+            }).join('');
 
             const firstPrice = roomTypes.length > 0 ? (roomTypes[0].base_price || 0) : 0;
+            const rateVal = initialRate !== null && initialRate !== undefined ? initialRate : firstPrice;
 
             tr.innerHTML = `
                 <td class="py-2 px-3">
@@ -5829,10 +5954,10 @@
                     </select>
                 </td>
                 <td class="py-2 px-3">
-                    <input type="number" min="1" value="1" class="group-blocked-qty w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:outline-none focus:border-primary">
+                    <input type="number" min="1" value="${initialQty}" class="group-blocked-qty w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:outline-none focus:border-primary">
                 </td>
                 <td class="py-2 px-3">
-                    <input type="number" min="0" value="${firstPrice}" class="group-agreed-rate w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:outline-none focus:border-primary">
+                    <input type="number" min="0" value="${rateVal}" class="group-agreed-rate w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs focus:outline-none focus:border-primary">
                 </td>
                 <td class="py-2 px-3 text-center">
                     <button type="button" onclick="removeGroupAllotmentRow(this)" class="p-1 text-slate-400 hover:text-red-600 transition-colors">
@@ -5862,6 +5987,118 @@
                 if (tr) tr.remove();
             } else {
                 alert('Group booking harus memiliki minimal 1 tipe kamar dalam Room Allotment.');
+            }
+        }
+
+        function closeGroupDepositErrorModal() {
+            const modal = document.getElementById('groupDepositErrorModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function handleCancelGroupBooking(groupId) {
+            if (!groupId) return;
+
+            try {
+                // 1. Check if group has a master folio
+                const { data: masterFolio } = await supabaseClient
+                    .from('master_folios')
+                    .select('id')
+                    .eq('group_id', groupId)
+                    .maybeSingle();
+
+                let totalDeposit = 0;
+
+                if (masterFolio && masterFolio.id) {
+                    // Fetch payment transactions linked to this master folio
+                    const { data: txs, error: txErr } = await supabaseClient
+                        .from('folio_transactions')
+                        .select('amount, transaction_type, is_voided')
+                        .eq('master_folio_id', masterFolio.id);
+
+                    if (txErr) throw txErr;
+
+                    if (txs && txs.length > 0) {
+                        txs.forEach(t => {
+                            if (!t.is_voided) {
+                                const type = (t.transaction_type || '').toUpperCase();
+                                if (type === 'PAYMENT') {
+                                    totalDeposit += Number(t.amount || 0);
+                                }
+                            }
+                        });
+                    }
+                }
+
+                // 2. Deposit check
+                if (totalDeposit > 0) {
+                    const errModal = document.getElementById('groupDepositErrorModal');
+                    if (errModal) {
+                        errModal.classList.remove('hidden');
+                    } else {
+                        alert('Grup tidak bisa dibatalkan karena memiliki deposit aktif. Harap buat akun Non-Stay Guest (NSG) dan pindahkan dana secara manual terlebih dahulu.');
+                    }
+                    return;
+                }
+
+                // 3. Confirmation for 0 deposit
+                const confirmed = confirm('Yakin ingin membatalkan grup ini?');
+                if (!confirmed) return;
+
+                // 4. Execute Cancel
+                // Update group_bookings
+                let checkInVal = formatDateISO(new Date());
+                let checkOutVal = formatDateISO(new Date(Date.now() + 86400000));
+
+                const { data: gb } = await supabaseClient
+                    .from('group_bookings')
+                    .select('contact_person')
+                    .eq('id', groupId)
+                    .maybeSingle();
+
+                if (gb && gb.contact_person && gb.contact_person.startsWith('{')) {
+                    try {
+                        const cpObj = JSON.parse(gb.contact_person);
+                        checkInVal = cpObj.check_in_date || checkInVal;
+                        checkOutVal = cpObj.check_out_date || checkOutVal;
+                    } catch (e) {}
+                }
+
+                const updatedContactPerson = JSON.stringify({
+                    check_in_date: checkInVal,
+                    check_out_date: checkOutVal,
+                    status: 'Cancelled'
+                });
+
+                const { error: cancelGbErr } = await supabaseClient
+                    .from('group_bookings')
+                    .update({
+                        status: 'Cancelled',
+                        contact_person: updatedContactPerson
+                    })
+                    .eq('id', groupId);
+
+                if (cancelGbErr) {
+                    // Fallback if status column does not exist
+                    await supabaseClient
+                        .from('group_bookings')
+                        .update({ contact_person: updatedContactPerson })
+                        .eq('id', groupId);
+                }
+
+                // Set blocked_qty = 0 in group_allotments
+                const { error: cancelGaErr } = await supabaseClient
+                    .from('group_allotments')
+                    .update({ blocked_qty: 0 })
+                    .eq('group_id', groupId);
+
+                if (cancelGaErr) console.error('Error setting blocked_qty to 0:', cancelGaErr);
+
+                alert('Group Booking berhasil dibatalkan!');
+                await fetchFrontdeskDashboard();
+
+            } catch (err) {
+                console.error('Error cancelling group booking:', err);
+                alert('Gagal membatalkan Group Booking: ' + (err.message || err));
             }
         }
 
@@ -5916,39 +6153,90 @@
             }
 
             try {
-                // Store check_in_date and check_out_date in contact_person JSON
-                const contactPersonPayload = JSON.stringify({ check_in_date: checkIn, check_out_date: checkOut });
+                if (editingGroupId) {
+                    // EDIT MODE
+                    let existingStatus = null;
+                    const { data: existingGb } = await supabaseClient
+                        .from('group_bookings')
+                        .select('contact_person')
+                        .eq('id', editingGroupId)
+                        .maybeSingle();
 
-                // 1. Insert group_bookings
-                const { data: gbData, error: gbErr } = await supabaseClient
-                    .from('group_bookings')
-                    .insert([{
-                        group_name: groupName,
-                        corporate_id: corporateId,
-                        contact_person: contactPersonPayload
-                    }])
-                    .select();
+                    if (existingGb && existingGb.contact_person && existingGb.contact_person.startsWith('{')) {
+                        try {
+                            const cpObj = JSON.parse(existingGb.contact_person);
+                            if (cpObj.status) existingStatus = cpObj.status;
+                        } catch (e) {}
+                    }
 
-                if (gbErr) throw gbErr;
-                if (!gbData || gbData.length === 0) throw new Error('Gagal menyimpan data group booking.');
+                    const cpPayloadObj = { check_in_date: checkIn, check_out_date: checkOut };
+                    if (existingStatus) cpPayloadObj.status = existingStatus;
 
-                const newGroupId = gbData[0].id;
+                    // 1. Update group_bookings
+                    const { error: updErr } = await supabaseClient
+                        .from('group_bookings')
+                        .update({
+                            group_name: groupName,
+                            corporate_id: corporateId,
+                            contact_person: JSON.stringify(cpPayloadObj)
+                        })
+                        .eq('id', editingGroupId);
 
-                // 2. Insert group_allotments
-                const allotmentPayloads = allotments.map(a => ({
-                    group_id: newGroupId,
-                    room_type_id: a.room_type_id,
-                    blocked_qty: a.blocked_qty,
-                    agreed_rate: a.agreed_rate
-                }));
+                    if (updErr) throw updErr;
 
-                const { error: gaErr } = await supabaseClient
-                    .from('group_allotments')
-                    .insert(allotmentPayloads);
+                    // 2. Replace group_allotments
+                    await supabaseClient.from('group_allotments').delete().eq('group_id', editingGroupId);
 
-                if (gaErr) throw gaErr;
+                    const allotmentPayloads = allotments.map(a => ({
+                        group_id: editingGroupId,
+                        room_type_id: a.room_type_id,
+                        blocked_qty: a.blocked_qty,
+                        agreed_rate: a.agreed_rate
+                    }));
 
-                alert(`Group Booking "${groupName}" berhasil disimpan!`);
+                    const { error: gaErr } = await supabaseClient
+                        .from('group_allotments')
+                        .insert(allotmentPayloads);
+
+                    if (gaErr) throw gaErr;
+
+                    alert(`Group Booking "${groupName}" berhasil diperbarui!`);
+                } else {
+                    // CREATE MODE
+                    const contactPersonPayload = JSON.stringify({ check_in_date: checkIn, check_out_date: checkOut });
+
+                    // 1. Insert group_bookings
+                    const { data: gbData, error: gbErr } = await supabaseClient
+                        .from('group_bookings')
+                        .insert([{
+                            group_name: groupName,
+                            corporate_id: corporateId,
+                            contact_person: contactPersonPayload
+                        }])
+                        .select();
+
+                    if (gbErr) throw gbErr;
+                    if (!gbData || gbData.length === 0) throw new Error('Gagal menyimpan data group booking.');
+
+                    const newGroupId = gbData[0].id;
+
+                    // 2. Insert group_allotments
+                    const allotmentPayloads = allotments.map(a => ({
+                        group_id: newGroupId,
+                        room_type_id: a.room_type_id,
+                        blocked_qty: a.blocked_qty,
+                        agreed_rate: a.agreed_rate
+                    }));
+
+                    const { error: gaErr } = await supabaseClient
+                        .from('group_allotments')
+                        .insert(allotmentPayloads);
+
+                    if (gaErr) throw gaErr;
+
+                    alert(`Group Booking "${groupName}" berhasil disimpan!`);
+                }
+
                 closeGroupBookingModal();
                 await fetchFrontdeskDashboard();
 
