@@ -1818,6 +1818,20 @@
                     </nav>
                 </div>
 
+                <!-- Sub Tab Navigation for Group Bookings -->
+                <div id="group-subtabs-wrapper" class="hidden mb-4 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="group-subtab-active" onclick="switchGroupSubTab('active')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 bg-white text-slate-800 shadow-xs border border-slate-200">
+                            <i class="ph ph-check-circle text-emerald-600 text-sm"></i> Active Groups
+                            <span id="group-count-active" class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">0</span>
+                        </button>
+                        <button type="button" id="group-subtab-cancel" onclick="switchGroupSubTab('cancel')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 text-slate-600 hover:bg-white hover:text-slate-800">
+                            <i class="ph ph-x-circle text-red-500 text-sm"></i> Cancel List
+                            <span id="group-count-cancel" class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-[10px] font-bold">0</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- DataGrid Table -->
                 <div class="border border-slate-200 rounded-lg overflow-x-auto">
                     <table class="w-full text-left text-sm">
@@ -2558,8 +2572,34 @@
             }
         }
 
+        let currentGroupSubTab = 'active';
+
+        function switchGroupSubTab(subTab) {
+            currentGroupSubTab = subTab;
+            const activeBtn = document.getElementById('group-subtab-active');
+            const cancelBtn = document.getElementById('group-subtab-cancel');
+            if (activeBtn && cancelBtn) {
+                if (subTab === 'active') {
+                    activeBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 bg-white text-slate-800 shadow-xs border border-slate-200';
+                    cancelBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 text-slate-600 hover:bg-white hover:text-slate-800';
+                } else {
+                    cancelBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 bg-white text-slate-800 shadow-xs border border-slate-200';
+                    activeBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 text-slate-600 hover:bg-white hover:text-slate-800';
+                }
+            }
+            renderDashboardTable();
+        }
+
         function switchDashboardTab(tabName) {
             currentDashboardTab = tabName;
+            const subtabsWrapper = document.getElementById('group-subtabs-wrapper');
+            if (subtabsWrapper) {
+                if (tabName === 'group') {
+                    subtabsWrapper.classList.remove('hidden');
+                } else {
+                    subtabsWrapper.classList.add('hidden');
+                }
+            }
             const tabs = [
                 { id: 'arrival', btn: 'dash-tab-btn-arrival', count: 'dash-count-arrival' },
                 { id: 'in-house', btn: 'dash-tab-btn-in-house', count: 'dash-count-in-house' },
@@ -2648,16 +2688,36 @@
                     console.error('Error fetching group bookings:', e);
                 }
 
+                // Helper to check cancelled status
+                function checkGroupIsCancelled(gb) {
+                    let groupStatus = gb.status || null;
+                    if (!groupStatus && gb.contact_person && gb.contact_person.startsWith('{')) {
+                        try {
+                            const cpObj = JSON.parse(gb.contact_person);
+                            if (cpObj.status) groupStatus = cpObj.status;
+                        } catch (e) {}
+                    }
+                    return groupStatus === 'Cancelled';
+                }
+
+                const allGroups = dashboardData.group || [];
+                const activeGroupsCount = allGroups.filter(g => !checkGroupIsCancelled(g)).length;
+                const cancelGroupsCount = allGroups.filter(g => checkGroupIsCancelled(g)).length;
+
                 // Update count badges
                 const countArr = document.getElementById('dash-count-arrival');
                 const countIn = document.getElementById('dash-count-in-house');
                 const countDep = document.getElementById('dash-count-departure');
                 const countGrp = document.getElementById('dash-count-group');
+                const countActive = document.getElementById('group-count-active');
+                const countCancel = document.getElementById('group-count-cancel');
 
                 if (countArr) countArr.textContent = dashboardData.arrival.length;
                 if (countIn) countIn.textContent = dashboardData.inHouse.length;
                 if (countDep) countDep.textContent = dashboardData.departure.length;
-                if (countGrp) countGrp.textContent = dashboardData.group.length;
+                if (countGrp) countGrp.textContent = activeGroupsCount;
+                if (countActive) countActive.textContent = activeGroupsCount;
+                if (countCancel) countCancel.textContent = cancelGroupsCount;
 
                 renderDashboardTable();
             } catch (err) {
@@ -2710,7 +2770,18 @@
 
             // Handle Group Booking tab rendering
             if (currentDashboardTab === 'group') {
-                let filteredGroups = dashboardData.group || [];
+                let allGroups = dashboardData.group || [];
+                let filteredGroups = allGroups.filter(gb => {
+                    let groupStatus = gb.status || null;
+                    if (!groupStatus && gb.contact_person && gb.contact_person.startsWith('{')) {
+                        try {
+                            const cpObj = JSON.parse(gb.contact_person);
+                            if (cpObj.status) groupStatus = cpObj.status;
+                        } catch (e) {}
+                    }
+                    const isCancelled = groupStatus === 'Cancelled';
+                    return currentGroupSubTab === 'cancel' ? isCancelled : !isCancelled;
+                });
 
                 if (dashboardSearchQuery) {
                     filteredGroups = filteredGroups.filter(g => {
@@ -2721,11 +2792,14 @@
                 }
 
                 if (!filteredGroups || filteredGroups.length === 0) {
+                    const emptyMsg = currentGroupSubTab === 'cancel'
+                        ? 'Tidak ada data Group Booking yang dibatalkan.'
+                        : 'Belum ada data Group Booking aktif.';
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="7" class="py-8 text-center text-slate-400">
                                 <i class="ph ph-users-three text-2xl text-slate-300 inline-block mb-1"></i>
-                                <div>Belum ada data Group Booking.</div>
+                                <div>${emptyMsg}</div>
                             </td>
                         </tr>
                     `;
@@ -2778,8 +2852,8 @@
                     }
 
                     let actionBtn = '';
-                    if (isCancelled) {
-                        actionBtn = `<span class="text-xs text-red-500 italic font-semibold">Dibatalkan</span>`;
+                    if (isCancelled || currentGroupSubTab === 'cancel') {
+                        actionBtn = `<span class="text-xs text-slate-400 italic font-semibold">Dibatalkan (Read-only)</span>`;
                     } else {
                         const splitBtnHtml = !isSplit
                             ? `<button type="button" onclick="openSplitReservationModal('${gb.id}')" title="Split Reservasi" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold transition-colors shadow-sm flex items-center gap-1">
@@ -6094,6 +6168,7 @@
                 if (cancelGaErr) console.error('Error setting blocked_qty to 0:', cancelGaErr);
 
                 alert('Group Booking berhasil dibatalkan!');
+                switchGroupSubTab('cancel');
                 await fetchFrontdeskDashboard();
 
             } catch (err) {
