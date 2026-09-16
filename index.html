@@ -9042,9 +9042,6 @@
                         return dateISO >= s && dateISO <= e;
                     }).length;
 
-                    // Room Available = Total - Out of Order
-                    const availableVal = Math.max(0, roomTotalVal - oooCount);
-
                     // Room Occupied = reservations active on dateISO (check_in_date <= dateISO < check_out_date)
                     let occupiedCount = 0;
                     let complimentCount = 0;
@@ -9062,13 +9059,17 @@
                         }
                     });
 
+                    // Room Available (Sisa Kamar untuk Dijual) = Room Total - Out of Order - Room Occupied
+                    const availableVal = Math.max(0, roomTotalVal - oooCount - occupiedCount);
+
                     // Room Sold = Occupied - Compliment
                     const soldVal = Math.max(0, occupiedCount - complimentCount);
 
-                    // % Occupancy = (Occupied / Available) * 100
+                    // % Occupancy = (Room Occupied / (Room Total - Out of Order)) * 100
+                    const totalMinusOoo = roomTotalVal - oooCount;
                     let occPct = 0;
-                    if (availableVal > 0) {
-                        occPct = (occupiedCount / availableVal) * 100;
+                    if (totalMinusOoo > 0) {
+                        occPct = (occupiedCount / totalMinusOoo) * 100;
                     }
 
                     metrics.roomTotal.push(roomTotalVal);
