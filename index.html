@@ -48,18 +48,28 @@
             <h1 class="text-xl font-bold text-primary tracking-tight">NG Hotel Mgt.</h1>
         </div>
         <nav class="flex-1 px-4 space-y-2 mt-4 md:mt-0">
-            <a href="#" onclick="switchView('frontdesk')" id="nav-overview" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
-                <i class="ph ph-squares-four text-xl"></i> Overview
-            </a>
-            <a href="#" onclick="switchView('frontdesk')" id="nav-frontdesk" class="flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors">
-                <i class="ph ph-desktop-tower text-xl"></i> Frontdesk
-            </a>
-            <a href="#" onclick="switchView('frontdesk')" id="nav-reservations" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
-                <i class="ph ph-calendar-check text-xl"></i> Reservations
-            </a>
-            <a href="#" onclick="switchView('room-forecast')" id="nav-room-forecast" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
-                <i class="ph ph-chart-line-up text-xl"></i> Room Forecast
-            </a>
+            <!-- Frontdesk Accordion -->
+            <div>
+                <button type="button" onclick="toggleFrontdeskAccordion()" id="nav-frontdesk-accordion" class="w-full flex items-center justify-between p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <i class="ph ph-desktop-tower text-xl"></i>
+                        <span class="font-semibold">Frontdesk</span>
+                    </div>
+                    <i id="frontdesk-chevron" class="ph ph-caret-down text-sm transition-transform duration-200 rotate-180"></i>
+                </button>
+                <div id="frontdesk-submenu" class="pl-4 space-y-1 mt-1">
+                    <a href="#" onclick="switchView('frontdesk')" id="nav-frontdesk" class="flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm">
+                        <i class="ph ph-squares-four text-lg"></i> Dashboard & Tape Chart
+                    </a>
+                    <a href="#" onclick="switchView('room-forecast')" id="nav-room-forecast" class="flex items-center gap-3 p-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors text-sm">
+                        <i class="ph ph-chart-line-up text-lg"></i> Room Forecast
+                    </a>
+                    <a href="#" onclick="switchView('nsg')" id="nav-nsg" class="flex items-center gap-3 p-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors text-sm">
+                        <i class="ph ph-user-list text-lg"></i> Non-Stay Guest (NSG)
+                    </a>
+                </div>
+            </div>
+
             <a href="#" onclick="switchView('housekeeping')" id="nav-housekeeping" class="flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
                 <i class="ph ph-broom text-xl"></i> Housekeeping
             </a>
@@ -80,6 +90,39 @@
             </a>
         </div>
     </aside>
+
+    <!-- Modal Add NSG Account -->
+    <div id="nsgAccountModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 id="nsgAccountModalTitle" class="text-lg font-semibold text-slate-800">New NSG Account</h3>
+                <button type="button" onclick="closeNsgAccountModal()" class="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="nsgAccountForm" onsubmit="event.preventDefault();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Nama Akun <span class="text-red-500">*</span></label>
+                    <input type="text" id="nsgAccountName" required placeholder="Contoh: NSG - Restaurant / Event" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Keterangan</label>
+                    <textarea id="nsgAccountDescription" rows="3" placeholder="Keterangan akun Non-Stay Guest..." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                    <button type="button" onclick="closeNsgAccountModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" id="nsgAccountSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors cursor-pointer">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Modal Add / Edit Corporate Profile -->
     <div id="corporateModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
@@ -1968,6 +2011,44 @@
                         <i class="ph ph-spinner animate-spin text-3xl inline-block mb-2"></i>
                         <div>Memuat data kamar housekeeping...</div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area: Non-Stay Guest (NSG) / Paymaster View -->
+        <div id="nsg-view" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px] flex flex-col">
+                <div class="mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Non-Stay Guest (NSG) / Paymaster</h2>
+                        <p class="text-sm text-slate-500 mt-1">Daftar akun Non-Stay Guest / Paymaster untuk transaksi tanpa menginap.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="openNsgAccountModal()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 shadow-sm cursor-pointer">
+                            <i class="ph ph-plus-circle text-lg"></i> + New NSG Account
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border border-slate-200 rounded-lg overflow-x-auto flex-1">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-xs">
+                            <tr>
+                                <th class="py-3 px-4">No. NSG</th>
+                                <th class="py-3 px-4">Nama Akun</th>
+                                <th class="py-3 px-4">Keterangan</th>
+                                <th class="py-3 px-4">Status</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nsg-list-tbody" class="divide-y divide-slate-200 text-slate-700">
+                            <tr>
+                                <td colspan="5" class="py-8 text-center text-slate-400">
+                                    Belum ada akun Non-Stay Guest (NSG).
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -9444,33 +9525,73 @@
             return updateRoomStatus(roomId, newStatus);
         }
 
+        // Frontdesk Accordion Toggle Function
+        function toggleFrontdeskAccordion(forceOpen) {
+            const submenu = document.getElementById('frontdesk-submenu');
+            const chevron = document.getElementById('frontdesk-chevron');
+            if (!submenu) return;
+            const isHidden = submenu.classList.contains('hidden');
+            if (forceOpen === true || (forceOpen === undefined && isHidden)) {
+                submenu.classList.remove('hidden');
+                if (chevron) chevron.classList.add('rotate-180');
+            } else if (forceOpen === false || (forceOpen === undefined && !isHidden)) {
+                submenu.classList.add('hidden');
+                if (chevron) chevron.classList.remove('rotate-180');
+            }
+        }
+
+        // Modal Handlers for NSG Account
+        function openNsgAccountModal() {
+            const modal = document.getElementById('nsgAccountModal');
+            if (modal) {
+                const form = document.getElementById('nsgAccountForm');
+                if (form) form.reset();
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeNsgAccountModal() {
+            const modal = document.getElementById('nsgAccountModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                const form = document.getElementById('nsgAccountForm');
+                if (form) form.reset();
+            }
+        }
+
         // Single Page Application (SPA) View Toggling
         async function switchView(viewName) {
             const frontdeskTopbar = document.getElementById('frontdesk-topbar');
             const frontdeskView = document.getElementById('frontdesk-view');
+            const nsgView = document.getElementById('nsg-view');
             const roomForecastView = document.getElementById('room-forecast-view');
             const housekeepingView = document.getElementById('housekeeping-view');
             const corporateView = document.getElementById('corporate-view');
             const cancelListView = document.getElementById('cancel-list-view');
             const adminSettingsView = document.getElementById('admin-settings-view');
 
-            const navOverview = document.getElementById('nav-overview');
             const navFrontdesk = document.getElementById('nav-frontdesk');
-            const navReservations = document.getElementById('nav-reservations');
             const navRoomForecast = document.getElementById('nav-room-forecast');
+            const navNsg = document.getElementById('nav-nsg');
             const navHousekeeping = document.getElementById('nav-housekeeping');
             const navCorporate = document.getElementById('nav-corporate');
             const navCancelList = document.getElementById('nav-cancel-list');
             const navSettings = document.getElementById('nav-settings');
 
-            const allNavBtns = [navOverview, navFrontdesk, navReservations, navRoomForecast, navHousekeeping, navCorporate, navCancelList, navSettings];
-            allNavBtns.forEach(btn => {
+            const allSubNavBtns = [navFrontdesk, navRoomForecast, navNsg];
+            allSubNavBtns.forEach(btn => {
+                if (btn) btn.className = "flex items-center gap-3 p-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors text-sm font-normal";
+            });
+
+            const allMainNavBtns = [navHousekeeping, navCorporate, navCancelList, navSettings];
+            allMainNavBtns.forEach(btn => {
                 if (btn) btn.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
             });
 
             if (viewName === 'settings') {
                 if (frontdeskTopbar) frontdeskTopbar.classList.add('hidden');
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (nsgView) nsgView.classList.add('hidden');
                 if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
                 if (corporateView) corporateView.classList.add('hidden');
@@ -9478,19 +9599,36 @@
                 if (adminSettingsView) adminSettingsView.classList.remove('hidden');
 
                 if (navSettings) navSettings.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+            } else if (viewName === 'nsg') {
+                toggleFrontdeskAccordion(true);
+                if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+                const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+                if (topbarHeader) topbarHeader.textContent = "Frontdesk / Non-Stay Guest (NSG)";
+
+                if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (roomForecastView) roomForecastView.classList.add('hidden');
+                if (housekeepingView) housekeepingView.classList.add('hidden');
+                if (corporateView) corporateView.classList.add('hidden');
+                if (cancelListView) cancelListView.classList.add('hidden');
+                if (adminSettingsView) adminSettingsView.classList.add('hidden');
+                if (nsgView) nsgView.classList.remove('hidden');
+
+                if (navNsg) navNsg.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
             } else if (viewName === 'room-forecast') {
+                toggleFrontdeskAccordion(true);
                 if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
                 const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
                 if (topbarHeader) topbarHeader.textContent = "Frontdesk / Room Forecast";
 
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (nsgView) nsgView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
                 if (corporateView) corporateView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
                 if (roomForecastView) roomForecastView.classList.remove('hidden');
 
-                if (navRoomForecast) navRoomForecast.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+                if (navRoomForecast) navRoomForecast.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
 
                 renderRoomForecast();
             } else if (viewName === 'corporate') {
@@ -9499,6 +9637,7 @@
                 if (topbarHeader) topbarHeader.textContent = "Corporate / Travel Agent Profiles";
 
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (nsgView) nsgView.classList.add('hidden');
                 if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
@@ -9514,6 +9653,7 @@
                 if (topbarHeader) topbarHeader.textContent = "Reports / Cancel List";
 
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (nsgView) nsgView.classList.add('hidden');
                 if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
                 if (corporateView) corporateView.classList.add('hidden');
@@ -9529,6 +9669,7 @@
                 if (topbarHeader) topbarHeader.textContent = "Housekeeping / Room Status";
 
                 if (frontdeskView) frontdeskView.classList.add('hidden');
+                if (nsgView) nsgView.classList.add('hidden');
                 if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (corporateView) corporateView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
@@ -9539,18 +9680,20 @@
 
                 fetchHousekeepingRooms();
             } else {
+                toggleFrontdeskAccordion(true);
                 if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
                 const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
                 if (topbarHeader) topbarHeader.textContent = "Frontdesk / Tape Chart";
 
                 if (frontdeskView) frontdeskView.classList.remove('hidden');
+                if (nsgView) nsgView.classList.add('hidden');
                 if (roomForecastView) roomForecastView.classList.add('hidden');
                 if (housekeepingView) housekeepingView.classList.add('hidden');
                 if (corporateView) corporateView.classList.add('hidden');
                 if (cancelListView) cancelListView.classList.add('hidden');
                 if (adminSettingsView) adminSettingsView.classList.add('hidden');
 
-                if (navFrontdesk) navFrontdesk.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+                if (navFrontdesk) navFrontdesk.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
 
                 await fetchRooms();
                 await fetchFrontdeskDashboard();
