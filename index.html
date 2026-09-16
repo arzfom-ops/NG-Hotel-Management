@@ -872,6 +872,9 @@
                         <button type="button" id="btnMoveToMaster" onclick="handleMoveToMasterFolio()" disabled class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
                             <i class="ph ph-arrows-out-line-horizontal text-base"></i> Move to Master Folio
                         </button>
+                        <button type="button" id="btnTransferSelected" onclick="openTransferBillModal()" disabled class="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                            <i class="ph ph-arrows-left-right text-base"></i> Transfer Selected Item(s)
+                        </button>
                         <button type="button" onclick="openAddChargeModal()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
                             <i class="ph ph-plus-circle text-base"></i> + Add Charge
                         </button>
@@ -1182,6 +1185,48 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Transfer Bill / Tagihan -->
+    <div id="transferBillModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative">
+
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-arrows-left-right text-xl text-purple-600"></i> Transfer Tagihan
+                </h3>
+                <button type="button" onclick="closeTransferBillModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 space-y-4">
+                <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-800 flex items-center gap-2">
+                    <i class="ph ph-info text-base text-purple-600 shrink-0"></i>
+                    <span id="transferSelectedCountInfo">Pilih reservasi tujuan untuk memindahkan item tagihan yang dicentang.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Reservasi / Akun Tujuan</label>
+                    <input type="text" id="transferTargetSearch" oninput="filterTransferTargets()" placeholder="Cari nama tamu, no. kamar, atau res #..." class="w-full px-3 py-2 mb-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600">
+                    <select id="transferTargetSelect" size="6" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600">
+                        <option value="">Loading reservasi tujuan...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-3 bg-slate-50 shrink-0">
+                <button type="button" onclick="closeTransferBillModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                    Batal
+                </button>
+                <button type="button" onclick="executeTransferBill()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                    <i class="ph ph-check text-base"></i> Transfer Tagihan
+                </button>
+            </div>
         </div>
     </div>
 
@@ -7137,6 +7182,174 @@
             const btnMove = document.getElementById('btnMoveToMaster');
             if (btnMove) {
                 btnMove.disabled = checkedBoxes.length === 0;
+            }
+            const btnTransfer = document.getElementById('btnTransferSelected');
+            if (btnTransfer) {
+                btnTransfer.disabled = checkedBoxes.length === 0;
+            }
+        }
+
+        async function fetchFolioData() {
+            if (currentFolioReservation && currentFolioReservation.id) {
+                await fetchFolioTransactions(currentFolioReservation.id);
+            }
+        }
+
+        let transferTargetReservationsCache = [];
+
+        async function openTransferBillModal() {
+            const checkedBoxes = document.querySelectorAll('.folio-tx-cb:checked');
+            if (checkedBoxes.length === 0) {
+                alert('Pilih minimal satu transaksi untuk ditransfer.');
+                return;
+            }
+
+            const infoEl = document.getElementById('transferSelectedCountInfo');
+            if (infoEl) {
+                infoEl.textContent = `${checkedBoxes.length} item transaksi dipilih untuk ditransfer.`;
+            }
+
+            const searchInput = document.getElementById('transferTargetSearch');
+            if (searchInput) searchInput.value = '';
+
+            const selectEl = document.getElementById('transferTargetSelect');
+            if (selectEl) {
+                selectEl.innerHTML = '<option value="">Memuat reservasi tujuan...</option>';
+            }
+
+            const modal = document.getElementById('transferBillModal');
+            if (modal) modal.classList.remove('hidden');
+
+            try {
+                const currentResId = currentFolioReservation ? currentFolioReservation.id : null;
+
+                const { data, error } = await supabaseClient
+                    .from('reservations')
+                    .select('id, reservation_number, booker_name, guest_type, status, guest_profiles(full_name), rooms(room_number)')
+                    .or('status.eq.Checkin,guest_type.eq.Non-Staying Guest')
+                    .neq('status', 'Cancelled');
+
+                if (error) throw error;
+
+                transferTargetReservationsCache = (data || []).filter(r => r.id !== currentResId);
+                renderTransferTargetOptions(transferTargetReservationsCache);
+
+            } catch (err) {
+                console.error('Error fetching transfer destinations:', err);
+                if (selectEl) {
+                    selectEl.innerHTML = `<option value="">Gagal memuat tujuan: ${err.message}</option>`;
+                }
+            }
+        }
+
+        function renderTransferTargetOptions(list) {
+            const selectEl = document.getElementById('transferTargetSelect');
+            if (!selectEl) return;
+
+            if (!list || list.length === 0) {
+                selectEl.innerHTML = '<option value="">Tidak ada reservasi tujuan yang tersedia.</option>';
+                return;
+            }
+
+            const inHouse = list.filter(r => r.guest_type !== 'Non-Staying Guest' && r.status === 'Checkin');
+            const nsg = list.filter(r => r.guest_type === 'Non-Staying Guest');
+            const others = list.filter(r => r.guest_type !== 'Non-Staying Guest' && r.status !== 'Checkin');
+
+            let html = '';
+
+            if (inHouse.length > 0) {
+                html += '<optgroup label="Tamu In-House (Staying Guest)">';
+                inHouse.forEach(r => {
+                    const guestProfile = r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0] : r.guest_profiles) : null;
+                    const guestName = (guestProfile ? guestProfile.full_name : null) || r.booker_name || 'Guest';
+                    const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '-';
+                    const resNo = r.reservation_number || r.id.slice(0, 8);
+                    html += `<option value="${r.id}">[Kamar ${roomNo}] ${guestName} (${resNo})</option>`;
+                });
+                html += '</optgroup>';
+            }
+
+            if (nsg.length > 0) {
+                html += '<optgroup label="Akun Non-Staying Guest (NSG)">';
+                nsg.forEach(r => {
+                    const accountName = r.booker_name || 'NSG Account';
+                    const resNo = r.reservation_number || r.id.slice(0, 8);
+                    html += `<option value="${r.id}">[NSG] ${accountName} (${resNo})</option>`;
+                });
+                html += '</optgroup>';
+            }
+
+            if (others.length > 0) {
+                html += '<optgroup label="Reservasi Lainnya">';
+                others.forEach(r => {
+                    const guestProfile = r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0] : r.guest_profiles) : null;
+                    const guestName = (guestProfile ? guestProfile.full_name : null) || r.booker_name || 'Guest';
+                    const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '-';
+                    const resNo = r.reservation_number || r.id.slice(0, 8);
+                    html += `<option value="${r.id}">[${r.status}] [Kamar ${roomNo}] ${guestName} (${resNo})</option>`;
+                });
+                html += '</optgroup>';
+            }
+
+            selectEl.innerHTML = html;
+        }
+
+        function filterTransferTargets() {
+            const searchVal = (document.getElementById('transferTargetSearch')?.value || '').toLowerCase().trim();
+            if (!searchVal) {
+                renderTransferTargetOptions(transferTargetReservationsCache);
+                return;
+            }
+
+            const filtered = transferTargetReservationsCache.filter(r => {
+                const guestProfile = r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0] : r.guest_profiles) : null;
+                const guestName = (guestProfile ? guestProfile.full_name : '').toLowerCase();
+                const bookerName = (r.booker_name || '').toLowerCase();
+                const roomNo = (r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '').toLowerCase();
+                const resNo = (r.reservation_number || r.id).toLowerCase();
+
+                return guestName.includes(searchVal) || bookerName.includes(searchVal) || roomNo.includes(searchVal) || resNo.includes(searchVal);
+            });
+
+            renderTransferTargetOptions(filtered);
+        }
+
+        function closeTransferBillModal() {
+            const modal = document.getElementById('transferBillModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function executeTransferBill() {
+            const checkedBoxes = Array.from(document.querySelectorAll('.folio-tx-cb:checked'));
+            const selectedIds = checkedBoxes.map(cb => cb.value);
+
+            if (selectedIds.length === 0) {
+                alert('Pilih minimal satu transaksi untuk ditransfer.');
+                return;
+            }
+
+            const targetResId = document.getElementById('transferTargetSelect')?.value;
+            if (!targetResId) {
+                alert('Pilih reservasi/akun tujuan transfer.');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('folio_transactions')
+                    .update({ reservation_id: targetResId })
+                    .in('id', selectedIds);
+
+                if (error) throw error;
+
+                closeTransferBillModal();
+                alert('Transaksi berhasil ditransfer!');
+
+                await fetchFolioData();
+
+            } catch (err) {
+                console.error('Error transferring bill:', err);
+                alert('Gagal mentransfer transaksi: ' + err.message);
             }
         }
 
