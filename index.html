@@ -6408,18 +6408,6 @@
             document.getElementById('res-child').value = 0;
             document.getElementById('res-qty').value = 1;
             document.getElementById('res-extrabed').value = 0;
-            const depositAmtEl = document.getElementById('res-deposit-amount');
-            const depositMethodEl = document.getElementById('res-payment-method');
-            const depositLockedMsg = document.getElementById('res-deposit-locked-msg');
-            if (depositAmtEl) {
-                depositAmtEl.value = 0;
-                depositAmtEl.disabled = false;
-            }
-            if (depositMethodEl) {
-                depositMethodEl.value = '';
-                depositMethodEl.disabled = false;
-            }
-            if (depositLockedMsg) depositLockedMsg.classList.add('hidden');
 
             document.getElementById('res-source').value = 'Direct';
             const guestTypeSelect = document.getElementById('res-guest-type');
@@ -6541,21 +6529,6 @@
                 document.getElementById('res-corporate-id').value = res.corporate_id || '';
                 document.getElementById('res-qty').value = res.qty || 1;
                 document.getElementById('res-extrabed').value = res.extrabed_qty || 0;
-
-                // Set Deposit & Comment (Deposit fields locked in Edit Mode)
-                const depositAmtEl = document.getElementById('res-deposit-amount');
-                const depositMethodEl = document.getElementById('res-payment-method');
-                const depositLockedMsg = document.getElementById('res-deposit-locked-msg');
-
-                if (depositAmtEl) {
-                    depositAmtEl.value = res.deposit_amount || 0;
-                    depositAmtEl.disabled = true;
-                }
-                if (depositMethodEl) {
-                    depositMethodEl.value = res.deposit_method || '';
-                    depositMethodEl.disabled = true;
-                }
-                if (depositLockedMsg) depositLockedMsg.classList.remove('hidden');
 
                 document.getElementById('res-comment').value = res.comment || '';
 
@@ -8809,8 +8782,6 @@
                 const qty = parseInt(document.getElementById('res-qty').value, 10) || 1;
                 const extrabedQty = parseInt(document.getElementById('res-extrabed').value, 10) || 0;
 
-                const depositAmount = parseFloat(document.getElementById('res-deposit-amount').value) || 0;
-                const depositMethod = document.getElementById('res-payment-method').value || null;
                 const comment = document.getElementById('res-comment').value.trim() || null;
 
                 const reservationPayload = {
@@ -8834,8 +8805,6 @@
                     reservation_source: reservationSource,
                     voucher_number: voucherNumber,
                     corporate_id: corporateId,
-                    deposit_amount: depositAmount,
-                    deposit_method: depositMethod,
                     comment: comment
                 };
 
