@@ -101,7 +101,7 @@
                 </button>
             </div>
 
-            <form id="nsgAccountForm" onsubmit="event.preventDefault();" class="space-y-4">
+            <form id="nsgAccountForm" onsubmit="handleSaveNsg(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Nama Akun <span class="text-red-500">*</span></label>
                     <input type="text" id="nsgAccountName" required placeholder="Contoh: NSG - Restaurant / Event" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
@@ -9540,7 +9540,7 @@
             }
         }
 
-        // Modal Handlers for NSG Account
+        // Modal Handlers & JS Logic for NSG (Non-Stay Guest) Account
         function openNsgAccountModal() {
             const modal = document.getElementById('nsgAccountModal');
             if (modal) {
@@ -9556,6 +9556,137 @@
                 modal.classList.add('hidden');
                 const form = document.getElementById('nsgAccountForm');
                 if (form) form.reset();
+            }
+        }
+
+        async function fetchNsgList() {
+            const tbody = document.getElementById('nsg-list-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="py-8 text-center text-slate-400">
+                        <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
+                        <div>Memuat data Non-Stay Guest...</div>
+                    </td>
+                </tr>
+            `;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('reservations')
+                    .select('*')
+                    .eq('guest_type', 'Non-Staying Guest')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-slate-400">
+                                Belum ada akun Non-Stay Guest (NSG).
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = data.map(item => {
+                    const resNo = item.reservation_number || (item.id ? item.id.slice(0, 8) : '-');
+                    const accountName = item.booker_name || '-';
+                    const description = item.comment || '-';
+                    const status = item.status || 'Checkin';
+
+                    return `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 font-mono font-medium text-slate-800">${resNo}</td>
+                            <td class="py-3 px-4 font-medium text-slate-900">${accountName}</td>
+                            <td class="py-3 px-4 text-slate-600">${description}</td>
+                            <td class="py-3 px-4">
+                                <span class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    ${status}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                <button onclick="openFolioModal('${item.id}')" class="px-3 py-1.5 bg-primary hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs inline-flex items-center gap-1 cursor-pointer">
+                                    <i class="ph ph-receipt text-sm"></i> Open Folio
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Error fetching NSG list:', err);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-red-500">
+                            Gagal memuat data NSG: ${err.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function handleSaveNsg(event) {
+            if (event) event.preventDefault();
+
+            const accountNameInput = document.getElementById('nsgAccountName');
+            const descriptionInput = document.getElementById('nsgAccountDescription');
+            const submitBtn = document.getElementById('nsgAccountSubmitBtn');
+
+            const accountName = accountNameInput ? accountNameInput.value.trim() : '';
+            const description = descriptionInput ? descriptionInput.value.trim() : '';
+
+            if (!accountName) {
+                alert('Nama Akun wajib diisi!');
+                return;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Menyimpan...`;
+            }
+
+            try {
+                const todayISO = new Date().toISOString().split('T')[0];
+                const randomNum = Math.floor(1000 + Math.random() * 9000);
+                const nsgNumber = `NSG-${Date.now().toString().slice(-6)}-${randomNum}`;
+
+                const payload = {
+                    guest_type: 'Non-Staying Guest',
+                    status: 'Checkin',
+                    qty: 1,
+                    room_id: null,
+                    booker_name: accountName,
+                    comment: description,
+                    reservation_number: nsgNumber,
+                    check_in_date: todayISO,
+                    check_out_date: todayISO,
+                    nights: 1,
+                    room_rate: 0
+                };
+
+                const { data, error } = await supabaseClient
+                    .from('reservations')
+                    .insert([payload])
+                    .select();
+
+                if (error) throw error;
+
+                alert('Akun Non-Stay Guest (NSG) berhasil dibuat!');
+                closeNsgAccountModal();
+                await fetchNsgList();
+
+            } catch (err) {
+                console.error('Error saving NSG account:', err);
+                alert('Gagal menyimpan akun NSG: ' + err.message);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Simpan';
+                }
             }
         }
 
@@ -9614,6 +9745,8 @@
                 if (nsgView) nsgView.classList.remove('hidden');
 
                 if (navNsg) navNsg.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
+
+                fetchNsgList();
             } else if (viewName === 'room-forecast') {
                 toggleFrontdeskAccordion(true);
                 if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
