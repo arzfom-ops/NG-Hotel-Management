@@ -1336,10 +1336,19 @@
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <!-- Upload Doc (UI Only) -->
+                            <!-- Upload Doc (ID / Passport) -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Upload Doc (ID / Passport)</label>
-                                <input type="file" id="res-upload-doc" accept="image/*,.pdf" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-primary hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-md bg-white py-1 px-1">
+                                <div class="flex gap-2">
+                                    <label class="flex-1 cursor-pointer inline-flex items-center justify-center px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md text-xs font-medium text-slate-700 transition-colors">
+                                        <i class="ph ph-upload-simple mr-1.5 text-sm"></i> Upload / Kamera HP
+                                        <input type="file" id="res-upload-doc" accept="image/jpeg, image/png" capture="environment" class="hidden">
+                                    </label>
+                                    <button type="button" id="btn-open-webcam" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md text-xs font-medium text-slate-700 transition-colors">
+                                        <i class="ph ph-webcam mr-1.5 text-sm"></i> Gunakan Webcam
+                                    </button>
+                                </div>
+                                <img id="res-doc-preview" class="hidden w-full h-32 object-cover rounded-md mt-2">
                             </div>
 
                             <!-- Address -->
@@ -1713,6 +1722,34 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Webcam -->
+    <div id="webcamModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-webcam text-xl text-primary"></i> Ambil Foto ID / Passport
+                </h3>
+                <button type="button" onclick="document.getElementById('webcamModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <video id="webcam-video" autoplay playsinline class="w-full bg-black rounded-md h-64"></video>
+                <canvas id="webcam-canvas" class="hidden"></canvas>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="document.getElementById('webcamModal').classList.add('hidden')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-xs font-semibold transition-colors">
+                        Batal
+                    </button>
+                    <button type="button" id="btn-capture-webcam" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
+                        <i class="ph ph-camera text-base"></i> Jepret Foto
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
