@@ -1260,6 +1260,7 @@
             <!-- Form Content -->
             <form id="reservationForm" onsubmit="handleSaveReservation(event)" class="flex-1 overflow-y-auto p-6 space-y-6">
                 <input type="hidden" id="edit-reservation-id">
+                <input type="hidden" id="edit-reservation-number">
                 <input type="hidden" id="res-guest-profile-id">
 
                 <!-- TAB 1 CONTAINER: Reservation Details -->
@@ -5395,6 +5396,53 @@
             }
         }
 
+        function getCompressedDocBlob() {
+            return new Promise((resolve) => {
+                const preview = document.getElementById('res-doc-preview');
+                if (!preview || preview.classList.contains('hidden') || !preview.src || preview.src === '' || preview.src === window.location.href) {
+                    resolve(null);
+                    return;
+                }
+
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    let width = img.naturalWidth || img.width;
+                    let height = img.naturalHeight || img.height;
+
+                    if (!width || !height) {
+                        resolve(null);
+                        return;
+                    }
+
+                    const maxWidth = 800;
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob(
+                        (blob) => {
+                            resolve(blob);
+                        },
+                        'image/jpeg',
+                        0.7
+                    );
+                };
+                img.onerror = (err) => {
+                    console.error('Error loading preview image for compression:', err);
+                    resolve(null);
+                };
+                img.src = preview.src;
+            });
+        }
+
         function handleStayDatesChange(triggerSource) {
             const checkInInput = document.getElementById('res-check-in');
             const checkOutInput = document.getElementById('res-check-out');
@@ -6612,8 +6660,10 @@
             await populateReservationFormDropdowns();
             switchReservationTab('details');
 
-            // Reset IDs and pending deposits
+            // Reset IDs, pending deposits, and document preview
             document.getElementById('edit-reservation-id').value = '';
+            document.getElementById('edit-reservation-number').value = '';
+            clearDocPreview();
             pendingNewReservationDeposits = [];
             toggleAddDepositForm(false);
             renderReservationDepositHistory([]);
@@ -6723,6 +6773,15 @@
                 if (!res) throw new Error('Data reservasi tidak ditemukan.');
 
                 document.getElementById('edit-reservation-id').value = res.id;
+                document.getElementById('edit-reservation-number').value = res.reservation_number || '';
+
+                if (res.document_url) {
+                    const preview = document.getElementById('res-doc-preview');
+                    if (preview) {
+                        preview.src = res.document_url;
+                        preview.classList.remove('hidden');
+                    }
+                }
 
                 // Set Header Edit Mode
                 const titleIcon = document.getElementById('reservationModalIcon');
@@ -9226,6 +9285,57 @@
                     comment: comment
                 };
 
+                // Determine reservation number for new or existing reservation
+                let resNumber = editId ? (document.getElementById('edit-reservation-number').value || '') : '';
+                if (!editId) {
+                    const randomNum = Math.floor(1000 + Math.random() * 9000);
+                    resNumber = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
+                    reservationPayload.reservation_number = resNumber;
+                    reservationPayload.status = 'Reserved';
+                }
+
+                // Document compression & upload to Supabase Storage
+                const docPreview = document.getElementById('res-doc-preview');
+                const hasDocPreview = docPreview && !docPreview.classList.contains('hidden') && docPreview.src && docPreview.src !== '' && docPreview.src !== window.location.href;
+
+                if (hasDocPreview) {
+                    if (docPreview.src.startsWith('data:')) {
+                        const hotelNameRaw = (document.getElementById('active-property-name')?.textContent || 'Hotel').trim();
+                        const hotelName = hotelNameRaw.replace(/\s+/g, '_');
+                        const resNumStr = (resNumber || 'RES').replace(/\s+/g, '_');
+                        const guestNameStr = (guestNameVal || 'Guest').replace(/\s+/g, '_');
+                        const fileName = `${hotelName}_${resNumStr}_${guestNameStr}_ID.jpg`;
+
+                        const compressedBlob = await getCompressedDocBlob();
+                        if (compressedBlob) {
+                            const { data: uploadData, error: uploadErr } = await supabaseClient
+                                .storage
+                                .from('guest_documents')
+                                .upload(fileName, compressedBlob, {
+                                    contentType: 'image/jpeg',
+                                    upsert: true
+                                });
+
+                            if (uploadErr) {
+                                console.error('Error uploading guest document to Supabase Storage:', uploadErr);
+                            } else {
+                                const { data: publicUrlData } = supabaseClient
+                                    .storage
+                                    .from('guest_documents')
+                                    .getPublicUrl(fileName);
+
+                                if (publicUrlData && publicUrlData.publicUrl) {
+                                    reservationPayload.document_url = publicUrlData.publicUrl;
+                                }
+                            }
+                        }
+                    } else if (docPreview.src.startsWith('http')) {
+                        reservationPayload.document_url = docPreview.src;
+                    }
+                } else {
+                    reservationPayload.document_url = null;
+                }
+
                 let savedReservationId = editId;
 
                 if (editId) {
@@ -9246,9 +9356,13 @@
                         alert('Data reservasi berhasil diperbarui!');
                     }
                 } else {
-                    const randomNum = Math.floor(1000 + Math.random() * 9000);
-                    reservationPayload.reservation_number = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
-                    reservationPayload.status = 'Reserved';
+                    if (!reservationPayload.reservation_number) {
+                        const randomNum = Math.floor(1000 + Math.random() * 9000);
+                        reservationPayload.reservation_number = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
+                    }
+                    if (!reservationPayload.status) {
+                        reservationPayload.status = 'Reserved';
+                    }
 
                     const { data: newResData, error: insertResErr } = await supabaseClient
                         .from('reservations')
