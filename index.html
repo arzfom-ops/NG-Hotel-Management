@@ -2402,7 +2402,7 @@
                 <!-- Tab 8 Content: Invoice Setting -->
                 <div id="tab-content-invoice-setting" class="tab-content-panel hidden">
                     <div class="max-w-2xl bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                        <h3 class="text-base font-semibold text-slate-800 mb-4 pb-2 border-b">Invoice Configuration</h3>
+                        <h3 class="text-base font-semibold text-slate-800 mb-4 pb-2 border-b">Print & Document Settings</h3>
                         <form id="invoiceSettingForm" onsubmit="handleSaveInvoiceSetting(event)" class="space-y-4">
                             <input type="hidden" id="invoice-setting-id">
 
@@ -2414,6 +2414,11 @@
                             <div>
                                 <label class="block text-xs font-medium text-slate-600 mb-1">Footer Notes / Terms</label>
                                 <textarea id="invoice-footer-notes" rows="4" placeholder="e.g. Thank you for staying with us. Payment is due within 14 days." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Registration Card Terms & Conditions</label>
+                                <textarea id="invoice-rc-terms" rows="5" placeholder="Syarat & ketentuan yang akan ditampilkan pada Registration Card..." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
                             </div>
 
                             <div class="pt-2">
@@ -4361,10 +4366,12 @@
                     document.getElementById('invoice-setting-id').value = item.id || '';
                     document.getElementById('invoice-prefix').value = item.prefix || item.invoice_prefix || '';
                     document.getElementById('invoice-footer-notes').value = item.footer_notes || item.terms || item.notes || '';
+                    document.getElementById('invoice-rc-terms').value = item.rc_terms || '';
                 } else {
                     document.getElementById('invoice-setting-id').value = '';
                     document.getElementById('invoice-prefix').value = '';
                     document.getElementById('invoice-footer-notes').value = '';
+                    document.getElementById('invoice-rc-terms').value = '';
                 }
             } catch (err) {
                 console.error('Error fetching invoice settings:', err);
@@ -4376,6 +4383,7 @@
             const id = document.getElementById('invoice-setting-id').value;
             const prefix = document.getElementById('invoice-prefix').value.trim();
             const footerNotes = document.getElementById('invoice-footer-notes').value.trim();
+            const rcTerms = document.getElementById('invoice-rc-terms').value.trim();
 
             if (!prefix) {
                 alert('Silakan isi Invoice Prefix.');
@@ -4384,7 +4392,8 @@
 
             const payload = {
                 prefix: prefix,
-                footer_notes: footerNotes
+                footer_notes: footerNotes,
+                rc_terms: rcTerms
             };
 
             try {
