@@ -1728,6 +1728,9 @@
                         <button type="button" id="resCancelBookingBtn" onclick="handleCancelBookingReservation()" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
                             <i class="ph ph-x-circle text-lg"></i> Cancel Booking
                         </button>
+                        <button type="button" id="resPrintRegCardBtn" onclick="handlePrintRegistrationCard()" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
+                            <i class="ph ph-printer text-lg"></i> Print Reg. Card
+                        </button>
                         <button type="button" id="resOpenFolioBtn" onclick="handleOpenFolioFromEdit()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
                             <i class="ph ph-receipt text-lg"></i> Open Folio / Billing
                         </button>
@@ -8322,6 +8325,303 @@
             currentFolioReservation = null;
             currentFolioTransactions = [];
             calculatedCurrentBalance = 0;
+        }
+
+        async function handlePrintRegistrationCard() {
+            const resId = document.getElementById('edit-reservation-id').value;
+            if (!resId) {
+                alert('ID reservasi tidak ditemukan.');
+                return;
+            }
+
+            try {
+                // Fetch complete reservation data (joined with guest_profiles, room_types, and rooms)
+                const { data: res, error: resErr } = await supabaseClient
+                    .from('reservations')
+                    .select('*, guest_profiles(*), room_types(*), rooms(*)')
+                    .eq('id', resId)
+                    .single();
+
+                if (resErr) throw resErr;
+                if (!res) throw new Error('Data reservasi tidak ditemukan.');
+
+                // Fetch terms & conditions (rc_terms) from invoice_settings
+                let rcTermsText = '';
+                const { data: invData } = await supabaseClient
+                    .from('invoice_settings')
+                    .select('rc_terms')
+                    .limit(1);
+
+                if (invData && invData.length > 0 && invData[0].rc_terms) {
+                    rcTermsText = invData[0].rc_terms.trim();
+                }
+
+                if (!rcTermsText) {
+                    rcTermsText = `1. Check-out time is 12:00 noon. Check-in time is 14:00 PM.
+2. The hotel is not responsible for any loss or damage of valuables left in guest rooms.
+3. Visitors are not allowed in guest rooms after 22:00 PM.
+4. Smoking in non-smoking rooms will incur a cleaning fee.
+5. All charges must be settled prior to departure.`;
+                }
+
+                // Get property name from active-property-name
+                const propertyName = (document.getElementById('active-property-name')?.textContent || 'NG HOTEL MANAGEMENT').trim();
+
+                // Format reservation data
+                const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
+                const guestName = (guestProfile ? guestProfile.full_name : null) || res.booker_name || '-';
+                const idCardNo = (guestProfile ? guestProfile.id_card_no : null) || '-';
+                const address = (guestProfile ? guestProfile.address : null) || '-';
+                const city = (guestProfile ? guestProfile.city : null) || '-';
+                const nationality = (guestProfile ? guestProfile.nationality : null) || 'Indonesia';
+                const phone = (guestProfile ? guestProfile.phone_number : null) || '-';
+                const email = (guestProfile ? guestProfile.email : null) || '-';
+
+                const roomType = res.room_types ? (Array.isArray(res.room_types) ? res.room_types[0]?.name : res.room_types.name) : '-';
+                const roomNo = res.rooms ? (Array.isArray(res.rooms) ? res.rooms[0]?.room_number : res.rooms.room_number) : '-';
+                const resNo = res.reservation_number || res.id.slice(0, 8);
+                const roomRate = res.room_rate ? `Rp ${Number(res.room_rate).toLocaleString('id-ID')}` : 'Rp 0';
+                const qty = res.qty || 1;
+                const totalGuests = (res.adult || 0) + (res.child || 0);
+
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    alert('Gagal membuka jendela cetak. Mohon izinkan pop-up di browser Anda.');
+                    return;
+                }
+
+                const termsHtml = rcTermsText.replace(/\n/g, '<br>');
+
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Registration Card - ${resNo}</title>
+                        <style>
+                            @page {
+                                size: A4;
+                                margin: 15mm;
+                            }
+                            body {
+                                font-family: Arial, Helvetica, sans-serif;
+                                color: #000;
+                                background: #fff;
+                                margin: 0;
+                                padding: 0;
+                                font-size: 11px;
+                                line-height: 1.4;
+                            }
+                            .header-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                border-bottom: 2px solid #000;
+                                margin-bottom: 12px;
+                                padding-bottom: 8px;
+                            }
+                            .header-logo {
+                                width: 80px;
+                                height: 50px;
+                                border: 1px dashed #666;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 10px;
+                                color: #666;
+                                font-weight: bold;
+                            }
+                            .section-title {
+                                font-weight: bold;
+                                font-size: 11px;
+                                text-transform: uppercase;
+                                background: #f0f0f0;
+                                padding: 4px 6px;
+                                border: 1px solid #000;
+                                margin-top: 10px;
+                                margin-bottom: -1px;
+                            }
+                            .data-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                border: 1px solid #000;
+                                margin-bottom: 10px;
+                            }
+                            .data-table td, .data-table th {
+                                border: 1px solid #000;
+                                padding: 5px 8px;
+                                vertical-align: top;
+                            }
+                            .label-cell {
+                                font-weight: bold;
+                                background: #fafafa;
+                                width: 18%;
+                                font-size: 10px;
+                                text-transform: uppercase;
+                            }
+                            .value-cell {
+                                width: 32%;
+                            }
+                            .terms-box {
+                                border: 1px solid #000;
+                                padding: 8px;
+                                font-size: 10px;
+                                margin-bottom: 15px;
+                                min-height: 80px;
+                            }
+                            .signature-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-top: 20px;
+                            }
+                            .signature-table td {
+                                width: 50%;
+                                text-align: center;
+                                vertical-align: bottom;
+                                padding-top: 60px;
+                            }
+                            .signature-line {
+                                border-top: 1px solid #000;
+                                width: 80%;
+                                margin: 0 auto;
+                                padding-top: 4px;
+                                font-weight: bold;
+                                font-size: 11px;
+                            }
+                            .checkbox-item {
+                                display: inline-block;
+                                margin-right: 20px;
+                            }
+                            .checkbox-box {
+                                display: inline-block;
+                                width: 12px;
+                                height: 12px;
+                                border: 1px solid #000;
+                                margin-right: 5px;
+                                vertical-align: middle;
+                            }
+                            @media print {
+                                body { padding: 0; }
+                                .section-title { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                                .label-cell { background: #fafafa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <table class="header-table">
+                            <tr>
+                                <td style="width: 20%;">
+                                    <div class="header-logo">LOGO</div>
+                                </td>
+                                <td style="text-align: center; width: 60%;">
+                                    <h2 style="margin: 0; font-size: 18px; text-transform: uppercase;">${propertyName}</h2>
+                                    <h3 style="margin: 4px 0 0 0; font-size: 14px; letter-spacing: 2px;">REGISTRATION CARD</h3>
+                                </td>
+                                <td style="width: 20%; text-align: right; font-size: 10px;">
+                                    <strong>Res No:</strong><br>
+                                    <span style="font-size: 13px; font-family: monospace; font-weight: bold;">${resNo}</span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Section 1: Stay Information -->
+                        <div class="section-title">1. Stay Information</div>
+                        <table class="data-table">
+                            <tr>
+                                <td class="label-cell">Arrival Date</td>
+                                <td class="value-cell">${res.check_in_date || '-'}</td>
+                                <td class="label-cell">Departure Date</td>
+                                <td class="value-cell">${res.check_out_date || '-'} (${res.nights || 1} Night(s))</td>
+                            </tr>
+                            <tr>
+                                <td class="label-cell">ETA / ETD</td>
+                                <td class="value-cell">${res.eta || '14:00'} / ${res.etd || '12:00'}</td>
+                                <td class="label-cell">Room No</td>
+                                <td class="value-cell"><strong>${roomNo}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="label-cell">Room Type</td>
+                                <td class="value-cell">${roomType}</td>
+                                <td class="label-cell">Room Rate</td>
+                                <td class="value-cell">${roomRate} / Night</td>
+                            </tr>
+                            <tr>
+                                <td class="label-cell">Room Qty</td>
+                                <td class="value-cell">${qty} Room(s)</td>
+                                <td class="label-cell">No. of Guests</td>
+                                <td class="value-cell">${totalGuests} Guest(s) (${res.adult || 0} Adult, ${res.child || 0} Child)</td>
+                            </tr>
+                        </table>
+
+                        <!-- Section 2: Guest Profile -->
+                        <div class="section-title">2. Guest Profile</div>
+                        <table class="data-table">
+                            <tr>
+                                <td class="label-cell">Full Name</td>
+                                <td class="value-cell" colspan="3"><strong>${guestName}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="label-cell">ID / Passport No</td>
+                                <td class="value-cell">${idCardNo}</td>
+                                <td class="label-cell">Nationality</td>
+                                <td class="value-cell">${nationality}</td>
+                            </tr>
+                            <tr>
+                                <td class="label-cell">Address</td>
+                                <td class="value-cell" colspan="3">${address}</td>
+                            </tr>
+                            <tr>
+                                <td class="label-cell">City</td>
+                                <td class="value-cell">${city}</td>
+                                <td class="label-cell">Phone / Mobile</td>
+                                <td class="value-cell">${phone}</td>
+                            </tr>
+                            <tr>
+                                <td class="label-cell">Email Address</td>
+                                <td class="value-cell" colspan="3">${email}</td>
+                            </tr>
+                        </table>
+
+                        <!-- Section 3: Mode of Payment -->
+                        <div class="section-title">3. Payment Details</div>
+                        <table class="data-table">
+                            <tr>
+                                <td class="label-cell">Mode of Payment</td>
+                                <td class="value-cell" colspan="3">
+                                    <span class="checkbox-item"><span class="checkbox-box"></span> Cash</span>
+                                    <span class="checkbox-item"><span class="checkbox-box"></span> Credit / Debit Card</span>
+                                    <span class="checkbox-item"><span class="checkbox-box"></span> Bank Transfer</span>
+                                    <span class="checkbox-item"><span class="checkbox-box"></span> OTA / Travel Agent Voucher</span>
+                                    <span class="checkbox-item"><span class="checkbox-box"></span> Corporate / City Ledger</span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Section 4: Terms & Conditions -->
+                        <div class="section-title">4. Terms & Conditions</div>
+                        <div class="terms-box">
+                            ${termsHtml}
+                        </div>
+
+                        <!-- Section 5: Signatures -->
+                        <table class="signature-table">
+                            <tr>
+                                <td>
+                                    <div class="signature-line">Guest Signature</div>
+                                </td>
+                                <td>
+                                    <div class="signature-line">Receptionist / Staff Signature</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                try { printWindow.print(); } catch(e) {}
+
+            } catch (err) {
+                console.error('Error printing registration card:', err);
+                alert('Gagal mencetak Registration Card: ' + err.message);
+            }
         }
 
         function handlePrintFolio() {
