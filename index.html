@@ -1342,9 +1342,9 @@
                                 <div class="flex gap-2">
                                     <label class="flex-1 cursor-pointer inline-flex items-center justify-center px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md text-xs font-medium text-slate-700 transition-colors">
                                         <i class="ph ph-upload-simple mr-1.5 text-sm"></i> Upload / Kamera HP
-                                        <input type="file" id="res-upload-doc" accept="image/jpeg, image/png" capture="environment" class="hidden">
+                                        <input type="file" id="res-upload-doc" accept="image/jpeg, image/png" capture="environment" class="hidden" onchange="handleDocUpload(event)">
                                     </label>
-                                    <button type="button" id="btn-open-webcam" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md text-xs font-medium text-slate-700 transition-colors">
+                                    <button type="button" id="btn-open-webcam" onclick="openWebcamModal()" class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md text-xs font-medium text-slate-700 transition-colors">
                                         <i class="ph ph-webcam mr-1.5 text-sm"></i> Gunakan Webcam
                                     </button>
                                 </div>
@@ -1732,7 +1732,7 @@
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i class="ph ph-webcam text-xl text-primary"></i> Ambil Foto ID / Passport
                 </h3>
-                <button type="button" onclick="document.getElementById('webcamModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeWebcamModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -1742,10 +1742,10 @@
                 <canvas id="webcam-canvas" class="hidden"></canvas>
 
                 <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" onclick="document.getElementById('webcamModal').classList.add('hidden')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-xs font-semibold transition-colors">
+                    <button type="button" onclick="closeWebcamModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-xs font-semibold transition-colors">
                         Batal
                     </button>
-                    <button type="button" id="btn-capture-webcam" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
+                    <button type="button" id="btn-capture-webcam" onclick="captureWebcamPhoto()" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
                         <i class="ph ph-camera text-base"></i> Jepret Foto
                     </button>
                 </div>
@@ -5311,6 +5311,90 @@
             if (guestNameInput) guestNameInput.focus();
         }
 
+        let webcamStream = null;
+
+        async function openWebcamModal() {
+            const modal = document.getElementById('webcamModal');
+            if (modal) modal.classList.remove('hidden');
+
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                    webcamStream = stream;
+                    const video = document.getElementById('webcam-video');
+                    if (video) {
+                        video.srcObject = stream;
+                        video.play();
+                    }
+                } catch (err) {
+                    console.error('Error accessing webcam:', err);
+                    alert('Gagal mengakses kamera: ' + (err.message || err));
+                }
+            } else {
+                alert('Browser Anda tidak mendukung akses webcam.');
+            }
+        }
+
+        function closeWebcamModal() {
+            const modal = document.getElementById('webcamModal');
+            if (modal) modal.classList.add('hidden');
+
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            const video = document.getElementById('webcam-video');
+            if (video) {
+                video.srcObject = null;
+            }
+        }
+
+        function captureWebcamPhoto() {
+            const video = document.getElementById('webcam-video');
+            const canvas = document.getElementById('webcam-canvas');
+            const preview = document.getElementById('res-doc-preview');
+
+            if (video && canvas && preview) {
+                const width = video.videoWidth || 640;
+                const height = video.videoHeight || 480;
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, width, height);
+                const dataUrl = canvas.toDataURL('image/jpeg');
+                preview.src = dataUrl;
+                preview.classList.remove('hidden');
+            }
+            closeWebcamModal();
+        }
+
+        function handleDocUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const preview = document.getElementById('res-doc-preview');
+                    if (preview) {
+                        preview.src = evt.target.result;
+                        preview.classList.remove('hidden');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearDocPreview() {
+            const preview = document.getElementById('res-doc-preview');
+            if (preview) {
+                preview.src = '';
+                preview.classList.add('hidden');
+            }
+            const docInput = document.getElementById('res-upload-doc');
+            if (docInput) {
+                docInput.value = '';
+            }
+        }
+
         function handleStayDatesChange(triggerSource) {
             const checkInInput = document.getElementById('res-check-in');
             const checkOutInput = document.getElementById('res-check-out');
@@ -6626,6 +6710,7 @@
             isReactivateMode = false;
             await populateReservationFormDropdowns();
             switchReservationTab('details');
+            clearDocPreview();
 
             try {
                 const { data: res, error } = await supabaseClient
@@ -6937,11 +7022,13 @@
             if (form) {
                 form.reset();
             }
-                pendingNewReservationDeposits = [];
+            pendingNewReservationDeposits = [];
             toggleAddDepositForm(false);
             renderReservationDepositHistory([]);
 
             clearSelectedGuest();
+            clearDocPreview();
+            closeWebcamModal();
         }
 
         async function handleCheckInReservation() {
