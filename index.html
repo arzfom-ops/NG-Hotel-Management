@@ -1358,6 +1358,20 @@
                                 <input type="text" id="res-address" placeholder="Alamat Lengkap Tamu" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
                             </div>
                         </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- City -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">City</label>
+                                <input type="text" id="res-city" placeholder="Kota" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+
+                            <!-- Nationality -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Nationality</label>
+                                <input type="text" id="res-nationality" value="Indonesia" placeholder="Kewarganegaraan" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
                     </div>
 
                     <!-- CARD B: Stay Details -->
@@ -5272,10 +5286,12 @@
                             const escapedEmail = (g.email || '').replace(/'/g, "\\'");
                             const escapedIdCard = (g.id_card_no || '').replace(/'/g, "\\'");
                             const escapedAddress = (g.address || '').replace(/'/g, "\\'");
+                            const escapedCity = (g.city || '').replace(/'/g, "\\'");
+                            const escapedNationality = (g.nationality || '').replace(/'/g, "\\'");
                             const birthDate = g.birth_date || '';
 
                             return `
-                                <div onclick="selectGuestProfile('${g.id}', '${escapedName}', '${escapedIdCard}', '${escapedPhone}', '${escapedEmail}', '${birthDate}', '${escapedAddress}')" class="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-b-0">
+                                <div onclick="selectGuestProfile('${g.id}', '${escapedName}', '${escapedIdCard}', '${escapedPhone}', '${escapedEmail}', '${birthDate}', '${escapedAddress}', '${escapedCity}', '${escapedNationality}')" class="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-b-0">
                                     <div class="font-medium text-xs text-slate-800">${g.full_name}</div>
                                     <div class="text-[11px] text-slate-500 flex gap-2">
                                         <span>${g.phone_number || 'No phone'}</span>
@@ -5293,7 +5309,7 @@
             }, 250);
         }
 
-        function selectGuestProfile(id, name, idCard, phone, email, birthDate, address) {
+        function selectGuestProfile(id, name, idCard, phone, email, birthDate, address, city, nationality) {
             document.getElementById('res-guest-profile-id').value = id;
             document.getElementById('res-guest-name').value = name;
             document.getElementById('res-id-card').value = idCard || '';
@@ -5301,6 +5317,8 @@
             document.getElementById('res-email').value = email || '';
             document.getElementById('res-birth-date').value = birthDate || '';
             document.getElementById('res-address').value = address || '';
+            document.getElementById('res-city').value = city || '';
+            document.getElementById('res-nationality').value = nationality || 'Indonesia';
 
             const suggestionsDiv = document.getElementById('res-guest-suggestions');
             if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
@@ -5314,6 +5332,8 @@
             document.getElementById('res-email').value = '';
             document.getElementById('res-birth-date').value = '';
             document.getElementById('res-address').value = '';
+            document.getElementById('res-city').value = '';
+            document.getElementById('res-nationality').value = 'Indonesia';
 
             const suggestionsDiv = document.getElementById('res-guest-suggestions');
             if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
@@ -6820,6 +6840,8 @@
                 document.getElementById('res-email').value = guestProfile ? (guestProfile.email || '') : '';
                 document.getElementById('res-birth-date').value = guestProfile ? (guestProfile.birth_date || '') : '';
                 document.getElementById('res-address').value = guestProfile ? (guestProfile.address || '') : '';
+                document.getElementById('res-city').value = guestProfile ? (guestProfile.city || '') : '';
+                document.getElementById('res-nationality').value = guestProfile ? (guestProfile.nationality || 'Indonesia') : 'Indonesia';
 
                 // Set Stay Details
                 const checkInInput = document.getElementById('res-check-in');
@@ -9205,6 +9227,8 @@
                 const emailVal = document.getElementById('res-email').value.trim();
                 const birthDateVal = document.getElementById('res-birth-date').value || null;
                 const addressVal = document.getElementById('res-address').value.trim();
+                const cityVal = document.getElementById('res-city').value.trim();
+                const nationalityVal = document.getElementById('res-nationality').value.trim();
 
                 if (!guestNameVal) {
                     alert('Harap isi nama tamu.');
@@ -9225,7 +9249,9 @@
                             phone_number: phoneVal || null,
                             email: emailVal || null,
                             birth_date: birthDateVal,
-                            address: addressVal || null
+                            address: addressVal || null,
+                            city: cityVal || null,
+                            nationality: nationalityVal || 'Indonesia'
                         }])
                         .select()
                         .single();
@@ -9242,7 +9268,9 @@
                             phone_number: phoneVal || null,
                             email: emailVal || null,
                             birth_date: birthDateVal,
-                            address: addressVal || null
+                            address: addressVal || null,
+                            city: cityVal || null,
+                            nationality: nationalityVal || 'Indonesia'
                         })
                         .eq('id', guestProfileId);
                 }
