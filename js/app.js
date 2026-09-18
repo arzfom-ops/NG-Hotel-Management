@@ -146,7 +146,7 @@ if (typeof window !== 'undefined') {
     window.openModal = openModal;
     window.openViewReservationModal = openViewReservationModal;
     window.openReactivateReservationModal = openReactivateReservationModal;
-    window.switchReservationTab = switchReservationTab;
+    window.handleSaveReservation = typeof handleSaveReservation !== 'undefined' ? handleSaveReservation : window.handleSaveReservation;
     window.handleGuestSearchInput = handleGuestSearchInput;
     window.selectGuestProfile = selectGuestProfile;
     window.clearSelectedGuest = clearSelectedGuest;
@@ -160,6 +160,11 @@ if (typeof window !== 'undefined') {
     window.handleRoomTypeChange = handleRoomTypeChange;
     window.handleRateCodeChange = handleRateCodeChange;
     window.handleGuestTypeChange = handleGuestTypeChange;
+    window.switchReservationTab = switchReservationTab;
+    window.openWebcamModal = typeof openWebcamModal !== 'undefined' ? openWebcamModal : window.openWebcamModal;
+    window.closeWebcamModal = typeof closeWebcamModal !== 'undefined' ? closeWebcamModal : window.closeWebcamModal;
+    window.captureWebcamPhoto = typeof captureWebcamPhoto !== 'undefined' ? captureWebcamPhoto : window.captureWebcamPhoto;
+    window.handleDocUpload = typeof handleDocUpload !== 'undefined' ? handleDocUpload : window.handleDocUpload;
     window.mealPlansCache = mealPlansCache;
     window.roomTypesCache = roomTypesCache;
     window.ratePlansCache = ratePlansCache;
