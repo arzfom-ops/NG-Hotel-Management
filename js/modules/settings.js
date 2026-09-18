@@ -1448,6 +1448,230 @@ export let outletsCache = [];
         }
 
 
+        export async function renderRoomTypePriceInputs(existingPricesMap = {}) {
+            const container = document.getElementById('rate-plan-prices-container');
+            if (!container) return;
+            container.innerHTML = `<p class="text-xs text-slate-400">Loading room types...</p>`;
+
+            try {
+                const { data: roomTypes, error } = await supabaseClient.from('room_types').select('id, name').order('name', { ascending: true });
+                if (error) throw error;
+
+                if (!roomTypes || roomTypes.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-400 font-normal">Tidak ada tipe kamar tersedia.</p>`;
+                    return;
+                }
+
+                container.innerHTML = roomTypes.map(rt => {
+                    const currentPrice = existingPricesMap[rt.id] !== undefined && existingPricesMap[rt.id] !== null ? existingPricesMap[rt.id] : '';
+                    return `
+                        <div class="flex items-center justify-between gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                            <span class="text-xs font-medium text-slate-700 w-1/2 truncate" title="${rt.name}">${rt.name}</span>
+                            <div class="w-1/2">
+                                <input type="number" step="any" min="0" data-room-type-id="${rt.id}" value="${currentPrice}" placeholder="e.g. 500000" class="rate-plan-room-price-input w-full px-3 py-1.5 border border-slate-200 rounded-md text-xs focus:outline-none focus:border-primary">
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Error rendering room type price inputs:', err);
+                container.innerHTML = `<p class="text-xs text-red-500">Gagal memuat tipe kamar.</p>`;
+            }
+        }
+
+        export async function fetchRatePlans() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('rate_plans')
+                    .select('id, rate_code, rate_name, segment_id, meal_plan_id, allow_override, cancellation_policy, segment_codes(id, segment_code, description), meal_plans(id, code, name)')
+                    .order('created_at', { ascending: true });
+                if (error) throw error;
+
+                const tbody = document.getElementById('rate-plans-tbody');
+                if (tbody) {
+                    if (!data || data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">Tidak ada data rate plan.</td></tr>`;
+                    } else {
+                        tbody.innerHTML = data.map(rp => {
+                            const sc = rp.segment_codes ? (Array.isArray(rp.segment_codes) ? rp.segment_codes[0] : rp.segment_codes) : null;
+                            const segmentDisplay = sc ? (sc.description ? `${sc.segment_code} - ${sc.description}` : sc.segment_code) : '-';
+
+                            const mp = rp.meal_plans ? (Array.isArray(rp.meal_plans) ? rp.meal_plans[0] : rp.meal_plans) : null;
+                            const mealPlanDisplay = mp ? (mp.name ? `${mp.code} - ${mp.name}` : mp.code) : '-';
+
+                            const allowOverrideBadge = rp.allow_override
+                                ? `<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">Yes</span>`
+                                : `<span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium">No</span>`;
+
+                            const escapedCode = (rp.rate_code || '').replace(/'/g, "\\'");
+                            const escapedName = (rp.rate_name || '').replace(/'/g, "\\'");
+                            const escapedPolicy = (rp.cancellation_policy || '').replace(/'/g, "\\'");
+                            const segId = rp.segment_id || '';
+                            const mpId = rp.meal_plan_id || '';
+                            const allowOverrideBool = Boolean(rp.allow_override);
+
+                            return `
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3 px-4 font-mono font-semibold text-slate-700">${rp.rate_code || ''}</td>
+                                    <td class="py-3 px-4 font-medium">${rp.rate_name || ''}</td>
+                                    <td class="py-3 px-4">${segmentDisplay}</td>
+                                    <td class="py-3 px-4">${mealPlanDisplay}</td>
+                                    <td class="py-3 px-4">${allowOverrideBadge}</td>
+                                    <td class="py-3 px-4 text-slate-600">${rp.cancellation_policy || '-'}</td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button onclick="openEditRatePlan('${rp.id}', '${escapedCode}', '${escapedName}', '${segId}', '${mpId}', ${allowOverrideBool}, '${escapedPolicy}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
+                                        <button onclick="deleteRatePlan('${rp.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching rate plans:', err);
+                const tbody = document.getElementById('rate-plans-tbody');
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-red-500">Gagal memuat rate plan.</td></tr>`;
+                }
+            }
+        }
+
+        export async function openRatePlanModal() {
+            await fetchSegmentCodes();
+            await fetchMealPlans();
+            document.getElementById('edit-rate-plan-id').value = '';
+            document.getElementById('ratePlanCode').value = '';
+            document.getElementById('ratePlanName').value = '';
+            document.getElementById('ratePlanSegment').value = '';
+            document.getElementById('ratePlanMealPlan').value = '';
+            document.getElementById('ratePlanAllowOverride').value = 'false';
+            document.getElementById('ratePlanCancellationPolicy').value = '';
+
+            await renderRoomTypePriceInputs({});
+
+            document.getElementById('ratePlanModalTitle').textContent = 'Add Rate Plan';
+            document.getElementById('ratePlanSubmitBtn').textContent = 'Save';
+            const modal = document.getElementById('ratePlanModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        export async function openEditRatePlan(id, code, name, segmentId, mealPlanId, allowOverride, policy) {
+            await fetchSegmentCodes();
+            await fetchMealPlans();
+            document.getElementById('edit-rate-plan-id').value = id;
+            document.getElementById('ratePlanCode').value = code;
+            document.getElementById('ratePlanName').value = name;
+            document.getElementById('ratePlanSegment').value = segmentId;
+            document.getElementById('ratePlanMealPlan').value = mealPlanId;
+            document.getElementById('ratePlanAllowOverride').value = allowOverride ? 'true' : 'false';
+            document.getElementById('ratePlanCancellationPolicy').value = policy;
+
+            let existingPricesMap = {};
+            try {
+                const { data: priceData, error } = await supabaseClient.from('rate_plan_prices').select('room_type_id, price').eq('rate_plan_id', id);
+                if (error) throw error;
+                if (priceData) {
+                    priceData.forEach(item => {
+                        existingPricesMap[item.room_type_id] = item.price;
+                    });
+                }
+            } catch (err) {
+                console.error('Error fetching rate plan prices for edit:', err);
+            }
+
+            await renderRoomTypePriceInputs(existingPricesMap);
+
+            document.getElementById('ratePlanModalTitle').textContent = 'Update Rate Plan';
+            document.getElementById('ratePlanSubmitBtn').textContent = 'Update';
+            const modal = document.getElementById('ratePlanModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        export function closeRatePlanModal() {
+            const modal = document.getElementById('ratePlanModal');
+            if (modal) modal.classList.add('hidden');
+            document.getElementById('edit-rate-plan-id').value = '';
+            const form = document.getElementById('ratePlanForm');
+            if (form) form.reset();
+            const container = document.getElementById('rate-plan-prices-container');
+            if (container) container.innerHTML = '';
+        }
+
+        export async function handleSaveRatePlan(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-rate-plan-id').value;
+            const codeVal = document.getElementById('ratePlanCode').value.trim();
+            const nameVal = document.getElementById('ratePlanName').value.trim();
+            const segmentIdVal = document.getElementById('ratePlanSegment').value || null;
+            const mealPlanIdVal = document.getElementById('ratePlanMealPlan').value || null;
+            const allowOverrideVal = document.getElementById('ratePlanAllowOverride').value === 'true';
+            const cancellationPolicyVal = document.getElementById('ratePlanCancellationPolicy').value.trim() || null;
+
+            const payload = {
+                rate_code: codeVal,
+                rate_name: nameVal,
+                segment_id: segmentIdVal,
+                meal_plan_id: mealPlanIdVal,
+                allow_override: allowOverrideVal,
+                cancellation_policy: cancellationPolicyVal
+            };
+
+            try {
+                let ratePlanId = editId;
+                if (editId) {
+                    const { error } = await supabaseClient.from('rate_plans').update(payload).eq('id', editId);
+                    if (error) throw error;
+
+                    const { error: delErr } = await supabaseClient.from('rate_plan_prices').delete().eq('rate_plan_id', editId);
+                    if (delErr) throw delErr;
+                } else {
+                    const { data: newRatePlan, error } = await supabaseClient.from('rate_plans').insert([payload]).select().single();
+                    if (error) throw error;
+                    ratePlanId = newRatePlan.id;
+                }
+
+                const priceInputs = document.querySelectorAll('.rate-plan-room-price-input');
+                const pricePayload = [];
+                priceInputs.forEach(input => {
+                    const roomTypeId = input.dataset.roomTypeId;
+                    const rawVal = input.value.trim();
+                    if (rawVal !== '') {
+                        const priceVal = parseFloat(rawVal);
+                        if (!isNaN(priceVal)) {
+                            pricePayload.push({
+                                rate_plan_id: ratePlanId,
+                                room_type_id: roomTypeId,
+                                price: priceVal
+                            });
+                        }
+                    }
+                });
+
+                if (pricePayload.length > 0) {
+                    const { error: priceErr } = await supabaseClient.from('rate_plan_prices').insert(pricePayload);
+                    if (priceErr) throw priceErr;
+                }
+
+                closeRatePlanModal();
+                fetchRatePlans();
+            } catch (err) {
+                console.error('Error saving rate plan:', err);
+                alert('Gagal menyimpan rate plan: ' + err.message);
+            }
+        }
+
+        export async function deleteRatePlan(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus Rate Plan ini?')) return;
+            try {
+                const { error } = await supabaseClient.from('rate_plans').delete().eq('id', id);
+                if (error) throw error;
+                fetchRatePlans();
+            } catch (err) {
+                console.error('Error deleting rate plan:', err);
+                alert('Gagal menghapus rate plan: ' + err.message);
+            }
+        }
+
         export function switchSettingsTab(tabId) {
             const tabs = ['room-types', 'rooms', 'meal-plans', 'rate-structure', 'tax-service', 'extra-charges', 'payment-methods', 'invoice-setting', 'market-segments', 'revenue-centers'];
 
@@ -1469,7 +1693,7 @@ export let outletsCache = [];
                         } else if (t === 'rate-structure') {
                             fetchSegmentCodes();
                             fetchMealPlans();
-                            if (typeof window !== 'undefined' && typeof window.fetchRatePlans === 'function') window.fetchRatePlans();
+                            fetchRatePlans();
                         } else if (t === 'tax-service') {
                             fetchTaxService();
                         } else if (t === 'extra-charges') {

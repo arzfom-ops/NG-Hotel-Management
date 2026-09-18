@@ -1,5 +1,6 @@
 import { supabaseClient } from './config/supabase.js';
 import { formatDateISO, formatStayDatesCompact, addDays } from './utils/formatters.js';
+
 import {
     currentDashboardTab,
     dashboardSelectedDate,
@@ -63,7 +64,24 @@ import {
     mealPlansCache,
     roomTypesCache,
     ratePlansCache,
-    isReactivateMode
+    isReactivateMode,
+    webcamStream,
+    pendingNewReservationDeposits,
+    openWebcamModal,
+    closeWebcamModal,
+    captureWebcamPhoto,
+    handleDocUpload,
+    clearDocPreview,
+    getCompressedDocBlob,
+    openEditReservation,
+    toggleAddDepositForm,
+    fetchAndRenderReservationDepositHistory,
+    renderReservationDepositHistory,
+    handleAddDepositSubmit,
+    closeModal,
+    handleCheckInReservation,
+    handleCheckIn,
+    handleSaveReservation
 } from './modules/reservation.js';
 
 import {
@@ -138,7 +156,6 @@ import {
 
 import {
     fetchHousekeepingRooms,
-    getHousekeepingBgColor,
     openBlockRoomModal,
     closeBlockRoomModal,
     handleSaveBlockRoom,
@@ -240,6 +257,13 @@ import {
     closeMealPlanModal,
     handleSaveMealPlan,
     deleteMealPlan,
+    renderRoomTypePriceInputs,
+    fetchRatePlans,
+    openRatePlanModal,
+    openEditRatePlan,
+    closeRatePlanModal,
+    handleSaveRatePlan,
+    deleteRatePlan,
     outletsCache
 } from './modules/settings.js';
 
@@ -249,10 +273,177 @@ todayDate.setHours(0, 0, 0, 0);
 
 export let initializedAppDate = new Date().toDateString();
 
+// Frontdesk Accordion Toggle Function
+export function toggleFrontdeskAccordion(forceOpen) {
+    const submenu = document.getElementById('frontdesk-submenu');
+    const chevron = document.getElementById('frontdesk-chevron');
+    if (!submenu) return;
+    const isHidden = submenu.classList.contains('hidden');
+    if (forceOpen === true || (forceOpen === undefined && isHidden)) {
+        submenu.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
+    } else if (forceOpen === false || (forceOpen === undefined && !isHidden)) {
+        submenu.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+    }
+}
+
+// Single Page Application (SPA) View Toggling
+export async function switchView(viewName) {
+    const frontdeskTopbar = document.getElementById('frontdesk-topbar');
+    const frontdeskView = document.getElementById('frontdesk-view');
+    const nsgView = document.getElementById('nsg-view');
+    const roomForecastView = document.getElementById('room-forecast-view');
+    const housekeepingView = document.getElementById('housekeeping-view');
+    const corporateView = document.getElementById('corporate-view');
+    const cancelListView = document.getElementById('cancel-list-view');
+    const adminSettingsView = document.getElementById('admin-settings-view');
+
+    const navFrontdesk = document.getElementById('nav-frontdesk');
+    const navRoomForecast = document.getElementById('nav-room-forecast');
+    const navNsg = document.getElementById('nav-nsg');
+    const navHousekeeping = document.getElementById('nav-housekeeping');
+    const navCorporate = document.getElementById('nav-corporate');
+    const navCancelList = document.getElementById('nav-cancel-list');
+    const navSettings = document.getElementById('nav-settings');
+
+    const allSubNavBtns = [navFrontdesk, navRoomForecast, navNsg];
+    allSubNavBtns.forEach(btn => {
+        if (btn) btn.className = "flex items-center gap-3 p-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors text-sm font-normal";
+    });
+
+    const allMainNavBtns = [navHousekeeping, navCorporate, navCancelList, navSettings];
+    allMainNavBtns.forEach(btn => {
+        if (btn) btn.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
+    });
+
+    if (viewName === 'settings') {
+        if (frontdeskTopbar) frontdeskTopbar.classList.add('hidden');
+        if (frontdeskView) frontdeskView.classList.add('hidden');
+        if (nsgView) nsgView.classList.add('hidden');
+        if (roomForecastView) roomForecastView.classList.add('hidden');
+        if (housekeepingView) housekeepingView.classList.add('hidden');
+        if (corporateView) corporateView.classList.add('hidden');
+        if (cancelListView) cancelListView.classList.add('hidden');
+        if (adminSettingsView) adminSettingsView.classList.remove('hidden');
+
+        if (navSettings) navSettings.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+    } else if (viewName === 'nsg') {
+        toggleFrontdeskAccordion(true);
+        if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+        const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+        if (topbarHeader) topbarHeader.textContent = "Frontdesk / Non-Stay Guest (NSG)";
+
+        if (frontdeskView) frontdeskView.classList.add('hidden');
+        if (roomForecastView) roomForecastView.classList.add('hidden');
+        if (housekeepingView) housekeepingView.classList.add('hidden');
+        if (corporateView) corporateView.classList.add('hidden');
+        if (cancelListView) cancelListView.classList.add('hidden');
+        if (adminSettingsView) adminSettingsView.classList.add('hidden');
+        if (nsgView) nsgView.classList.remove('hidden');
+
+        if (navNsg) navNsg.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
+
+        fetchNsgList();
+    } else if (viewName === 'room-forecast') {
+        toggleFrontdeskAccordion(true);
+        if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+        const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+        if (topbarHeader) topbarHeader.textContent = "Frontdesk / Room Forecast";
+
+        if (frontdeskView) frontdeskView.classList.add('hidden');
+        if (nsgView) nsgView.classList.add('hidden');
+        if (housekeepingView) housekeepingView.classList.add('hidden');
+        if (corporateView) corporateView.classList.add('hidden');
+        if (cancelListView) cancelListView.classList.add('hidden');
+        if (adminSettingsView) adminSettingsView.classList.add('hidden');
+        if (roomForecastView) roomForecastView.classList.remove('hidden');
+
+        if (navRoomForecast) navRoomForecast.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
+
+        renderRoomForecast();
+    } else if (viewName === 'corporate') {
+        if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+        const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+        if (topbarHeader) topbarHeader.textContent = "Corporate / Travel Agent Profiles";
+
+        if (frontdeskView) frontdeskView.classList.add('hidden');
+        if (nsgView) nsgView.classList.add('hidden');
+        if (roomForecastView) roomForecastView.classList.add('hidden');
+        if (housekeepingView) housekeepingView.classList.add('hidden');
+        if (cancelListView) cancelListView.classList.add('hidden');
+        if (adminSettingsView) adminSettingsView.classList.add('hidden');
+        if (corporateView) corporateView.classList.remove('hidden');
+
+        if (navCorporate) navCorporate.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+
+        fetchCorporateProfiles();
+    } else if (viewName === 'cancel-list') {
+        if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+        const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+        if (topbarHeader) topbarHeader.textContent = "Reports / Cancel List";
+
+        if (frontdeskView) frontdeskView.classList.add('hidden');
+        if (nsgView) nsgView.classList.add('hidden');
+        if (roomForecastView) roomForecastView.classList.add('hidden');
+        if (housekeepingView) housekeepingView.classList.add('hidden');
+        if (corporateView) corporateView.classList.add('hidden');
+        if (adminSettingsView) adminSettingsView.classList.add('hidden');
+        if (cancelListView) cancelListView.classList.remove('hidden');
+
+        if (navCancelList) navCancelList.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+
+        fetchCancelList();
+    } else if (viewName === 'housekeeping') {
+        if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+        const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+        if (topbarHeader) topbarHeader.textContent = "Housekeeping / Room Status";
+
+        if (frontdeskView) frontdeskView.classList.add('hidden');
+        if (nsgView) nsgView.classList.add('hidden');
+        if (roomForecastView) roomForecastView.classList.add('hidden');
+        if (corporateView) corporateView.classList.add('hidden');
+        if (cancelListView) cancelListView.classList.add('hidden');
+        if (adminSettingsView) adminSettingsView.classList.add('hidden');
+        if (housekeepingView) housekeepingView.classList.remove('hidden');
+
+        if (navHousekeeping) navHousekeeping.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+
+        fetchHousekeepingRooms();
+    } else {
+        toggleFrontdeskAccordion(true);
+        if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+        const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+        if (topbarHeader) topbarHeader.textContent = "Frontdesk / Tape Chart";
+
+        if (frontdeskView) frontdeskView.classList.remove('hidden');
+        if (nsgView) nsgView.classList.add('hidden');
+        if (roomForecastView) roomForecastView.classList.add('hidden');
+        if (housekeepingView) housekeepingView.classList.add('hidden');
+        if (corporateView) corporateView.classList.add('hidden');
+        if (cancelListView) cancelListView.classList.add('hidden');
+        if (adminSettingsView) adminSettingsView.classList.add('hidden');
+
+        if (navFrontdesk) navFrontdesk.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
+
+        await fetchRooms();
+        await fetchFrontdeskDashboard();
+        await renderTapeChart();
+    }
+
+    // Toggle Mobile Menu closed if open
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.add('-translate-x-full');
+    }
+}
+
 // Attach global variables and module functions to window for inline scripts
 if (typeof window !== 'undefined') {
     window.todayDate = todayDate;
     window.initializedAppDate = initializedAppDate;
+    window.toggleFrontdeskAccordion = toggleFrontdeskAccordion;
+    window.switchView = switchView;
 
     // Frontdesk State & Handlers
     window.currentDashboardTab = currentDashboardTab;
@@ -303,7 +494,9 @@ if (typeof window !== 'undefined') {
     window.openModal = openModal;
     window.openViewReservationModal = openViewReservationModal;
     window.openReactivateReservationModal = openReactivateReservationModal;
-    window.handleSaveReservation = typeof handleSaveReservation !== 'undefined' ? handleSaveReservation : window.handleSaveReservation;
+    window.handleSaveReservation = handleSaveReservation;
+    window.openEditReservation = openEditReservation;
+    window.closeModal = closeModal;
     window.handleGuestSearchInput = handleGuestSearchInput;
     window.selectGuestProfile = selectGuestProfile;
     window.clearSelectedGuest = clearSelectedGuest;
@@ -318,14 +511,23 @@ if (typeof window !== 'undefined') {
     window.handleRateCodeChange = handleRateCodeChange;
     window.handleGuestTypeChange = handleGuestTypeChange;
     window.switchReservationTab = switchReservationTab;
-    window.openWebcamModal = typeof openWebcamModal !== 'undefined' ? openWebcamModal : window.openWebcamModal;
-    window.closeWebcamModal = typeof closeWebcamModal !== 'undefined' ? closeWebcamModal : window.closeWebcamModal;
-    window.captureWebcamPhoto = typeof captureWebcamPhoto !== 'undefined' ? captureWebcamPhoto : window.captureWebcamPhoto;
-    window.handleDocUpload = typeof handleDocUpload !== 'undefined' ? handleDocUpload : window.handleDocUpload;
+    window.openWebcamModal = openWebcamModal;
+    window.closeWebcamModal = closeWebcamModal;
+    window.captureWebcamPhoto = captureWebcamPhoto;
+    window.handleDocUpload = handleDocUpload;
+    window.clearDocPreview = clearDocPreview;
+    window.getCompressedDocBlob = getCompressedDocBlob;
+    window.toggleAddDepositForm = toggleAddDepositForm;
+    window.fetchAndRenderReservationDepositHistory = fetchAndRenderReservationDepositHistory;
+    window.renderReservationDepositHistory = renderReservationDepositHistory;
+    window.handleAddDepositSubmit = handleAddDepositSubmit;
+    window.handleCheckInReservation = handleCheckInReservation;
+    window.handleCheckIn = handleCheckIn;
     window.mealPlansCache = mealPlansCache;
     window.roomTypesCache = roomTypesCache;
     window.ratePlansCache = ratePlansCache;
     window.isReactivateMode = isReactivateMode;
+    window.pendingNewReservationDeposits = pendingNewReservationDeposits;
 
     // Group Module
     window.openGroupBookingModal = openGroupBookingModal;
@@ -397,7 +599,7 @@ if (typeof window !== 'undefined') {
 
     // Operations Module
     window.fetchHousekeepingRooms = fetchHousekeepingRooms;
-    window.getHousekeepingBgColor = getHousekeepingBgColor;
+
     window.openBlockRoomModal = openBlockRoomModal;
     window.closeBlockRoomModal = closeBlockRoomModal;
     window.handleSaveBlockRoom = handleSaveBlockRoom;
@@ -498,8 +700,79 @@ if (typeof window !== 'undefined') {
     window.closeMealPlanModal = closeMealPlanModal;
     window.handleSaveMealPlan = handleSaveMealPlan;
     window.deleteMealPlan = deleteMealPlan;
+    window.renderRoomTypePriceInputs = renderRoomTypePriceInputs;
+    window.fetchRatePlans = fetchRatePlans;
+    window.openRatePlanModal = openRatePlanModal;
+    window.openEditRatePlan = openEditRatePlan;
+    window.closeRatePlanModal = closeRatePlanModal;
+    window.handleSaveRatePlan = handleSaveRatePlan;
+    window.deleteRatePlan = deleteRatePlan;
     window.outletsCache = outletsCache;
 }
+
+// Drag-to-Select Global Event Listeners
+document.addEventListener('mousedown', (e) => {
+    const cell = e.target.closest('.calendar-cell');
+    if (!cell) return;
+    if (e.target.closest('[onclick^="openEditReservation"]')) return;
+
+    const roomId = cell.dataset.roomId;
+    const date = cell.dataset.date;
+    if (roomId && date) {
+        setDragState(true, { roomId, date }, { roomId, date });
+        updateDragHighlight();
+    }
+});
+
+document.addEventListener('mouseover', (e) => {
+    if (!isDragging || !dragStartData) return;
+    const cell = e.target.closest('.calendar-cell');
+    if (!cell) return;
+
+    const roomId = cell.dataset.roomId;
+    const date = cell.dataset.date;
+    if (roomId === dragStartData.roomId && date) {
+        setDragState(true, dragStartData, { roomId, date });
+        updateDragHighlight();
+    }
+});
+
+document.addEventListener('mouseup', (e) => {
+    if (!isDragging) return;
+    setDragState(false, dragStartData, dragEndData);
+
+    if (dragStartData && dragEndData) {
+        const roomId = dragStartData.roomId;
+        const date1 = dragStartData.date;
+        const date2 = dragEndData.date;
+
+        const startDateStr = date1 < date2 ? date1 : date2;
+        const endDateStr = date1 < date2 ? date2 : date1;
+
+        const checkInDate = startDateStr;
+        const endDateObj = new Date(endDateStr + 'T00:00:00');
+        const checkOutDateObj = addDays(endDateObj, 1);
+        const checkOutDate = formatDateISO(checkOutDateObj);
+
+        setDragState(false, null, null);
+
+        openCreateReservationModal(roomId, checkInDate, checkOutDate);
+    } else {
+        clearDragHighlight();
+        setDragState(false, null, null);
+    }
+});
+
+// Mobile Menu Event Listener
+document.addEventListener('DOMContentLoaded', () => {
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    if (mobileBtn) {
+        mobileBtn.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.toggle('-translate-x-full');
+        });
+    }
+});
 
 // Day Change Detector (Night Audit Sync)
 setInterval(() => {
@@ -539,7 +812,7 @@ export async function initApp() {
             window.populateDashRoomTypeFilter();
         }
 
-        // Langkah 3: Trigger Eksekusi Tape Chart & Dashboard
+        // Trigger Eksekusi Tape Chart & Dashboard
         if (typeof window.fetchFrontdeskDashboard === 'function') {
             window.fetchFrontdeskDashboard();
         }

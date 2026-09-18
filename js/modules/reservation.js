@@ -647,3 +647,889 @@ export function updateTotalPreview() {
         totalPreviewDiv.textContent = `Rp ${total.toLocaleString('id-ID')}`;
     }
 }
+
+export let webcamStream = null;
+export let pendingNewReservationDeposits = [];
+
+export async function openWebcamModal() {
+    const modal = document.getElementById('webcamModal');
+    if (modal) modal.classList.remove('hidden');
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            webcamStream = stream;
+            const video = document.getElementById('webcam-video');
+            if (video) {
+                video.srcObject = stream;
+                video.play();
+            }
+        } catch (err) {
+            console.error('Error accessing webcam:', err);
+            alert('Gagal mengakses kamera: ' + (err.message || err));
+        }
+    } else {
+        alert('Browser Anda tidak mendukung akses webcam.');
+    }
+}
+
+export function closeWebcamModal() {
+    const modal = document.getElementById('webcamModal');
+    if (modal) modal.classList.add('hidden');
+
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+    }
+    const video = document.getElementById('webcam-video');
+    if (video) {
+        video.srcObject = null;
+    }
+}
+
+export function captureWebcamPhoto() {
+    const video = document.getElementById('webcam-video');
+    const canvas = document.getElementById('webcam-canvas');
+    const preview = document.getElementById('res-doc-preview');
+
+    if (video && canvas && preview) {
+        const width = video.videoWidth || 640;
+        const height = video.videoHeight || 480;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        preview.src = dataUrl;
+        preview.classList.remove('hidden');
+    }
+    closeWebcamModal();
+}
+
+export function handleDocUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const preview = document.getElementById('res-doc-preview');
+            if (preview) {
+                preview.src = evt.target.result;
+                preview.classList.remove('hidden');
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+export function clearDocPreview() {
+    const preview = document.getElementById('res-doc-preview');
+    if (preview) {
+        preview.src = '';
+        preview.classList.add('hidden');
+    }
+    const docInput = document.getElementById('res-upload-doc');
+    if (docInput) {
+        docInput.value = '';
+    }
+}
+
+export function getCompressedDocBlob() {
+    return new Promise((resolve) => {
+        const preview = document.getElementById('res-doc-preview');
+        if (!preview || preview.classList.contains('hidden') || !preview.src || preview.src === '' || preview.src === window.location.href) {
+            resolve(null);
+            return;
+        }
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            let width = img.naturalWidth || img.width;
+            let height = img.naturalHeight || img.height;
+
+            if (!width || !height) {
+                resolve(null);
+                return;
+            }
+
+            const maxWidth = 800;
+            if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(
+                (blob) => {
+                    resolve(blob);
+                },
+                'image/jpeg',
+                0.7
+            );
+        };
+        img.onerror = (err) => {
+            console.error('Error loading preview image for compression:', err);
+            resolve(null);
+        };
+        img.src = preview.src;
+    });
+}
+
+export async function openEditReservation(id) {
+    isReactivateMode = false;
+    await populateReservationFormDropdowns();
+    switchReservationTab('details');
+    clearDocPreview();
+
+    try {
+        const { data: res, error } = await supabaseClient
+            .from('reservations')
+            .select('*, guest_profiles(*)')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+        if (!res) throw new Error('Data reservasi tidak ditemukan.');
+
+        document.getElementById('edit-reservation-id').value = res.id;
+        document.getElementById('edit-reservation-number').value = res.reservation_number || '';
+
+        if (res.document_url) {
+            const preview = document.getElementById('res-doc-preview');
+            if (preview) {
+                preview.src = res.document_url;
+                preview.classList.remove('hidden');
+            }
+        }
+
+        const titleIcon = document.getElementById('reservationModalIcon');
+        const titleText = document.getElementById('reservationModalTitleText');
+        const subTitle = document.getElementById('reservationModalSubTitle');
+        if (titleIcon) titleIcon.className = 'ph ph-pencil-simple-line text-primary text-2xl';
+        if (titleText) titleText.textContent = `Edit Reservation (${res.reservation_number || ''})`;
+        if (subTitle) subTitle.textContent = 'Lihat atau ubah rincian data reservasi tamu.';
+
+        const updateBtn = document.getElementById('resUpdateBtn');
+        if (updateBtn) {
+            updateBtn.className = 'px-6 py-2.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2';
+            updateBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> Update Data`;
+        }
+
+        const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
+        const guestProfileId = res.guest_profile_id || (guestProfile ? guestProfile.id : '');
+        const guestName = guestProfile ? (guestProfile.full_name || '') : '';
+
+        document.getElementById('res-guest-profile-id').value = guestProfileId;
+        document.getElementById('res-booker-name').value = res.booker_name || '';
+        document.getElementById('res-guest-name').value = guestName;
+        document.getElementById('res-id-card').value = guestProfile ? (guestProfile.id_card_no || '') : '';
+        document.getElementById('res-phone').value = guestProfile ? (guestProfile.phone_number || '') : '';
+        document.getElementById('res-email').value = guestProfile ? (guestProfile.email || '') : '';
+        document.getElementById('res-birth-date').value = guestProfile ? (guestProfile.birth_date || '') : '';
+        document.getElementById('res-address').value = guestProfile ? (guestProfile.address || '') : '';
+        document.getElementById('res-city').value = guestProfile ? (guestProfile.city || '') : '';
+        document.getElementById('res-nationality').value = guestProfile ? (guestProfile.nationality || 'Indonesia') : 'Indonesia';
+
+        const checkInInput = document.getElementById('res-check-in');
+        checkInInput.removeAttribute('min');
+        checkInInput.value = res.check_in_date || '';
+        document.getElementById('res-check-out').value = res.check_out_date || '';
+        document.getElementById('res-nights').value = res.nights || 1;
+        document.getElementById('res-eta').value = res.eta ? res.eta.slice(0, 5) : '14:00';
+        document.getElementById('res-etd').value = res.etd ? res.etd.slice(0, 5) : '12:00';
+        document.getElementById('res-adult').value = res.adult || 1;
+        document.getElementById('res-child').value = res.child || 0;
+
+        document.getElementById('res-room-type').value = res.room_type_id || '';
+        handleRoomTypeChange();
+        document.getElementById('res-room-number').value = res.room_id || '';
+        document.getElementById('res-rate-code').value = res.rate_plan_id || '';
+        document.getElementById('res-room-rate').value = res.room_rate || 0;
+        document.getElementById('res-meal-plan').value = res.meal_plan_id || '';
+        document.getElementById('res-segment').value = res.segment_id || '';
+        document.getElementById('res-source').value = res.reservation_source || 'Direct';
+        document.getElementById('res-voucher').value = res.voucher_number || '';
+        document.getElementById('res-corporate-id').value = res.corporate_id || '';
+        document.getElementById('res-qty').value = res.qty || 1;
+        document.getElementById('res-extrabed').value = res.extrabed_qty || 0;
+
+        document.getElementById('res-comment').value = res.comment || '';
+
+        let dailyRates = null;
+        try {
+            const { data: drData, error: drErr } = await supabaseClient
+                .from('reservation_daily_rates')
+                .select('*')
+                .eq('reservation_id', res.id)
+                .order('stay_date', { ascending: true });
+
+            if (!drErr && drData && drData.length > 0) {
+                dailyRates = drData;
+            }
+        } catch (err) {
+            console.error('Error fetching reservation_daily_rates:', err);
+        }
+
+        renderDailyBreakdownGrid(dailyRates);
+        updateTotalPreview();
+
+        fetchAndRenderReservationDepositHistory(res.id);
+
+        const currentStatus = res.status || 'Reserved';
+        const statusBadge = document.getElementById('res-status-badge');
+        const statusText = document.getElementById('res-status-text');
+        if (statusText) statusText.textContent = `Status: ${currentStatus}`;
+
+        if (currentStatus === 'Reserved') {
+            if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold';
+        } else if (currentStatus === 'Checkin') {
+            if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-bold';
+        } else if (currentStatus === 'Cancelled') {
+            if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-bold';
+        } else {
+            if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs px-3 py-1 rounded-full font-bold';
+        }
+
+        const createFooter = document.getElementById('resModalCreateFooter');
+        const editFooter = document.getElementById('resModalEditFooter');
+        if (createFooter) createFooter.classList.add('hidden');
+        if (editFooter) editFooter.classList.remove('hidden');
+
+        const checkInBtn = document.getElementById('resCheckInBtn');
+        const cancelBookingBtn = document.getElementById('resCancelBookingBtn');
+        const openFolioBtn = document.getElementById('resOpenFolioBtn');
+
+        if (currentStatus === 'Reserved') {
+            if (checkInBtn) checkInBtn.classList.remove('hidden');
+            if (cancelBookingBtn) cancelBookingBtn.classList.remove('hidden');
+            if (openFolioBtn) openFolioBtn.classList.add('hidden');
+        } else {
+            if (checkInBtn) checkInBtn.classList.add('hidden');
+            if (cancelBookingBtn) cancelBookingBtn.classList.add('hidden');
+            if (openFolioBtn) openFolioBtn.classList.remove('hidden');
+        }
+
+        const modal = document.getElementById('reservationModal');
+        if (modal) modal.classList.remove('hidden');
+
+    } catch (err) {
+        console.error('Error opening edit reservation modal:', err);
+        alert('Gagal memuat reservasi: ' + err.message);
+    }
+}
+
+export function toggleAddDepositForm(show) {
+    const formContainer = document.getElementById('res-add-deposit-form');
+    if (!formContainer) return;
+
+    if (show === undefined) {
+        formContainer.classList.toggle('hidden');
+    } else if (show) {
+        formContainer.classList.remove('hidden');
+    } else {
+        formContainer.classList.add('hidden');
+    }
+
+    if (!formContainer.classList.contains('hidden')) {
+        const amtInput = document.getElementById('res-new-deposit-amount');
+        if (amtInput) amtInput.value = '';
+        const pmSelect = document.getElementById('res-new-deposit-method');
+        if (pmSelect) pmSelect.value = '';
+    }
+}
+
+export async function fetchAndRenderReservationDepositHistory(reservationId) {
+    const tbody = document.getElementById('res-deposit-history-tbody');
+    const totalText = document.getElementById('res-deposit-total-text');
+    if (!tbody) return;
+
+    if (!reservationId) {
+        renderReservationDepositHistory([]);
+        return;
+    }
+
+    tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-slate-400">Loading deposit history...</td></tr>`;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('folio_transactions')
+            .select('*, payment_methods:payment_method_id(id, name, type, method_type)')
+            .eq('reservation_id', reservationId)
+            .eq('transaction_type', 'PAYMENT')
+            .order('transaction_date', { ascending: true });
+
+        if (error) throw error;
+
+        renderReservationDepositHistory(data || []);
+    } catch (err) {
+        console.error('Error fetching deposit history:', err);
+        tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-red-500">Gagal memuat history deposit: ${err.message}</td></tr>`;
+        if (totalText) totalText.textContent = 'Rp 0';
+    }
+}
+
+export function renderReservationDepositHistory(deposits) {
+    const tbody = document.getElementById('res-deposit-history-tbody');
+    const totalText = document.getElementById('res-deposit-total-text');
+    if (!tbody) return;
+
+    let total = 0;
+
+    if (!deposits || deposits.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-slate-400">Belum ada deposit recorded.</td></tr>`;
+    } else {
+        tbody.innerHTML = deposits.map(d => {
+            const isVoided = d.is_voided === true;
+            const amt = Number(d.amount || 0);
+            if (!isVoided) total += amt;
+
+            const dateStr = d.transaction_date ? new Date(d.transaction_date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
+
+            let pmName = '';
+            let pmType = '';
+            if (d.payment_methods) {
+                const pmObj = Array.isArray(d.payment_methods) ? d.payment_methods[0] : d.payment_methods;
+                if (pmObj) {
+                    pmName = pmObj.name || '';
+                    pmType = pmObj.type || pmObj.method_type || '';
+                }
+            }
+
+            let methodDisplay = '';
+            if (pmName && pmType) {
+                methodDisplay = `${pmName} (${pmType})`;
+            } else if (pmName) {
+                methodDisplay = pmName;
+            } else if (d.reference_number) {
+                methodDisplay = d.reference_number;
+            } else {
+                methodDisplay = 'Deposit';
+            }
+
+            const strikeClass = isVoided ? 'line-through text-slate-400' : '';
+            const voidBadge = isVoided ? '<span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-600 text-white">[VOID]</span>' : '';
+
+            return `
+                <tr class="hover:bg-slate-50 border-b border-slate-100 last:border-none">
+                    <td class="p-2.5 text-slate-600 whitespace-nowrap ${strikeClass}">${dateStr}</td>
+                    <td class="p-2.5 font-medium text-slate-800 ${strikeClass}">${methodDisplay} ${voidBadge}</td>
+                    <td class="p-2.5 text-right font-semibold ${isVoided ? 'text-slate-400 line-through' : 'text-emerald-600'}">Rp ${amt.toLocaleString('id-ID')}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    if (totalText) {
+        totalText.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+    }
+}
+
+export async function handleAddDepositSubmit() {
+    const editId = document.getElementById('edit-reservation-id').value;
+
+    const amountInput = document.getElementById('res-new-deposit-amount');
+    const pmSelect = document.getElementById('res-new-deposit-method');
+
+    const amount = parseFloat(amountInput ? amountInput.value : 0) || 0;
+    const paymentMethodId = pmSelect ? pmSelect.value : null;
+
+    if (isNaN(amount) || amount <= 0) {
+        alert('Nominal deposit harus lebih besar dari 0.');
+        return;
+    }
+
+    if (!paymentMethodId) {
+        alert('Pilih Metode Pembayaran terlebih dahulu.');
+        return;
+    }
+
+    const txPayload = {
+        reservation_id: editId || null,
+        transaction_type: 'PAYMENT',
+        description: 'Deposit',
+        amount: amount,
+        payment_method_id: paymentMethodId,
+        transaction_date: new Date().toISOString()
+    };
+
+    try {
+        if (editId) {
+            const { error } = await supabaseClient
+                .from('folio_transactions')
+                .insert([txPayload]);
+
+            if (error) throw error;
+
+            alert('Deposit berhasil ditambahkan!');
+            toggleAddDepositForm(false);
+            await fetchAndRenderReservationDepositHistory(editId);
+        } else {
+            const selectedOption = pmSelect.options[pmSelect.selectedIndex];
+            const pmLabel = selectedOption ? selectedOption.text : 'Deposit';
+
+            pendingNewReservationDeposits.push({
+                amount: amount,
+                payment_method_id: paymentMethodId,
+                transaction_date: txPayload.transaction_date,
+                payment_methods: { name: pmLabel.split(' - ')[0], type: pmLabel.split(' - ')[1] || '' }
+            });
+
+            toggleAddDepositForm(false);
+            renderReservationDepositHistory(pendingNewReservationDeposits);
+        }
+    } catch (err) {
+        console.error('Error adding deposit:', err);
+        alert('Gagal menambahkan deposit: ' + err.message);
+    }
+}
+
+export function closeModal() {
+    const modal = document.getElementById('reservationModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    document.getElementById('edit-reservation-id').value = '';
+    const form = document.getElementById('reservationForm');
+    if (form) {
+        form.reset();
+    }
+    pendingNewReservationDeposits = [];
+    toggleAddDepositForm(false);
+    renderReservationDepositHistory([]);
+
+    clearSelectedGuest();
+    clearDocPreview();
+    closeWebcamModal();
+}
+
+export async function handleCheckInReservation() {
+    const resId = document.getElementById('edit-reservation-id').value;
+    if (!resId) return;
+
+    const checkInBtn = document.getElementById('resCheckInBtn');
+    if (checkInBtn) {
+        checkInBtn.disabled = true;
+        checkInBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Processing...`;
+    }
+
+    try {
+        const { data: res, error: resErr } = await supabaseClient
+            .from('reservations')
+            .select('room_id')
+            .eq('id', resId)
+            .single();
+
+        if (resErr) throw resErr;
+
+        const roomId = res ? res.room_id : null;
+        if (!roomId) throw new Error('Kamar belum dipilih untuk reservasi ini.');
+
+        const { data: roomData, error: roomErr } = await supabaseClient
+            .from('rooms')
+            .select('status')
+            .eq('id', roomId)
+            .single();
+
+        if (roomErr) throw roomErr;
+
+        const currentRoomStatus = (roomData?.status || '').toUpperCase();
+        if (currentRoomStatus !== 'VC') {
+            alert('Check-in ditolak: Kamar belum dibersihkan. Status kamar harus VC (Vacant Clean).');
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from('reservations')
+            .update({ status: 'Checkin' })
+            .eq('id', resId);
+
+        if (error) throw error;
+
+        const { error: updateRoomErr } = await supabaseClient
+            .from('rooms')
+            .update({ status: 'OC' })
+            .eq('id', roomId);
+
+        if (updateRoomErr) console.error('Error updating room status to OC:', updateRoomErr);
+
+        if (typeof window.fetchRooms === 'function') window.fetchRooms();
+
+        alert('Berhasil check-in reservasi!');
+        closeModal();
+        if (typeof window.fetchFrontdeskDashboard === 'function') window.fetchFrontdeskDashboard();
+        if (typeof window.renderTapeChart === 'function') window.renderTapeChart();
+    } catch (err) {
+        console.error('Error during check-in:', err);
+        alert('Gagal melakukan check-in: ' + err.message);
+    } finally {
+        if (checkInBtn) {
+            checkInBtn.disabled = false;
+            checkInBtn.innerHTML = `<i class="ph ph-check-circle text-lg"></i> Check-in`;
+        }
+    }
+}
+
+export async function handleCheckIn(reservationId, roomId) {
+    if (!reservationId) return;
+    try {
+        let targetRoomId = roomId;
+
+        if (!targetRoomId) {
+            const { data: res, error: resErr } = await supabaseClient
+                .from('reservations')
+                .select('room_id')
+                .eq('id', reservationId)
+                .single();
+
+            if (resErr) throw resErr;
+            targetRoomId = res?.room_id;
+        }
+
+        if (!targetRoomId) throw new Error('Kamar belum dipilih untuk reservasi ini.');
+
+        const { data: roomData, error: roomErr } = await supabaseClient
+            .from('rooms')
+            .select('status')
+            .eq('id', targetRoomId)
+            .single();
+
+        if (roomErr) throw roomErr;
+
+        const currentRoomStatus = (roomData?.status || '').toUpperCase();
+        if (currentRoomStatus !== 'VC') {
+            alert('Check-in ditolak: Kamar belum dibersihkan. Status kamar harus VC (Vacant Clean).');
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from('reservations')
+            .update({ status: 'Checkin' })
+            .eq('id', reservationId);
+
+        if (error) throw error;
+
+        const { error: updateRoomErr } = await supabaseClient
+            .from('rooms')
+            .update({ status: 'OC' })
+            .eq('id', targetRoomId);
+
+        if (updateRoomErr) console.error('Error updating room status to OC:', updateRoomErr);
+
+        if (typeof window.fetchRooms === 'function') window.fetchRooms();
+
+        alert('Berhasil check-in reservasi!');
+        closeModal();
+        if (typeof window.fetchFrontdeskDashboard === 'function') window.fetchFrontdeskDashboard();
+        if (typeof window.renderTapeChart === 'function') window.renderTapeChart();
+    } catch (err) {
+        console.error('Error during check-in:', err);
+        alert('Gagal melakukan check-in: ' + err.message);
+    }
+}
+
+export async function handleSaveReservation(event) {
+    event.preventDefault();
+
+    const editId = document.getElementById('edit-reservation-id').value;
+    const submitBtn = editId ? document.getElementById('resUpdateBtn') : document.getElementById('resSubmitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> ${editId ? 'Updating...' : 'Saving...'}`;
+    }
+
+    try {
+        let guestProfileId = document.getElementById('res-guest-profile-id').value;
+        const bookerNameVal = document.getElementById('res-booker-name').value.trim();
+        const guestNameVal = document.getElementById('res-guest-name').value.trim();
+        const idCardVal = document.getElementById('res-id-card').value.trim();
+        const phoneVal = document.getElementById('res-phone').value.trim();
+        const emailVal = document.getElementById('res-email').value.trim();
+        const birthDateVal = document.getElementById('res-birth-date').value || null;
+        const addressVal = document.getElementById('res-address').value.trim();
+        const cityVal = document.getElementById('res-city').value.trim();
+        const nationalityVal = document.getElementById('res-nationality').value.trim();
+
+        if (!guestNameVal) {
+            alert('Harap isi nama tamu.');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> ${editId ? 'Update Data' : 'Save Reservation'}`;
+            }
+            return;
+        }
+
+        if (!guestProfileId) {
+            const { data: newGuest, error: guestErr } = await supabaseClient
+                .from('guest_profiles')
+                .insert([{
+                    full_name: guestNameVal,
+                    id_card_no: idCardVal || null,
+                    phone_number: phoneVal || null,
+                    email: emailVal || null,
+                    birth_date: birthDateVal,
+                    address: addressVal || null,
+                    city: cityVal || null,
+                    nationality: nationalityVal || 'Indonesia'
+                }])
+                .select()
+                .single();
+
+            if (guestErr) throw guestErr;
+            guestProfileId = newGuest.id;
+        } else {
+            await supabaseClient
+                .from('guest_profiles')
+                .update({
+                    full_name: guestNameVal,
+                    id_card_no: idCardVal || null,
+                    phone_number: phoneVal || null,
+                    email: emailVal || null,
+                    birth_date: birthDateVal,
+                    address: addressVal || null,
+                    city: cityVal || null,
+                    nationality: nationalityVal || 'Indonesia'
+                })
+                .eq('id', guestProfileId);
+        }
+
+        const checkInDate = document.getElementById('res-check-in').value;
+        const checkOutDate = document.getElementById('res-check-out').value;
+        const nights = parseInt(document.getElementById('res-nights').value) || 1;
+        const eta = document.getElementById('res-eta').value || '14:00';
+        const etd = document.getElementById('res-etd').value || '12:00';
+        const adult = parseInt(document.getElementById('res-adult').value) || 1;
+        const child = parseInt(document.getElementById('res-child').value) || 0;
+
+        const guestType = document.getElementById('res-guest-type') ? document.getElementById('res-guest-type').value : 'Staying Guest';
+        const roomTypeId = document.getElementById('res-room-type').value || null;
+        const roomId = document.getElementById('res-room-number').value || null;
+        const ratePlanId = document.getElementById('res-rate-code').value || null;
+        const roomRate = parseFloat(document.getElementById('res-room-rate').value) || 0;
+        const mealPlanId = document.getElementById('res-meal-plan').value || null;
+        const segmentId = document.getElementById('res-segment').value || null;
+        const reservationSource = document.getElementById('res-source').value || 'Direct';
+        const voucherNumber = document.getElementById('res-voucher').value.trim() || null;
+        const corporateId = document.getElementById('res-corporate-id').value || null;
+        const qty = parseInt(document.getElementById('res-qty').value) || 1;
+        const extrabedQty = parseInt(document.getElementById('res-extrabed').value) || 0;
+
+        const comment = document.getElementById('res-comment').value.trim() || null;
+
+        const reservationPayload = {
+            guest_profile_id: guestProfileId,
+            booker_name: bookerNameVal || null,
+            guest_type: guestType,
+            check_in_date: checkInDate,
+            check_out_date: checkOutDate,
+            nights: nights,
+            eta: eta,
+            etd: etd,
+            adult: adult,
+            child: child,
+            room_type_id: roomTypeId,
+            room_id: roomId,
+            rate_plan_id: ratePlanId,
+            room_rate: roomRate,
+            qty: qty,
+            extrabed_qty: extrabedQty,
+            meal_plan_id: mealPlanId,
+            segment_id: segmentId,
+            reservation_source: reservationSource,
+            voucher_number: voucherNumber,
+            corporate_id: corporateId,
+            comment: comment
+        };
+
+        let resNumber = editId ? (document.getElementById('edit-reservation-number').value || '') : '';
+        if (!editId) {
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            resNumber = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
+            reservationPayload.reservation_number = resNumber;
+            reservationPayload.status = 'Reserved';
+        }
+
+        const docPreview = document.getElementById('res-doc-preview');
+        const hasDocPreview = docPreview && !docPreview.classList.contains('hidden') && docPreview.src && docPreview.src !== '' && docPreview.src !== window.location.href;
+
+        if (hasDocPreview) {
+            if (docPreview.src.startsWith('data:')) {
+                const hotelNameRaw = (document.getElementById('active-property-name')?.textContent || 'Hotel').trim();
+                const hotelName = hotelNameRaw.replace(/\s+/g, '_');
+                const resNumStr = (resNumber || 'RES').replace(/\s+/g, '_');
+                const guestNameStr = (guestNameVal || 'Guest').replace(/\s+/g, '_');
+                const fileName = `${hotelName}_${resNumStr}_${guestNameStr}_ID.jpg`;
+
+                const compressedBlob = await getCompressedDocBlob();
+                if (compressedBlob) {
+                    const { data: uploadData, error: uploadErr } = await supabaseClient
+                        .storage
+                        .from('guest_documents')
+                        .upload(fileName, compressedBlob, {
+                            contentType: 'image/jpeg',
+                            upsert: true
+                        });
+
+                    if (uploadErr) {
+                        console.error('Error uploading guest document to Supabase Storage:', uploadErr);
+                    } else {
+                        const { data: publicUrlData } = supabaseClient
+                            .storage
+                            .from('guest_documents')
+                            .getPublicUrl(fileName);
+
+                        if (publicUrlData && publicUrlData.publicUrl) {
+                            reservationPayload.document_url = publicUrlData.publicUrl;
+                        }
+                    }
+                }
+            } else if (docPreview.src.startsWith('http')) {
+                reservationPayload.document_url = docPreview.src;
+            }
+        } else {
+            reservationPayload.document_url = null;
+        }
+
+        let savedReservationId = editId;
+
+        if (editId) {
+            if (isReactivateMode) {
+                reservationPayload.status = 'Reserved';
+            }
+
+            const { error: updateResErr } = await supabaseClient
+                .from('reservations')
+                .update(reservationPayload)
+                .eq('id', editId);
+
+            if (updateResErr) throw updateResErr;
+
+            if (isReactivateMode) {
+                alert('Reservasi berhasil di-reactivate (status menjadi Reserved)!');
+            } else {
+                alert('Data reservasi berhasil diperbarui!');
+            }
+        } else {
+            if (!reservationPayload.reservation_number) {
+                const randomNum = Math.floor(1000 + Math.random() * 9000);
+                reservationPayload.reservation_number = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
+            }
+            if (!reservationPayload.status) {
+                reservationPayload.status = 'Reserved';
+            }
+
+            const { data: newResData, error: insertResErr } = await supabaseClient
+                .from('reservations')
+                .insert([reservationPayload])
+                .select();
+
+            if (insertResErr) throw insertResErr;
+
+            if (newResData && newResData.length > 0) {
+                savedReservationId = newResData[0].id;
+            }
+
+            if (savedReservationId && pendingNewReservationDeposits && pendingNewReservationDeposits.length > 0) {
+                const txPayloads = pendingNewReservationDeposits.map(d => ({
+                    reservation_id: savedReservationId,
+                    transaction_type: 'PAYMENT',
+                    description: 'Deposit',
+                    amount: d.amount,
+                    payment_method_id: d.payment_method_id,
+                    transaction_date: d.transaction_date || new Date().toISOString()
+                }));
+
+                const { error: depositTxErr } = await supabaseClient
+                    .from('folio_transactions')
+                    .insert(txPayloads);
+
+                if (depositTxErr) {
+                    console.error('Error auto-posting pending deposits to folio_transactions:', depositTxErr);
+                }
+            }
+        }
+
+        if (savedReservationId) {
+            const rows = document.querySelectorAll('#daily-breakdown-tbody tr');
+            const dailyRatesPayload = [];
+
+            rows.forEach(row => {
+                const stayDateInput = row.querySelector('.daily-stay-date');
+                const rateInput = row.querySelector('.daily-rate-input');
+                const mealSelect = row.querySelector('.daily-meal-select');
+
+                if (stayDateInput && rateInput) {
+                    const sDate = stayDateInput.value;
+                    const rRate = parseFloat(rateInput.value) || 0;
+                    const mPlanId = mealSelect ? (mealSelect.value || null) : null;
+
+                    dailyRatesPayload.push({
+                        reservation_id: savedReservationId,
+                        stay_date: sDate,
+                        room_rate: rRate,
+                        meal_plan_id: mPlanId
+                    });
+                }
+            });
+
+            if (dailyRatesPayload.length > 0) {
+                if (editId) {
+                    await supabaseClient
+                        .from('reservation_daily_rates')
+                        .delete()
+                        .eq('reservation_id', savedReservationId);
+                }
+
+                const { error: dailyInsertErr } = await supabaseClient
+                    .from('reservation_daily_rates')
+                    .insert(dailyRatesPayload);
+
+                if (dailyInsertErr) {
+                    console.error('Error saving reservation_daily_rates:', dailyInsertErr);
+                }
+            }
+        }
+
+        const folioRoutingRulesState = window.folioRoutingRulesState || [];
+        if (savedReservationId && folioRoutingRulesState && folioRoutingRulesState.length > 0) {
+            try {
+                await supabaseClient
+                    .from('folio_routing_rules')
+                    .delete()
+                    .eq('source_reservation_id', savedReservationId);
+
+                const insertPayload = folioRoutingRulesState.map(rule => ({
+                    source_reservation_id: savedReservationId,
+                    route_type: rule.route_type,
+                    category_name: rule.category_name,
+                    article_id: rule.article_id
+                }));
+
+                await supabaseClient
+                    .from('folio_routing_rules')
+                    .insert(insertPayload);
+            } catch (rErr) {
+                console.error('Error auto-saving routing rules:', rErr);
+            }
+        }
+
+        closeModal();
+        if (typeof window.fetchRooms === 'function') window.fetchRooms();
+        if (typeof window.fetchFrontdeskDashboard === 'function') window.fetchFrontdeskDashboard();
+        if (typeof window.renderTapeChart === 'function') window.renderTapeChart();
+        if (typeof window.fetchCancelList === 'function') window.fetchCancelList();
+
+    } catch (err) {
+        console.error('Error saving reservation:', err);
+        alert('Gagal menyimpan reservasi: ' + err.message);
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> ${editId ? 'Update Data' : 'Save Reservation'}`;
+        }
+    }
+}
