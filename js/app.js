@@ -86,6 +86,56 @@ import {
     editingGroupId
 } from './modules/group.js';
 
+import {
+    currentFolioReservation,
+    currentFolioTransactions,
+    calculatedCurrentBalance,
+    currentMasterGroup,
+    currentMasterTransactions,
+    transferTargetReservationsCache,
+    folioRoutingAvailableArticles,
+    folioRoutingRulesState,
+    openFolioModal,
+    closeFolioModal,
+    checkAndUpdateMasterFolioHeader,
+    handleCreateMasterFolio,
+    handleOpenFolioFromEdit,
+    fetchFolioTransactions,
+    renderFolioTransactions,
+    openMasterFolioModal,
+    closeMasterFolioModal,
+    fetchMasterFolioTransactions,
+    renderMasterFolioTransactions,
+    handleMoveBackToPersonalFolio,
+    handleVoidMasterTransaction,
+    openAddChargeModal,
+    openAddPaymentModal,
+    openMasterAddChargeModal,
+    openMasterAddPaymentModal,
+    closeFolioTransactionModal,
+    handleChargeItemChange,
+    handleFolioPaymentMethodChange,
+    calculateFolioTotal,
+    handleSaveFolioTransaction,
+    handleVoidTransaction,
+    toggleSelectAllFolioTx,
+    onFolioTxCheckboxChange,
+    openTransferBillModal,
+    renderTransferTargetOptions,
+    filterTransferTargets,
+    closeTransferBillModal,
+    executeTransferBill,
+    handleMoveToMasterFolio,
+    populateFolioRoutingDualList,
+    renderRoutingDualList,
+    moveSelectedRouting,
+    handleSaveFolioRouting,
+    handleProcessCheckout,
+    handleCheckOut,
+    handlePrintFolio,
+    handlePrintMasterFolio
+} from './modules/folio.js';
+
 // Global Variables
 export const todayDate = new Date();
 todayDate.setHours(0, 0, 0, 0);
@@ -188,6 +238,55 @@ if (typeof window !== 'undefined') {
     window.activeGroupSplitData = activeGroupSplitData;
     window.activeFitSplitData = activeFitSplitData;
     window.editingGroupId = editingGroupId;
+
+    // Folio Module
+    window.currentFolioReservation = currentFolioReservation;
+    window.currentFolioTransactions = currentFolioTransactions;
+    window.calculatedCurrentBalance = calculatedCurrentBalance;
+    window.currentMasterGroup = currentMasterGroup;
+    window.currentMasterTransactions = currentMasterTransactions;
+    window.transferTargetReservationsCache = transferTargetReservationsCache;
+    window.folioRoutingAvailableArticles = folioRoutingAvailableArticles;
+    window.folioRoutingRulesState = folioRoutingRulesState;
+    window.openFolioModal = openFolioModal;
+    window.closeFolioModal = closeFolioModal;
+    window.checkAndUpdateMasterFolioHeader = checkAndUpdateMasterFolioHeader;
+    window.handleCreateMasterFolio = handleCreateMasterFolio;
+    window.handleOpenFolioFromEdit = handleOpenFolioFromEdit;
+    window.fetchFolioTransactions = fetchFolioTransactions;
+    window.renderFolioTransactions = renderFolioTransactions;
+    window.openMasterFolioModal = openMasterFolioModal;
+    window.closeMasterFolioModal = closeMasterFolioModal;
+    window.fetchMasterFolioTransactions = fetchMasterFolioTransactions;
+    window.renderMasterFolioTransactions = renderMasterFolioTransactions;
+    window.handleMoveBackToPersonalFolio = handleMoveBackToPersonalFolio;
+    window.handleVoidMasterTransaction = handleVoidMasterTransaction;
+    window.openAddChargeModal = openAddChargeModal;
+    window.openAddPaymentModal = openAddPaymentModal;
+    window.openMasterAddChargeModal = openMasterAddChargeModal;
+    window.openMasterAddPaymentModal = openMasterAddPaymentModal;
+    window.closeFolioTransactionModal = closeFolioTransactionModal;
+    window.handleChargeItemChange = handleChargeItemChange;
+    window.handleFolioPaymentMethodChange = handleFolioPaymentMethodChange;
+    window.calculateFolioTotal = calculateFolioTotal;
+    window.handleSaveFolioTransaction = handleSaveFolioTransaction;
+    window.handleVoidTransaction = handleVoidTransaction;
+    window.toggleSelectAllFolioTx = toggleSelectAllFolioTx;
+    window.onFolioTxCheckboxChange = onFolioTxCheckboxChange;
+    window.openTransferBillModal = openTransferBillModal;
+    window.renderTransferTargetOptions = renderTransferTargetOptions;
+    window.filterTransferTargets = filterTransferTargets;
+    window.closeTransferBillModal = closeTransferBillModal;
+    window.executeTransferBill = executeTransferBill;
+    window.handleMoveToMasterFolio = handleMoveToMasterFolio;
+    window.populateFolioRoutingDualList = populateFolioRoutingDualList;
+    window.renderRoutingDualList = renderRoutingDualList;
+    window.moveSelectedRouting = moveSelectedRouting;
+    window.handleSaveFolioRouting = handleSaveFolioRouting;
+    window.handleProcessCheckout = handleProcessCheckout;
+    window.handleCheckOut = handleCheckOut;
+    window.handlePrintFolio = handlePrintFolio;
+    window.handlePrintMasterFolio = handlePrintMasterFolio;
 }
 
 // Day Change Detector (Night Audit Sync)
