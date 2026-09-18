@@ -544,9 +544,11 @@ export async function openAddChargeModal() {
     if (txTypeSelect) txTypeSelect.value = 'CHARGE';
     if (modalTitle) modalTitle.innerHTML = `<i class="ph ph-plus-circle text-amber-500"></i> Post New Charge Item`;
 
-    document.getElementById('folio-tx-charge-container').classList.remove('hidden');
-    document.getElementById('folio-tx-payment-method-container').classList.add('hidden');
-    document.getElementById('folio-tx-ref-container').classList.add('hidden');
+    document.getElementById('folio-tx-charge-item-container')?.classList.remove('hidden');
+    document.getElementById('folio-tx-qty-price-container')?.classList.remove('hidden');
+    document.getElementById('folio-tx-desc-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-payment-method-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-ref-container')?.classList.add('hidden');
 
     const chargeSelect = document.getElementById('folio-tx-charge-item');
     if (chargeSelect) {
@@ -572,8 +574,12 @@ export async function openAddChargeModal() {
         }
     }
 
-    delete txModal.dataset.isMasterMode;
-    if (txModal) txModal.classList.remove('hidden');
+    handleChargeItemChange();
+
+    if (txModal) {
+        delete txModal.dataset.isMasterMode;
+        txModal.classList.remove('hidden');
+    }
 }
 
 export async function openAddPaymentModal() {
@@ -584,9 +590,13 @@ export async function openAddPaymentModal() {
     if (txTypeSelect) txTypeSelect.value = 'PAYMENT';
     if (modalTitle) modalTitle.innerHTML = `<i class="ph ph-receipt text-emerald-500"></i> Post Payment / Deposit`;
 
-    document.getElementById('folio-tx-charge-container').classList.add('hidden');
-    document.getElementById('folio-tx-payment-method-container').classList.remove('hidden');
-    document.getElementById('folio-tx-ref-container').classList.remove('hidden');
+    document.getElementById('folio-tx-charge-item-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-custom-desc-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-category-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-qty-price-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-desc-container')?.classList.remove('hidden');
+    document.getElementById('folio-tx-payment-method-container')?.classList.remove('hidden');
+    document.getElementById('folio-tx-ref-container')?.classList.remove('hidden');
 
     const amountInput = document.getElementById('folio-tx-amount');
     if (amountInput) {
@@ -629,8 +639,10 @@ export async function openAddPaymentModal() {
 
     handleFolioPaymentMethodChange();
 
-    delete txModal.dataset.isMasterMode;
-    if (txModal) txModal.classList.remove('hidden');
+    if (txModal) {
+        delete txModal.dataset.isMasterMode;
+        txModal.classList.remove('hidden');
+    }
 }
 
 export async function openMasterAddChargeModal() {
@@ -657,16 +669,19 @@ export function closeFolioTransactionModal() {
 
 export function handleChargeItemChange() {
     const select = document.getElementById('folio-tx-charge-item');
-    const customContainer = document.getElementById('folio-tx-custom-container');
+    const customDescContainer = document.getElementById('folio-tx-custom-desc-container');
+    const categoryContainer = document.getElementById('folio-tx-category-container');
     const unitPriceInput = document.getElementById('folio-tx-unit-price');
 
     if (!select) return;
 
     if (select.value === 'custom') {
-        if (customContainer) customContainer.classList.remove('hidden');
+        customDescContainer?.classList.remove('hidden');
+        categoryContainer?.classList.remove('hidden');
         if (unitPriceInput) unitPriceInput.value = '';
     } else {
-        if (customContainer) customContainer.classList.add('hidden');
+        customDescContainer?.classList.add('hidden');
+        categoryContainer?.classList.add('hidden');
         const selectedOption = select.options[select.selectedIndex];
         const price = selectedOption ? selectedOption.getAttribute('data-price') : 0;
         if (unitPriceInput) unitPriceInput.value = price || 0;
