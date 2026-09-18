@@ -165,6 +165,84 @@ import {
     fetchCancelList
 } from './modules/operations.js';
 
+import {
+    switchSettingsTab,
+    fetchBedTypes,
+    openBedTypeModal,
+    openEditBedType,
+    closeBedTypeModal,
+    handleSaveBedType,
+    deleteBedType,
+    fetchRoomTypes,
+    openRoomCategoryModal,
+    openEditRoomType,
+    closeRoomCategoryModal,
+    handleSaveRoomCategory,
+    deleteRoomType,
+    populateRoomTypeDropdown,
+    fetchRooms,
+    openRoomModal,
+    openEditRoom,
+    closeRoomModal,
+    handleSaveRoom,
+    deleteRoom,
+    fetchExtraCharges,
+    openExtraChargeModal,
+    openEditExtraCharge,
+    closeExtraChargeModal,
+    handleSaveExtraCharge,
+    deleteExtraCharge,
+    fetchPaymentMethods,
+    openPaymentMethodModal,
+    openEditPaymentMethod,
+    closePaymentMethodModal,
+    handleSavePaymentMethod,
+    deletePaymentMethod,
+    fetchInvoiceSetting,
+    handleSaveInvoiceSetting,
+    fetchSegmentCodes,
+    openSegmentCodeModal,
+    openEditSegmentCode,
+    closeSegmentCodeModal,
+    handleSaveSegmentCode,
+    deleteSegmentCode,
+    fetchMainGroups,
+    openMainGroupModal,
+    openEditMainGroup,
+    closeMainGroupModal,
+    handleSaveMainGroup,
+    deleteMainGroup,
+    fetchTaxService,
+    openTaxServiceModal,
+    closeTaxServiceModal,
+    handleSaveTaxService,
+    deleteTaxService,
+    fetchDepartments,
+    openDepartmentModal,
+    openEditDepartment,
+    closeDepartmentModal,
+    handleSaveDepartment,
+    deleteDepartment,
+    fetchOutlets,
+    openOutletModal,
+    openEditOutlet,
+    closeOutletModal,
+    handleSaveOutlet,
+    deleteOutlet,
+    fetchMealPlans,
+    loadOutletsCache,
+    buildOutletOptionsHTML,
+    addMealPlanBreakdownRow,
+    removeMealPlanBreakdownRow,
+    clearMealPlanBreakdownRows,
+    openMealPlanModal,
+    openEditMealPlan,
+    closeMealPlanModal,
+    handleSaveMealPlan,
+    deleteMealPlan,
+    outletsCache
+} from './modules/settings.js';
+
 // Global Variables
 export const todayDate = new Date();
 todayDate.setHours(0, 0, 0, 0);
@@ -344,6 +422,83 @@ if (typeof window !== 'undefined') {
     window.handleDepositSettlement = handleDepositSettlement;
     window.executeCancelReservation = executeCancelReservation;
     window.fetchCancelList = fetchCancelList;
+
+    // Settings Module
+    window.switchSettingsTab = switchSettingsTab;
+    window.fetchBedTypes = fetchBedTypes;
+    window.openBedTypeModal = openBedTypeModal;
+    window.openEditBedType = openEditBedType;
+    window.closeBedTypeModal = closeBedTypeModal;
+    window.handleSaveBedType = handleSaveBedType;
+    window.deleteBedType = deleteBedType;
+    window.fetchRoomTypes = fetchRoomTypes;
+    window.openRoomCategoryModal = openRoomCategoryModal;
+    window.openEditRoomType = openEditRoomType;
+    window.closeRoomCategoryModal = closeRoomCategoryModal;
+    window.handleSaveRoomCategory = handleSaveRoomCategory;
+    window.deleteRoomType = deleteRoomType;
+    window.populateRoomTypeDropdown = populateRoomTypeDropdown;
+    window.fetchRooms = fetchRooms;
+    window.openRoomModal = openRoomModal;
+    window.openEditRoom = openEditRoom;
+    window.closeRoomModal = closeRoomModal;
+    window.handleSaveRoom = handleSaveRoom;
+    window.deleteRoom = deleteRoom;
+    window.fetchExtraCharges = fetchExtraCharges;
+    window.openExtraChargeModal = openExtraChargeModal;
+    window.openEditExtraCharge = openEditExtraCharge;
+    window.closeExtraChargeModal = closeExtraChargeModal;
+    window.handleSaveExtraCharge = handleSaveExtraCharge;
+    window.deleteExtraCharge = deleteExtraCharge;
+    window.fetchPaymentMethods = fetchPaymentMethods;
+    window.openPaymentMethodModal = openPaymentMethodModal;
+    window.openEditPaymentMethod = openEditPaymentMethod;
+    window.closePaymentMethodModal = closePaymentMethodModal;
+    window.handleSavePaymentMethod = handleSavePaymentMethod;
+    window.deletePaymentMethod = deletePaymentMethod;
+    window.fetchInvoiceSetting = fetchInvoiceSetting;
+    window.handleSaveInvoiceSetting = handleSaveInvoiceSetting;
+    window.fetchSegmentCodes = fetchSegmentCodes;
+    window.openSegmentCodeModal = openSegmentCodeModal;
+    window.openEditSegmentCode = openEditSegmentCode;
+    window.closeSegmentCodeModal = closeSegmentCodeModal;
+    window.handleSaveSegmentCode = handleSaveSegmentCode;
+    window.deleteSegmentCode = deleteSegmentCode;
+    window.fetchMainGroups = fetchMainGroups;
+    window.openMainGroupModal = openMainGroupModal;
+    window.openEditMainGroup = openEditMainGroup;
+    window.closeMainGroupModal = closeMainGroupModal;
+    window.handleSaveMainGroup = handleSaveMainGroup;
+    window.deleteMainGroup = deleteMainGroup;
+    window.fetchTaxService = fetchTaxService;
+    window.openTaxServiceModal = openTaxServiceModal;
+    window.closeTaxServiceModal = closeTaxServiceModal;
+    window.handleSaveTaxService = handleSaveTaxService;
+    window.deleteTaxService = deleteTaxService;
+    window.fetchDepartments = fetchDepartments;
+    window.openDepartmentModal = openDepartmentModal;
+    window.openEditDepartment = openEditDepartment;
+    window.closeDepartmentModal = closeDepartmentModal;
+    window.handleSaveDepartment = handleSaveDepartment;
+    window.deleteDepartment = deleteDepartment;
+    window.fetchOutlets = fetchOutlets;
+    window.openOutletModal = openOutletModal;
+    window.openEditOutlet = openEditOutlet;
+    window.closeOutletModal = closeOutletModal;
+    window.handleSaveOutlet = handleSaveOutlet;
+    window.deleteOutlet = deleteOutlet;
+    window.fetchMealPlans = fetchMealPlans;
+    window.loadOutletsCache = loadOutletsCache;
+    window.buildOutletOptionsHTML = buildOutletOptionsHTML;
+    window.addMealPlanBreakdownRow = addMealPlanBreakdownRow;
+    window.removeMealPlanBreakdownRow = removeMealPlanBreakdownRow;
+    window.clearMealPlanBreakdownRows = clearMealPlanBreakdownRows;
+    window.openMealPlanModal = openMealPlanModal;
+    window.openEditMealPlan = openEditMealPlan;
+    window.closeMealPlanModal = closeMealPlanModal;
+    window.handleSaveMealPlan = handleSaveMealPlan;
+    window.deleteMealPlan = deleteMealPlan;
+    window.outletsCache = outletsCache;
 }
 
 // Day Change Detector (Night Audit Sync)
