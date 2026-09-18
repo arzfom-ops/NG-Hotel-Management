@@ -136,8 +136,11 @@ export async function fetchFrontdeskDashboard() {
         dashboardData.inHouse = resList.filter(r => r.status === 'Checkin');
         dashboardData.departure = resList.filter(r => r.check_out_date === selectedDateISO && r.status === 'Checkin');
 
-        // 2. Fetch Group Bookings
-        const { data: gbData, error: gbErr } = await supabaseClient
+        // 2. Fetch Group Bookings with Fallback Query
+        let gbData = null;
+        let gbErr = null;
+
+        const resGb = await supabaseClient
             .from('group_bookings')
             .select(`
                 id,
@@ -150,17 +153,52 @@ export async function fetchFrontdeskDashboard() {
             `)
             .order('created_at', { ascending: false });
 
-        if (gbErr) console.error('Error fetching group_bookings for dashboard:', gbErr);
+        gbData = resGb.data;
+        gbErr = resGb.error;
+
+        if (gbErr) {
+            console.warn('Error fetching group_bookings with status column, attempting fallback query:', gbErr);
+            const fallbackGb = await supabaseClient
+                .from('group_bookings')
+                .select(`
+                    id,
+                    group_name,
+                    contact_person,
+                    created_at,
+                    corporate_profiles (company_name),
+                    group_allotments (blocked_qty, agreed_rate, room_type_id, room_types (name))
+                `)
+                .order('created_at', { ascending: false });
+
+            if (fallbackGb.error) {
+                console.error('Error fetching group_bookings fallback:', fallbackGb.error);
+            } else {
+                gbData = fallbackGb.data;
+            }
+        }
 
         const gbList = gbData || [];
-        dashboardData.group = (gbList || []).map(gb => ({
-            id: gb.id,
-            group_name: gb.group_name,
-            company_name: gb.corporate_profiles ? (Array.isArray(gb.corporate_profiles) ? gb.corporate_profiles[0]?.company_name : gb.corporate_profiles.company_name) : '-',
-            contact_person: gb.contact_person,
-            status: gb.status || 'Active',
-            allotments: gb.group_allotments || []
-        }));
+        dashboardData.group = gbList.map(gb => {
+            let status = gb.status;
+            if (!status && gb.contact_person && typeof gb.contact_person === 'string' && gb.contact_person.startsWith('{')) {
+                try {
+                    const cpObj = JSON.parse(gb.contact_person);
+                    if (cpObj && cpObj.status) {
+                        status = cpObj.status;
+                    }
+                } catch (e) {}
+            }
+            status = status || 'Active';
+
+            return {
+                id: gb.id,
+                group_name: gb.group_name,
+                company_name: gb.corporate_profiles ? (Array.isArray(gb.corporate_profiles) ? gb.corporate_profiles[0]?.company_name : gb.corporate_profiles.company_name) : '-',
+                contact_person: gb.contact_person,
+                status: status,
+                allotments: gb.group_allotments || []
+            };
+        });
 
         // Update counts in DOM
         const countArr = document.getElementById('dash-count-arrival');
