@@ -136,6 +136,35 @@ import {
     handlePrintMasterFolio
 } from './modules/folio.js';
 
+import {
+    fetchHousekeepingRooms,
+    getHousekeepingBgColor,
+    openBlockRoomModal,
+    closeBlockRoomModal,
+    handleSaveBlockRoom,
+    updateRoomStatus,
+    updateRoomHousekeepingStatus,
+    openNsgAccountModal,
+    closeNsgAccountModal,
+    fetchNsgList,
+    fetchNsgAccounts,
+    handleSaveNsg,
+    fetchCorporateProfiles,
+    openCorporateModal,
+    openEditCorporate,
+    closeCorporateModal,
+    handleSaveCorporate,
+    deleteCorporate,
+    pendingCancelReservationId,
+    pendingCancelDepositAmount,
+    openCancelDepositModal,
+    closeCancelDepositModal,
+    handleCancelBookingReservation,
+    handleDepositSettlement,
+    executeCancelReservation,
+    fetchCancelList
+} from './modules/operations.js';
+
 // Global Variables
 export const todayDate = new Date();
 todayDate.setHours(0, 0, 0, 0);
@@ -287,6 +316,34 @@ if (typeof window !== 'undefined') {
     window.handleCheckOut = handleCheckOut;
     window.handlePrintFolio = handlePrintFolio;
     window.handlePrintMasterFolio = handlePrintMasterFolio;
+
+    // Operations Module
+    window.fetchHousekeepingRooms = fetchHousekeepingRooms;
+    window.getHousekeepingBgColor = getHousekeepingBgColor;
+    window.openBlockRoomModal = openBlockRoomModal;
+    window.closeBlockRoomModal = closeBlockRoomModal;
+    window.handleSaveBlockRoom = handleSaveBlockRoom;
+    window.updateRoomStatus = updateRoomStatus;
+    window.updateRoomHousekeepingStatus = updateRoomHousekeepingStatus;
+    window.openNsgAccountModal = openNsgAccountModal;
+    window.closeNsgAccountModal = closeNsgAccountModal;
+    window.fetchNsgList = fetchNsgList;
+    window.fetchNsgAccounts = fetchNsgAccounts;
+    window.handleSaveNsg = handleSaveNsg;
+    window.fetchCorporateProfiles = fetchCorporateProfiles;
+    window.openCorporateModal = openCorporateModal;
+    window.openEditCorporate = openEditCorporate;
+    window.closeCorporateModal = closeCorporateModal;
+    window.handleSaveCorporate = handleSaveCorporate;
+    window.deleteCorporate = deleteCorporate;
+    window.pendingCancelReservationId = pendingCancelReservationId;
+    window.pendingCancelDepositAmount = pendingCancelDepositAmount;
+    window.openCancelDepositModal = openCancelDepositModal;
+    window.closeCancelDepositModal = closeCancelDepositModal;
+    window.handleCancelBookingReservation = handleCancelBookingReservation;
+    window.handleDepositSettlement = handleDepositSettlement;
+    window.executeCancelReservation = executeCancelReservation;
+    window.fetchCancelList = fetchCancelList;
 }
 
 // Day Change Detector (Night Audit Sync)

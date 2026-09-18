@@ -386,30 +386,7 @@ export async function handleDashboardCheckIn(reservationId, roomId) {
     await fetchFrontdeskDashboard();
 }
 
-export function getHousekeepingBgColor(status) {
-    const s = (status || '').toUpperCase();
-    switch (s) {
-        case 'VC':
-        case 'CLEAN':
-        case 'VACANT CLEAN':
-            return 'bg-emerald-100 text-emerald-900 border-emerald-200';
-        case 'VD':
-        case 'DIRTY':
-        case 'VACANT DIRTY':
-            return 'bg-yellow-100 text-yellow-900 border-yellow-200';
-        case 'OC':
-        case 'OCCUPIED CLEAN':
-            return 'bg-blue-100 text-blue-900 border-blue-200';
-        case 'OD':
-        case 'OCCUPIED DIRTY':
-            return 'bg-orange-100 text-orange-900 border-orange-200';
-        case 'OOO':
-        case 'OUT OF ORDER':
-            return 'bg-red-100 text-red-900 border-red-200';
-        default:
-            return 'bg-white text-slate-800 border-slate-200';
-    }
-}
+export { getHousekeepingBgColor } from './operations.js';
 
 export function getSourceColorClass(source) {
     switch ((source || '').toLowerCase()) {
