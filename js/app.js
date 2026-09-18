@@ -66,6 +66,26 @@ import {
     isReactivateMode
 } from './modules/reservation.js';
 
+import {
+    openGroupBookingModal,
+    openEditGroupBookingModal,
+    populateGroupCorporateDropdown,
+    closeGroupBookingModal,
+    addGroupAllotmentRow,
+    handleGroupRoomTypeChange,
+    removeGroupAllotmentRow,
+    handleSaveGroupBooking,
+    handleCancelGroupBooking,
+    closeGroupDepositErrorModal,
+    openSplitReservationModal,
+    openFitSplitReservationModal,
+    closeRoomingListModal,
+    handleSaveRoomingList,
+    activeGroupSplitData,
+    activeFitSplitData,
+    editingGroupId
+} from './modules/group.js';
+
 // Global Variables
 export const todayDate = new Date();
 todayDate.setHours(0, 0, 0, 0);
@@ -144,6 +164,25 @@ if (typeof window !== 'undefined') {
     window.roomTypesCache = roomTypesCache;
     window.ratePlansCache = ratePlansCache;
     window.isReactivateMode = isReactivateMode;
+
+    // Group Module
+    window.openGroupBookingModal = openGroupBookingModal;
+    window.openEditGroupBookingModal = openEditGroupBookingModal;
+    window.populateGroupCorporateDropdown = populateGroupCorporateDropdown;
+    window.closeGroupBookingModal = closeGroupBookingModal;
+    window.addGroupAllotmentRow = addGroupAllotmentRow;
+    window.handleGroupRoomTypeChange = handleGroupRoomTypeChange;
+    window.removeGroupAllotmentRow = removeGroupAllotmentRow;
+    window.handleSaveGroupBooking = handleSaveGroupBooking;
+    window.handleCancelGroupBooking = handleCancelGroupBooking;
+    window.closeGroupDepositErrorModal = closeGroupDepositErrorModal;
+    window.openSplitReservationModal = openSplitReservationModal;
+    window.openFitSplitReservationModal = openFitSplitReservationModal;
+    window.closeRoomingListModal = closeRoomingListModal;
+    window.handleSaveRoomingList = handleSaveRoomingList;
+    window.activeGroupSplitData = activeGroupSplitData;
+    window.activeFitSplitData = activeFitSplitData;
+    window.editingGroupId = editingGroupId;
 }
 
 // Day Change Detector (Night Audit Sync)
