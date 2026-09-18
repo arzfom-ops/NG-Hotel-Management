@@ -1,5 +1,45 @@
 import { supabaseClient } from './config/supabase.js';
 import { formatDateISO, formatStayDatesCompact, addDays } from './utils/formatters.js';
+import {
+    currentDashboardTab,
+    dashboardSelectedDate,
+    dashboardRoomTypeFilter,
+    dashboardSearchQuery,
+    dashboardData,
+    handleDashDateChange,
+    handleDashRoomTypeChange,
+    handleDashSearchInput,
+    populateDashRoomTypeFilter,
+    currentGroupSubTab,
+    switchGroupSubTab,
+    switchDashboardTab,
+    fetchFrontdeskDashboard,
+    renderDashboardTable,
+    handleDashboardCheckIn,
+    getHousekeepingBgColor,
+    getSourceColorClass,
+    isDragging,
+    dragStartData,
+    dragEndData,
+    setDragState,
+    updateDragHighlight,
+    clearDragHighlight,
+    openCreateReservationModal,
+    currentStartDate,
+    selectedRoomTypeFilter,
+    renderTapeChart,
+    handleTodayClick,
+    handlePrev7Days,
+    handleNext7Days,
+    handleJumpToDate,
+    handleRoomTypeFilterChange,
+    handleQuickSearch,
+    populateCalendarRoomTypeFilter,
+    forecastStartDate,
+    handleForecastDateChange,
+    renderRoomForecast,
+    addDaysISO
+} from './modules/frontdesk.js';
 
 // Global Variables
 export const todayDate = new Date();
@@ -7,10 +47,54 @@ todayDate.setHours(0, 0, 0, 0);
 
 export let initializedAppDate = new Date().toDateString();
 
-// Attach global variables to window for inline scripts
+// Attach global variables and frontdesk module functions to window for inline scripts
 if (typeof window !== 'undefined') {
     window.todayDate = todayDate;
     window.initializedAppDate = initializedAppDate;
+
+    // Frontdesk State & Handlers
+    window.currentDashboardTab = currentDashboardTab;
+    window.dashboardSelectedDate = dashboardSelectedDate;
+    window.dashboardRoomTypeFilter = dashboardRoomTypeFilter;
+    window.dashboardSearchQuery = dashboardSearchQuery;
+    window.dashboardData = dashboardData;
+    window.handleDashDateChange = handleDashDateChange;
+    window.handleDashRoomTypeChange = handleDashRoomTypeChange;
+    window.handleDashSearchInput = handleDashSearchInput;
+    window.populateDashRoomTypeFilter = populateDashRoomTypeFilter;
+    window.currentGroupSubTab = currentGroupSubTab;
+    window.switchGroupSubTab = switchGroupSubTab;
+    window.switchDashboardTab = switchDashboardTab;
+    window.fetchFrontdeskDashboard = fetchFrontdeskDashboard;
+    window.renderDashboardTable = renderDashboardTable;
+    window.handleDashboardCheckIn = handleDashboardCheckIn;
+    window.getHousekeepingBgColor = getHousekeepingBgColor;
+    window.getSourceColorClass = getSourceColorClass;
+
+    // Tape Chart Controls & Drag-to-Select
+    window.isDragging = isDragging;
+    window.dragStartData = dragStartData;
+    window.dragEndData = dragEndData;
+    window.setDragState = setDragState;
+    window.updateDragHighlight = updateDragHighlight;
+    window.clearDragHighlight = clearDragHighlight;
+    window.openCreateReservationModal = openCreateReservationModal;
+    window.currentStartDate = currentStartDate;
+    window.selectedRoomTypeFilter = selectedRoomTypeFilter;
+    window.renderTapeChart = renderTapeChart;
+    window.handleTodayClick = handleTodayClick;
+    window.handlePrev7Days = handlePrev7Days;
+    window.handleNext7Days = handleNext7Days;
+    window.handleJumpToDate = handleJumpToDate;
+    window.handleRoomTypeFilterChange = handleRoomTypeFilterChange;
+    window.handleQuickSearch = handleQuickSearch;
+    window.populateCalendarRoomTypeFilter = populateCalendarRoomTypeFilter;
+
+    // Room Forecast
+    window.forecastStartDate = forecastStartDate;
+    window.handleForecastDateChange = handleForecastDateChange;
+    window.renderRoomForecast = renderRoomForecast;
+    window.addDaysISO = addDaysISO;
 }
 
 // Day Change Detector (Night Audit Sync)
