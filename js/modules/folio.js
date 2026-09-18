@@ -183,7 +183,8 @@ export function handleOpenFolioFromEdit() {
     }
 }
 
-export async function fetchFolioTransactions(reservationId) {
+export async function fetchFolioTransactions(reservationId = currentFolioReservation?.id) {
+    if (!reservationId) return;
     const tbody = document.getElementById('folioTransactionsTbody');
     if (!tbody) return;
 
@@ -1043,43 +1044,33 @@ export async function executeTransferBill() {
         return;
     }
 
-    const targetResId = document.getElementById('transferTargetSelect')?.value;
-    if (!targetResId) {
+    const selectEl = document.getElementById('transferTargetSelect');
+    const targetId = selectEl?.value;
+    if (!targetId) {
         alert('Pilih reservasi/akun tujuan transfer.');
         return;
     }
 
+    const selectedOption = selectEl?.options[selectEl.selectedIndex];
+    const isMaster = selectedOption?.getAttribute('data-type') === 'master' ||
+                     selectedOption?.dataset?.type === 'master' ||
+                     targetId.startsWith('master_') ||
+                     targetId.startsWith('mf_');
+
+    const pTargetReservationId = isMaster ? null : targetId;
+    const pTargetMasterFolioId = isMaster ? (targetId.startsWith('master_') || targetId.startsWith('mf_') ? targetId.replace(/^(master_|mf_)/, '') : targetId) : null;
+
     try {
-        let rpcSuccess = false;
-        try {
-            const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
-                p_transaction_ids: selectedIds,
-                p_target_reservation_id: targetResId
-            });
-            if (!rpcErr && rpcData && rpcData.success !== false) {
-                rpcSuccess = true;
-            } else if (rpcErr) {
-                console.warn('rpc_transfer_folio_transaction error, falling back to direct update:', rpcErr);
-            }
-        } catch (e) {
-            console.warn('rpc_transfer_folio_transaction call exception, falling back:', e);
-        }
+        const { error } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
+            p_transaction_ids: selectedIds,
+            p_target_reservation_id: pTargetReservationId,
+            p_target_master_folio_id: pTargetMasterFolioId
+        });
 
-        if (!rpcSuccess) {
-            const { error } = await supabaseClient
-                .from('folio_transactions')
-                .update({ reservation_id: targetResId })
-                .in('id', selectedIds);
-
-            if (error) throw error;
-        }
+        if (error) throw error;
 
         closeTransferBillModal();
-        alert('Transaksi berhasil ditransfer!');
-
-        if (currentFolioReservation && currentFolioReservation.id) {
-            await fetchFolioTransactions(currentFolioReservation.id);
-        }
+        await fetchFolioTransactions(currentFolioReservation?.id);
 
     } catch (err) {
         console.error('Error transferring bill:', err);
