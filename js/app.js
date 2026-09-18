@@ -41,13 +41,38 @@ import {
     addDaysISO
 } from './modules/frontdesk.js';
 
+import {
+    populateReservationFormDropdowns,
+    openModal,
+    openViewReservationModal,
+    openReactivateReservationModal,
+    switchReservationTab,
+    handleGuestSearchInput,
+    selectGuestProfile,
+    clearSelectedGuest,
+    handleStayDatesChange,
+    renderDailyBreakdownGrid,
+    applyFirstRowToAllDailyRates,
+    syncMasterRateToGrid,
+    syncMasterMealPlanToGrid,
+    updateTotalPreview,
+    lookupAndSetRoomRate,
+    handleRoomTypeChange,
+    handleRateCodeChange,
+    handleGuestTypeChange,
+    mealPlansCache,
+    roomTypesCache,
+    ratePlansCache,
+    isReactivateMode
+} from './modules/reservation.js';
+
 // Global Variables
 export const todayDate = new Date();
 todayDate.setHours(0, 0, 0, 0);
 
 export let initializedAppDate = new Date().toDateString();
 
-// Attach global variables and frontdesk module functions to window for inline scripts
+// Attach global variables and module functions to window for inline scripts
 if (typeof window !== 'undefined') {
     window.todayDate = todayDate;
     window.initializedAppDate = initializedAppDate;
@@ -95,6 +120,30 @@ if (typeof window !== 'undefined') {
     window.handleForecastDateChange = handleForecastDateChange;
     window.renderRoomForecast = renderRoomForecast;
     window.addDaysISO = addDaysISO;
+
+    // Reservation Module
+    window.populateReservationFormDropdowns = populateReservationFormDropdowns;
+    window.openModal = openModal;
+    window.openViewReservationModal = openViewReservationModal;
+    window.openReactivateReservationModal = openReactivateReservationModal;
+    window.switchReservationTab = switchReservationTab;
+    window.handleGuestSearchInput = handleGuestSearchInput;
+    window.selectGuestProfile = selectGuestProfile;
+    window.clearSelectedGuest = clearSelectedGuest;
+    window.handleStayDatesChange = handleStayDatesChange;
+    window.renderDailyBreakdownGrid = renderDailyBreakdownGrid;
+    window.applyFirstRowToAllDailyRates = applyFirstRowToAllDailyRates;
+    window.syncMasterRateToGrid = syncMasterRateToGrid;
+    window.syncMasterMealPlanToGrid = syncMasterMealPlanToGrid;
+    window.updateTotalPreview = updateTotalPreview;
+    window.lookupAndSetRoomRate = lookupAndSetRoomRate;
+    window.handleRoomTypeChange = handleRoomTypeChange;
+    window.handleRateCodeChange = handleRateCodeChange;
+    window.handleGuestTypeChange = handleGuestTypeChange;
+    window.mealPlansCache = mealPlansCache;
+    window.roomTypesCache = roomTypesCache;
+    window.ratePlansCache = ratePlansCache;
+    window.isReactivateMode = isReactivateMode;
 }
 
 // Day Change Detector (Night Audit Sync)
