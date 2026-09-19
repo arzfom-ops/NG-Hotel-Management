@@ -103,6 +103,21 @@ export async function fetchHousekeepingRooms() {
                 <option value="${s.value}" ${normalizedStatus === s.value ? 'selected' : ''}>${s.label}</option>
             `).join('');
 
+            let quickActionButton = '';
+            if (normalizedStatus === 'VD') {
+                quickActionButton = `
+                    <button onclick="updateRoomStatus('${room.id}', 'VC')" class="w-full mb-2 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                        <i class="ph ph-check-circle text-sm"></i> Mark Clean (VC)
+                    </button>
+                `;
+            } else if (normalizedStatus === 'VC') {
+                quickActionButton = `
+                    <button onclick="updateRoomStatus('${room.id}', 'VD')" class="w-full mb-2 py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                        <i class="ph ph-broom text-sm"></i> Mark Dirty (VD)
+                    </button>
+                `;
+            }
+
             return `
                 <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                     <div>
@@ -115,6 +130,7 @@ export async function fetchHousekeepingRooms() {
                         </div>
                     </div>
                     <div class="pt-4 border-t border-slate-100 mt-2">
+                        ${quickActionButton}
                         <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Update Status</label>
                         <select onchange="updateRoomStatus('${room.id}', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-white focus:bg-white focus:outline-none focus:border-primary transition-colors cursor-pointer">
                             ${statusOptionsHTML}

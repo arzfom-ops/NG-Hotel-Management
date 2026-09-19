@@ -39,7 +39,8 @@ import {
     forecastStartDate,
     handleForecastDateChange,
     renderRoomForecast,
-    addDaysISO
+    addDaysISO,
+    initRealtimeSubscriptions
 } from './modules/frontdesk.js';
 
 import {
@@ -490,6 +491,7 @@ if (typeof window !== 'undefined') {
     window.handleForecastDateChange = handleForecastDateChange;
     window.renderRoomForecast = renderRoomForecast;
     window.addDaysISO = addDaysISO;
+    window.initRealtimeSubscriptions = initRealtimeSubscriptions;
 
     // Reservation Module
     window.populateReservationFormDropdowns = populateReservationFormDropdowns;
@@ -829,6 +831,9 @@ export async function initApp() {
         if (typeof window.fetchRoomTypes === 'function') window.fetchRoomTypes();
         if (typeof window.fetchRooms === 'function') window.fetchRooms();
         if (typeof window.fetchTaxService === 'function') window.fetchTaxService();
+
+        // Initialize Realtime Listener
+        initRealtimeSubscriptions();
 
     } catch (err) {
         console.error('Inisialisasi gagal:', err);
