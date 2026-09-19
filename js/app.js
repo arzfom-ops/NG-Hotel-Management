@@ -188,7 +188,9 @@ import {
 import {
     fetchDailyRevenueReport,
     renderDailyRevenueReport,
-    loadDailyRevenueReport
+    loadDailyRevenueReport,
+    handleDRRDateChange,
+    handlePrintDRR
 } from './modules/reports.js';
 
 import {
@@ -306,7 +308,7 @@ export async function switchView(viewName) {
     const housekeepingView = document.getElementById('housekeeping-view');
     const corporateView = document.getElementById('corporate-view');
     const cancelListView = document.getElementById('cancel-list-view');
-    const drrView = document.getElementById('drr-view');
+    const drrView = document.getElementById('report-drr-view') || document.getElementById('drr-view');
     const adminSettingsView = document.getElementById('admin-settings-view');
 
     const navFrontdesk = document.getElementById('nav-frontdesk');
@@ -315,7 +317,7 @@ export async function switchView(viewName) {
     const navHousekeeping = document.getElementById('nav-housekeeping');
     const navCorporate = document.getElementById('nav-corporate');
     const navCancelList = document.getElementById('nav-cancel-list');
-    const navDrr = document.getElementById('nav-drr');
+    const navDrr = document.getElementById('nav-report-drr') || document.getElementById('nav-drr');
     const navSettings = document.getElementById('nav-settings');
 
     const allSubNavBtns = [navFrontdesk, navRoomForecast, navNsg];
@@ -340,7 +342,7 @@ export async function switchView(viewName) {
         if (adminSettingsView) adminSettingsView.classList.remove('hidden');
 
         if (navSettings) navSettings.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
-    } else if (viewName === 'drr' || viewName === 'reports') {
+    } else if (viewName === 'drr' || viewName === 'report-drr' || viewName === 'reports') {
         if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Reports / Daily Revenue Report";
@@ -354,7 +356,7 @@ export async function switchView(viewName) {
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (drrView) drrView.classList.remove('hidden');
 
-        if (navDrr) navDrr.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+        if (navDrr) navDrr.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
 
         loadDailyRevenueReport();
     } else if (viewName === 'nsg') {
@@ -667,6 +669,8 @@ if (typeof window !== 'undefined') {
     window.fetchDailyRevenueReport = fetchDailyRevenueReport;
     window.renderDailyRevenueReport = renderDailyRevenueReport;
     window.loadDailyRevenueReport = loadDailyRevenueReport;
+    window.handleDRRDateChange = handleDRRDateChange;
+    window.handlePrintDRR = handlePrintDRR;
 
     // Settings Module
     window.switchSettingsTab = switchSettingsTab;

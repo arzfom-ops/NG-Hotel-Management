@@ -26,14 +26,38 @@ function formatPercent(value) {
  * @returns {Promise<{data: object|null, error: object|null}>}
  */
 export async function fetchDailyRevenueReport(selectedDate) {
+    const reportDateInput = document.getElementById('drr-date-picker');
+    let dateToFetch = selectedDate;
+    if (!dateToFetch || typeof dateToFetch !== 'string') {
+        dateToFetch = reportDateInput ? reportDateInput.value : null;
+    }
+    if (!dateToFetch) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        dateToFetch = `${year}-${month}-${day}`;
+    }
+
+    if (reportDateInput) {
+        reportDateInput.value = dateToFetch;
+    }
+
     try {
         const { data, error } = await supabaseClient.rpc('rpc_get_daily_revenue_report', {
-            p_report_date: selectedDate
+            p_report_date: dateToFetch
         });
 
         if (error) {
             console.error('Error fetching Daily Revenue Report RPC:', error);
+            if (typeof selectedDate !== 'string') {
+                alert(`Gagal memuat Daily Revenue Report: ${error.message || error}`);
+            }
             return { data: null, error };
+        }
+
+        if (data) {
+            renderDailyRevenueReport(data);
         }
 
         return { data, error: null };
@@ -44,35 +68,25 @@ export async function fetchDailyRevenueReport(selectedDate) {
 }
 
 /**
+ * Event handler for date picker change
+ */
+export function handleDRRDateChange(dateVal) {
+    loadDailyRevenueReport(dateVal);
+}
+
+/**
+ * Event handler for print report button
+ */
+export function handlePrintDRR() {
+    window.print();
+}
+
+/**
  * Fetches and renders Daily Revenue Report for a date string (or today's date if not provided).
  * @param {string} [dateStr] - YYYY-MM-DD format
  */
 export async function loadDailyRevenueReport(dateStr) {
-    const reportDateInput = document.getElementById('drr-date-picker');
-    let selectedDate = dateStr;
-    if (!selectedDate && reportDateInput) {
-        selectedDate = reportDateInput.value;
-    }
-    if (!selectedDate) {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        selectedDate = `${year}-${month}-${day}`;
-    }
-
-    if (reportDateInput) {
-        reportDateInput.value = selectedDate;
-    }
-
-    const { data, error } = await fetchDailyRevenueReport(selectedDate);
-
-    if (error) {
-        alert(`Gagal memuat Daily Revenue Report: ${error.message || error}`);
-        return;
-    }
-
-    renderDailyRevenueReport(data);
+    return await fetchDailyRevenueReport(dateStr);
 }
 
 /**
@@ -115,18 +129,37 @@ export function renderDailyRevenueReport(reportData) {
 
     setElemText('drr-kpi-occ-today', formatPercent(occToday));
     setElemText('drr-kpi-occ-mtd', formatPercent(occMtd));
+    setElemText('drr-card-occ', formatPercent(occToday));
+    setElemText('drr-card-occ-mtd', `MTD: ${formatPercent(occMtd)}`);
 
     setElemText('drr-kpi-adr-today', formatCurrency(adrToday));
     setElemText('drr-kpi-adr-mtd', formatCurrency(adrMtd));
+    setElemText('drr-card-adr', formatCurrency(adrToday));
+    setElemText('drr-card-adr-mtd', `MTD: ${formatCurrency(adrMtd)}`);
 
     setElemText('drr-kpi-revpar-today', formatCurrency(revParToday));
     setElemText('drr-kpi-revpar-mtd', formatCurrency(revParMtd));
+    setElemText('drr-card-revpar', formatCurrency(revParToday));
+    setElemText('drr-card-revpar-mtd', `MTD: ${formatCurrency(revParMtd)}`);
 
     setElemText('drr-kpi-total-rev-today', formatCurrency(totalRevToday));
     setElemText('drr-kpi-total-rev-mtd', formatCurrency(totalRevMtd));
+    setElemText('drr-card-revenue', formatCurrency(totalRevToday));
+    setElemText('drr-card-revenue-mtd', `MTD: ${formatCurrency(totalRevMtd)}`);
+
+    // Period label & Room stats
+    const reportDateInput = document.getElementById('drr-date-picker');
+    if (reportDateInput && reportDateInput.value) {
+        setElemText('drr-period-label', `Periode: ${reportDateInput.value}`);
+    }
+
+    setElemText('drr-stat-inventory', stats.total_inventory ?? stats.inventory ?? 0);
+    setElemText('drr-stat-ooo', stats.ooo_rooms ?? stats.ooo ?? 0);
+    setElemText('drr-stat-available', stats.net_available ?? stats.available ?? 0);
+    setElemText('drr-stat-occupied', stats.occupied_rooms ?? stats.occupied ?? 0);
 
     // 2. Revenue Breakdown Table
-    const revTbody = document.getElementById('drr-revenue-breakdown-tbody');
+    const revTbody = document.getElementById('drr-revenue-tbody') || document.getElementById('drr-revenue-breakdown-tbody');
     if (revTbody) {
         let revRows = [];
 
@@ -187,7 +220,7 @@ export function renderDailyRevenueReport(reportData) {
     }
 
     // 3. Cashier Payment Collection Table
-    const payTbody = document.getElementById('drr-cashier-payment-tbody');
+    const payTbody = document.getElementById('drr-payments-tbody') || document.getElementById('drr-cashier-payment-tbody');
     if (payTbody) {
         let paymentMap = {};
 
