@@ -81,6 +81,7 @@ import {
     closeModal,
     handleCheckInReservation,
     handleCheckIn,
+    handlePrintRegistrationCard,
     handleSaveReservation
 } from './modules/reservation.js';
 
@@ -523,6 +524,7 @@ if (typeof window !== 'undefined') {
     window.handleAddDepositSubmit = handleAddDepositSubmit;
     window.handleCheckInReservation = handleCheckInReservation;
     window.handleCheckIn = handleCheckIn;
+    window.handlePrintRegistrationCard = handlePrintRegistrationCard;
     window.mealPlansCache = mealPlansCache;
     window.roomTypesCache = roomTypesCache;
     window.ratePlansCache = ratePlansCache;

@@ -1174,6 +1174,167 @@ export async function handleCheckInReservation() {
     }
 }
 
+export async function handlePrintRegistrationCard() {
+    const editResId = document.getElementById('edit-reservation-id')?.value;
+    if (!editResId) {
+        alert('Tidak ada reservasi aktif yang dipilih.');
+        return;
+    }
+
+    try {
+        const { data: res, error: resErr } = await supabaseClient
+            .from('reservations')
+            .select('*, guest_profiles(*), room_types(name), rooms(room_number)')
+            .eq('id', editResId)
+            .single();
+
+        if (resErr) throw resErr;
+        if (!res) throw new Error('Data reservasi tidak ditemukan.');
+
+        let rcTerms = '';
+        try {
+            const { data: invData, error: invErr } = await supabaseClient
+                .from('invoice_settings')
+                .select('rc_terms')
+                .limit(1);
+
+            if (!invErr && invData && invData.length > 0) {
+                rcTerms = invData[0].rc_terms || '';
+            }
+        } catch (tErr) {
+            console.error('Error fetching rc_terms from invoice_settings:', tErr);
+        }
+
+        const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
+        const guestName = guestProfile ? (guestProfile.full_name || '-') : (res.booker_name || '-');
+        const phone = guestProfile ? (guestProfile.phone_number || '-') : '-';
+        const email = guestProfile ? (guestProfile.email || '-') : '-';
+        const idCard = guestProfile ? (guestProfile.id_card_no || '-') : '-';
+        const address = guestProfile ? (guestProfile.address || '-') : '-';
+        const city = guestProfile ? (guestProfile.city || '-') : '-';
+        const nationality = guestProfile ? (guestProfile.nationality || 'Indonesia') : 'Indonesia';
+
+        const roomTypeName = res.room_types ? (Array.isArray(res.room_types) ? res.room_types[0]?.name : res.room_types.name) : '-';
+        const roomNumber = res.rooms ? (Array.isArray(res.rooms) ? res.rooms[0]?.room_number : res.rooms.room_number) : '-';
+        const checkIn = res.check_in_date || '-';
+        const checkOut = res.check_out_date || '-';
+        const nights = res.nights || 1;
+        const adult = res.adult || 1;
+        const child = res.child || 0;
+        const roomRate = res.room_rate ? `Rp ${Number(res.room_rate).toLocaleString('id-ID')}` : 'Rp 0';
+        const specialRequest = res.comment || '-';
+        const resNo = res.reservation_number || '-';
+
+        const printWindow = window.open('', '_blank', 'width=850,height=900');
+        if (!printWindow) {
+            alert('Pop-up terblokir. Izinkan pop-up browser untuk mencetak Registration Card.');
+            return;
+        }
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Registration Card - ${guestName}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 24px; color: #1e293b; background: #fff; line-height: 1.5; }
+                    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; }
+                    .header h1 { margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .header p { margin: 4px 0 0 0; color: #64748b; font-size: 13px; font-weight: 600; }
+                    .res-no-box { text-align: right; background: #f1f5f9; padding: 8px 14px; border-radius: 6px; border: 1px solid #cbd5e1; }
+                    .res-no-box label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; }
+                    .res-no-box span { font-family: monospace; font-size: 16px; font-weight: 700; color: #0f172a; }
+
+                    .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px; margin-top: 16px; }
+
+                    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+                    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+
+                    .info-group { background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
+                    .info-group label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 2px; }
+                    .info-group span { font-size: 13px; font-weight: 600; color: #1e293b; word-break: break-word; }
+
+                    .terms-box { margin-top: 20px; background: #f8fafc; padding: 12px 16px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 11px; color: #475569; }
+                    .terms-box h4 { margin: 0 0 6px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #334155; }
+                    .terms-content { white-space: pre-wrap; line-height: 1.4; }
+
+                    .signatures { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 12px; }
+                    .sig-box { text-align: center; width: 40%; }
+                    .sig-line { border-bottom: 1px solid #0f172a; margin-top: 60px; margin-bottom: 6px; }
+                    .sig-label { font-size: 11px; font-weight: 600; color: #475569; }
+
+                    @media print {
+                        body { padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div>
+                        <h1>Registration Card</h1>
+                        <p>Hotel Guest Registration & Stay Information</p>
+                    </div>
+                    <div class="res-no-box">
+                        <label>Reservation No</label>
+                        <span>${resNo}</span>
+                    </div>
+                </div>
+
+                <div class="section-title">Guest Information</div>
+                <div class="grid-2">
+                    <div class="info-group"><label>Guest Name</label><span>${guestName}</span></div>
+                    <div class="info-group"><label>ID Card / Passport No</label><span>${idCard}</span></div>
+                    <div class="info-group"><label>Phone Number</label><span>${phone}</span></div>
+                    <div class="info-group"><label>Email Address</label><span>${email}</span></div>
+                    <div class="info-group"><label>Address</label><span>${address}, ${city}</span></div>
+                    <div class="info-group"><label>Nationality</label><span>${nationality}</span></div>
+                </div>
+
+                <div class="section-title">Stay & Room Details</div>
+                <div class="grid-4">
+                    <div class="info-group"><label>Room Type</label><span>${roomTypeName}</span></div>
+                    <div class="info-group"><label>Room Number</label><span>${roomNumber}</span></div>
+                    <div class="info-group"><label>Check-In Date</label><span>${checkIn}</span></div>
+                    <div class="info-group"><label>Check-Out Date</label><span>${checkOut}</span></div>
+                    <div class="info-group"><label>Nights</label><span>${nights} night(s)</span></div>
+                    <div class="info-group"><label>Guests (Adult / Child)</label><span>${adult} Adult(s) / ${child} Child</span></div>
+                    <div class="info-group"><label>Room Rate / Night</label><span>${roomRate}</span></div>
+                    <div class="info-group"><label>Special Request</label><span>${specialRequest}</span></div>
+                </div>
+
+                ${rcTerms ? `
+                <div class="terms-box">
+                    <h4>Terms & Conditions</h4>
+                    <div class="terms-content">${rcTerms}</div>
+                </div>
+                ` : ''}
+
+                <div class="signatures">
+                    <div class="sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-label">Guest Signature</div>
+                    </div>
+                    <div class="sig-box">
+                        <div class="sig-line"></div>
+                        <div class="sig-label">Receptionist / Front Desk</div>
+                    </div>
+                </div>
+
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    };
+                </script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    } catch (err) {
+        console.error('Error printing Registration Card:', err);
+        alert('Gagal mencetak Registration Card: ' + err.message);
+    }
+}
+
 export async function handleCheckIn(reservationId, roomId) {
     if (!reservationId) return;
     try {
