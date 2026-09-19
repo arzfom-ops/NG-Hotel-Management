@@ -247,7 +247,7 @@ export function renderFolioTransactions() {
             return `
                 <tr class="${rowClass} border-b border-slate-100 transition-colors text-xs">
                     <td class="p-3 text-center">
-                        <input type="checkbox" value="${tx.id}" class="folio-tx-cb rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer" onchange="onFolioTxCheckboxChange()" ${isVoided ? 'disabled' : ''}>
+                        <input type="checkbox" value="${tx.id}" class="folio-tx-cb folio-tx-checkbox rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer" onchange="updateTransferButtonsState()" ${isVoided ? 'disabled' : ''}>
                     </td>
                     <td class="p-3 font-medium whitespace-nowrap text-slate-500">${dateStr}</td>
                     <td class="p-3 font-semibold text-slate-800">${desc}</td>
@@ -278,6 +278,11 @@ export function renderFolioTransactions() {
             currentBalanceEl.className = "text-xl font-bold text-emerald-600";
         }
     }
+
+    const selectAllCb = document.getElementById('selectAllFolioTx');
+    if (selectAllCb) selectAllCb.checked = false;
+
+    updateTransferButtonsState();
 }
 
 export async function openMasterFolioModal(groupId, bookingRef, masterId) {
@@ -894,27 +899,37 @@ export async function handleVoidTransaction(transactionId) {
 // TRANSFER TAGIHAN & ROUTING
 // ==========================================
 
-export function toggleSelectAllFolioTx(masterCheckbox) {
-    const checkboxes = document.querySelectorAll('.folio-tx-cb:not(:disabled)');
-    checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
-    onFolioTxCheckboxChange();
-}
+export function updateTransferButtonsState() {
+    const checkedBoxes = document.querySelectorAll('.folio-tx-checkbox:checked, .folio-tx-cb:checked');
+    const checkedCount = checkedBoxes.length;
+    const btnTransferSelected = document.getElementById('btnTransferSelected');
+    const btnMoveToMaster = document.getElementById('btnMoveToMaster');
 
-export function onFolioTxCheckboxChange() {
-    const checkedBoxes = document.querySelectorAll('.folio-tx-cb:checked');
-    const btnTransfer = document.getElementById('btnTransferSelected');
-    if (btnTransfer) {
-        if (checkedBoxes.length > 0) {
-            btnTransfer.classList.remove('hidden');
-            btnTransfer.innerHTML = `<i class="ph ph-arrows-left-right text-sm"></i> Transfer Selected (${checkedBoxes.length})`;
-        } else {
-            btnTransfer.classList.add('hidden');
+    const isConnectedToMaster = !!(currentFolioReservation && (currentFolioReservation.group_id || currentFolioReservation.booking_reference));
+
+    if (checkedCount > 0) {
+        if (btnTransferSelected) btnTransferSelected.disabled = false;
+        if (btnMoveToMaster) {
+            btnMoveToMaster.disabled = !isConnectedToMaster;
         }
+    } else {
+        if (btnTransferSelected) btnTransferSelected.disabled = true;
+        if (btnMoveToMaster) btnMoveToMaster.disabled = true;
     }
 }
 
+export function toggleSelectAllFolioTx(masterCheckbox) {
+    const checkboxes = document.querySelectorAll('.folio-tx-checkbox:not(:disabled), .folio-tx-cb:not(:disabled)');
+    checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+    updateTransferButtonsState();
+}
+
+export function onFolioTxCheckboxChange() {
+    updateTransferButtonsState();
+}
+
 export async function openTransferBillModal() {
-    const checkedBoxes = document.querySelectorAll('.folio-tx-cb:checked');
+    const checkedBoxes = document.querySelectorAll('.folio-tx-checkbox:checked, .folio-tx-cb:checked');
     if (checkedBoxes.length === 0) {
         alert('Pilih minimal satu transaksi untuk ditransfer.');
         return;
@@ -1036,7 +1051,7 @@ export function closeTransferBillModal() {
 }
 
 export async function executeTransferBill() {
-    const checkedBoxes = Array.from(document.querySelectorAll('.folio-tx-cb:checked'));
+    const checkedBoxes = Array.from(document.querySelectorAll('.folio-tx-checkbox:checked, .folio-tx-cb:checked'));
     const selectedIds = checkedBoxes.map(cb => cb.value);
 
     if (selectedIds.length === 0) {
@@ -1089,7 +1104,7 @@ export async function handleMoveToMasterFolio() {
         return;
     }
 
-    const checkedBoxes = Array.from(document.querySelectorAll('.folio-tx-cb:checked'));
+    const checkedBoxes = Array.from(document.querySelectorAll('.folio-tx-checkbox:checked, .folio-tx-cb:checked'));
     if (checkedBoxes.length === 0) {
         alert('Pilih minimal satu transaksi untuk dipindahkan.');
         return;
