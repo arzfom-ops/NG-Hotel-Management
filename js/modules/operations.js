@@ -268,26 +268,37 @@ export async function fetchNsgList() {
     try {
         const { data, error } = await supabaseClient
             .from('reservations')
-            .select('*')
-            .eq('guest_type', 'Non-Staying Guest')
+            .select(`
+                *,
+                rooms (room_number),
+                guest_profiles (full_name)
+            `)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        if (!data || data.length === 0) {
+        const filteredData = (data || []).filter(item => {
+            const roomNo = item.rooms ? (Array.isArray(item.rooms) ? item.rooms[0]?.room_number : item.rooms.room_number) : null;
+            const isPmRoom = roomNo && String(roomNo).toLowerCase().startsWith('pm-');
+            const isNsg = item.guest_type === 'Non-Staying Guest';
+            return isNsg || isPmRoom;
+        });
+
+        if (!filteredData || filteredData.length === 0) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="5" class="py-8 text-center text-slate-400">
-                        Belum ada akun Non-Stay Guest (NSG).
+                        Belum ada akun Non-Stay Guest (NSG) / Paymaster (PM).
                     </td>
                 </tr>
             `;
             return;
         }
 
-        tbody.innerHTML = data.map(item => {
+        tbody.innerHTML = filteredData.map(item => {
             const resNo = item.reservation_number || (item.id ? item.id.slice(0, 8) : '-');
-            const accountName = item.booker_name || '-';
+            const guestFullName = item.guest_profiles ? (Array.isArray(item.guest_profiles) ? item.guest_profiles[0]?.full_name : item.guest_profiles.full_name) : null;
+            const accountName = item.booker_name || guestFullName || '-';
             const description = item.comment || '-';
             const status = item.status || 'Checkin';
 

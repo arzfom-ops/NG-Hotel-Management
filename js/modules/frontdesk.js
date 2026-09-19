@@ -122,6 +122,7 @@ export async function fetchFrontdeskDashboard() {
                 room_id,
                 room_type_id,
                 qty,
+                guest_type,
                 guest_profiles (full_name),
                 room_types (name),
                 rooms (room_number)
@@ -132,9 +133,17 @@ export async function fetchFrontdeskDashboard() {
 
         const resList = resData || [];
 
-        dashboardData.arrival = resList.filter(r => r.check_in_date === selectedDateISO && r.status === 'Reserved');
-        dashboardData.inHouse = resList.filter(r => r.status === 'Checkin');
-        dashboardData.departure = resList.filter(r => r.check_out_date === selectedDateISO && r.status === 'Checkin');
+        // Filter out Non-Staying Guests and PM/Paymaster rooms from operational dashboard
+        const validResList = resList.filter(r => {
+            const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : null;
+            const isPmRoom = roomNo && String(roomNo).toLowerCase().startsWith('pm-');
+            const isNsg = r.guest_type === 'Non-Staying Guest';
+            return !isNsg && !isPmRoom;
+        });
+
+        dashboardData.arrival = validResList.filter(r => r.check_in_date === selectedDateISO && r.status === 'Reserved');
+        dashboardData.inHouse = validResList.filter(r => r.status === 'Checkin');
+        dashboardData.departure = validResList.filter(r => r.check_out_date === selectedDateISO && r.status === 'Checkin');
 
         // 2. Fetch Group Bookings with Fallback Query
         let gbData = null;
@@ -579,10 +588,10 @@ export async function renderTapeChart() {
         const minDateStr = formatDateISO(datesList[0]);
         const maxDateStr = formatDateISO(datesList[TOTAL_DAYS - 1]);
 
-        // Filter rooms by room type if selected
-        let displayRooms = roomsCache;
+        // Filter rooms by room type if selected & exclude PM / Paymaster rooms
+        let displayRooms = roomsCache.filter(r => !r.room_number || !r.room_number.toLowerCase().startsWith('pm-'));
         if (selectedRoomTypeFilter) {
-            displayRooms = roomsCache.filter(r => r.room_type_id === selectedRoomTypeFilter);
+            displayRooms = displayRooms.filter(r => r.room_type_id === selectedRoomTypeFilter);
         }
 
         // Fetch active reservations overlapping the 14 days range
