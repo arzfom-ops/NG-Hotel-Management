@@ -358,7 +358,7 @@ export async function switchView(viewName) {
 
         if (navDrr) navDrr.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
 
-        loadDailyRevenueReport();
+        fetchDailyRevenueReport();
     } else if (viewName === 'nsg') {
         toggleFrontdeskAccordion(true);
         if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');

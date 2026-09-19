@@ -32,9 +32,20 @@ export function addDays(dateObj, days) {
     return res;
 }
 
+export function formatCurrency(amount) {
+    const val = Number(amount) || 0;
+    return `Rp ${val.toLocaleString('id-ID')}`;
+}
+
+export function formatRupiah(amount) {
+    return formatCurrency(amount);
+}
+
 // Expose globally for legacy non-module inline scripts in index.html
 if (typeof window !== 'undefined') {
     window.formatDateISO = formatDateISO;
     window.formatStayDatesCompact = formatStayDatesCompact;
     window.addDays = addDays;
+    window.formatCurrency = formatCurrency;
+    window.formatRupiah = formatRupiah;
 }
