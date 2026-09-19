@@ -137,6 +137,7 @@ import {
     calculateFolioTotal,
     handleSaveFolioTransaction,
     handleVoidTransaction,
+    updateTransferButtonsState,
     toggleSelectAllFolioTx,
     onFolioTxCheckboxChange,
     openTransferBillModal,
@@ -582,6 +583,7 @@ if (typeof window !== 'undefined') {
     window.calculateFolioTotal = calculateFolioTotal;
     window.handleSaveFolioTransaction = handleSaveFolioTransaction;
     window.handleVoidTransaction = handleVoidTransaction;
+    window.updateTransferButtonsState = updateTransferButtonsState;
     window.toggleSelectAllFolioTx = toggleSelectAllFolioTx;
     window.onFolioTxCheckboxChange = onFolioTxCheckboxChange;
     window.openTransferBillModal = openTransferBillModal;
