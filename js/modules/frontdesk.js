@@ -433,6 +433,29 @@ export async function handleDashboardCheckIn(reservationId, roomId) {
     await fetchFrontdeskDashboard();
 }
 
+export function initRealtimeSubscriptions() {
+    supabaseClient
+        .channel('realtime-rooms-changes')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'rooms'
+        }, (payload) => {
+            console.log('Realtime Room Update Received:', payload);
+            // Update cache rooms lokal jika ada
+            const updatedRoom = payload.new;
+            const roomsCache = window.roomsCache || [];
+            const idx = roomsCache.findIndex(r => r.id === updatedRoom.id);
+            if (idx !== -1) {
+                roomsCache[idx] = { ...roomsCache[idx], ...updatedRoom };
+            }
+            // Trigger Re-render instan di UI
+            if (typeof renderTapeChart === 'function') renderTapeChart();
+            if (typeof fetchHousekeepingRooms === 'function') fetchHousekeepingRooms();
+        })
+        .subscribe();
+}
+
 export { getHousekeepingBgColor } from './operations.js';
 
 export function getSourceColorClass(source) {
