@@ -28,10 +28,10 @@ export async function switchFolioTab(tabName) {
 
     if (activeFolioTab === 'master') {
         if (btnPribadi) {
-            btnPribadi.className = "px-5 py-2.5 text-xs font-bold rounded-t-lg border-b-2 border-transparent bg-slate-200/70 text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-all";
+            btnPribadi.className = "px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/50 font-semibold text-xs transition-all duration-200 flex items-center gap-2 cursor-pointer";
         }
         if (btnMaster) {
-            btnMaster.className = `px-5 py-2.5 text-xs font-bold rounded-t-lg border-b-2 border-indigo-600 bg-white text-indigo-900 shadow-xs flex items-center gap-2 transition-all ${isMasterHidden ? 'hidden' : ''}`.trim();
+            btnMaster.className = `px-4 py-2 rounded-xl bg-white text-primary shadow-xs font-bold text-xs transition-all duration-200 flex items-center gap-2 cursor-pointer ${isMasterHidden ? 'hidden' : ''}`.trim();
         }
         if (contentPribadi) contentPribadi.classList.add('hidden');
         if (contentMaster) contentMaster.classList.remove('hidden');
@@ -45,10 +45,10 @@ export async function switchFolioTab(tabName) {
         }
     } else { // 'pribadi'
         if (btnPribadi) {
-            btnPribadi.className = "px-5 py-2.5 text-xs font-bold rounded-t-lg border-b-2 border-amber-500 bg-white text-slate-800 shadow-xs flex items-center gap-2 transition-all";
+            btnPribadi.className = "px-4 py-2 rounded-xl bg-white text-primary shadow-xs font-bold text-xs transition-all duration-200 flex items-center gap-2 cursor-pointer";
         }
         if (btnMaster) {
-            btnMaster.className = `px-5 py-2.5 text-xs font-bold rounded-t-lg border-b-2 border-transparent bg-slate-200/70 text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-all ${isMasterHidden ? 'hidden' : ''}`.trim();
+            btnMaster.className = `px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/50 font-semibold text-xs transition-all duration-200 flex items-center gap-2 cursor-pointer ${isMasterHidden ? 'hidden' : ''}`.trim();
         }
         if (contentPribadi) contentPribadi.classList.remove('hidden');
         if (contentMaster) contentMaster.classList.add('hidden');

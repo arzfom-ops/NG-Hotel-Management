@@ -441,10 +441,10 @@ export function renderDailyBreakdownGrid(existingDailyRates = null) {
                     <input type="hidden" class="daily-stay-date" value="${stayDateStr}">
                 </td>
                 <td class="py-2 px-3">
-                    <input type="number" id="daily-rate-${i}" step="any" min="0" value="${rowRate}" oninput="updateTotalPreview()" onchange="updateTotalPreview()" class="daily-rate-input w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs font-bold text-slate-800 focus:outline-none focus:border-primary">
+                    <input type="number" id="daily-rate-${i}" step="any" min="0" value="${rowRate}" oninput="updateTotalPreview()" onchange="updateTotalPreview()" class="daily-rate-input w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </td>
                 <td class="py-2 px-3">
-                    <select id="daily-meal-${i}" class="daily-meal-select w-full px-2.5 py-1.5 border border-slate-300 rounded text-xs text-slate-700 bg-white focus:outline-none focus:border-primary">
+                    <select id="daily-meal-${i}" class="daily-meal-select w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                         ${mealOptionsHtml}
                     </select>
                 </td>
