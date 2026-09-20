@@ -123,9 +123,10 @@ export async function openModal() {
 
     // Status Badge (New Mode)
     const statusBadge = document.getElementById('res-status-badge');
-    const statusText = document.getElementById('res-status-text');
-    if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold';
-    if (statusText) statusText.textContent = 'Status: Reserved';
+    if (statusBadge) {
+        statusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs';
+        statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> <span id="res-status-text">Status: Reserved</span>';
+    }
 
     // Footer buttons toggle
     const createFooter = document.getElementById('resModalCreateFooter');
@@ -882,17 +883,27 @@ export async function openEditReservation(id) {
 
         const currentStatus = res.status || 'Reserved';
         const statusBadge = document.getElementById('res-status-badge');
-        const statusText = document.getElementById('res-status-text');
-        if (statusText) statusText.textContent = `Status: ${currentStatus}`;
+
+        let badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs';
+        let dotColor = 'bg-purple-500';
 
         if (currentStatus === 'Reserved') {
-            if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold';
-        } else if (currentStatus === 'Checkin') {
-            if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-bold';
+            badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs';
+            dotColor = 'bg-purple-500';
+        } else if (currentStatus === 'Checkin' || currentStatus === 'Checked In') {
+            badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-700 border border-blue-500/30 backdrop-blur-md shadow-2xs';
+            dotColor = 'bg-blue-500';
         } else if (currentStatus === 'Cancelled') {
-            if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-bold';
-        } else {
-            if (statusBadge) statusBadge.className = 'flex items-center gap-1.5 bg-slate-100 text-slate-800 text-xs px-3 py-1 rounded-full font-bold';
+            badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 border border-rose-500/30 backdrop-blur-md shadow-2xs';
+            dotColor = 'bg-rose-500';
+        } else if (currentStatus === 'Checkout' || currentStatus === 'Checked Out') {
+            badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/15 text-slate-700 border border-slate-500/30 backdrop-blur-md shadow-2xs';
+            dotColor = 'bg-slate-500';
+        }
+
+        if (statusBadge) {
+            statusBadge.className = badgeClass;
+            statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotColor} animate-pulse"></span> <span id="res-status-text">Status: ${currentStatus}</span>`;
         }
 
         const createFooter = document.getElementById('resModalCreateFooter');
@@ -953,7 +964,7 @@ export async function fetchAndRenderReservationDepositHistory(reservationId) {
         return;
     }
 
-    tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-slate-400">Loading deposit history...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="p-3"><div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-full"></div></td></tr>`;
 
     try {
         const { data, error } = await supabaseClient

@@ -296,9 +296,11 @@ export async function fetchShiftLogbooks() {
     if (tbody) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="py-6 text-center text-slate-400">
-                    <i class="ph ph-spinner animate-spin text-xl inline-block mb-1"></i>
-                    <div>Memuat data logbook...</div>
+                <td colspan="5" class="p-4">
+                    <div class="space-y-3">
+                        <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-full"></div>
+                        <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-3/4"></div>
+                    </div>
                 </td>
             </tr>
         `;
@@ -371,11 +373,11 @@ export function renderShiftLogbooks(logbooks) {
                               'bg-slate-100 text-slate-800';
 
         const statusBadge = item.is_resolved ?
-            `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                <i class="ph ph-check-circle text-sm"></i> Selesai
+            `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 backdrop-blur-md shadow-2xs">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Selesai
              </span>` :
-            `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
-                <i class="ph ph-clock text-sm"></i> Pending
+            `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 border border-rose-500/30 backdrop-blur-md shadow-2xs">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> Pending
              </span>`;
 
         const resolveAction = item.is_resolved ?
