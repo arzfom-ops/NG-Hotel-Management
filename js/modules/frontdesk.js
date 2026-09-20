@@ -655,11 +655,11 @@ export async function renderTapeChart() {
 
         // Build HTML Table structure
         let tableHTML = `
-            <div class="overflow-x-auto w-full border border-slate-200 rounded-lg shadow-xs bg-white">
-                <table class="w-full border-collapse text-left select-none" style="min-width: ${200 + (TOTAL_DAYS * CELL_WIDTH)}px;">
+            <div class="overflow-x-auto relative w-full border border-slate-200 rounded-lg shadow-xs bg-white">
+                <table class="w-full border-collapse text-left select-none" style="min-width: ${160 + (TOTAL_DAYS * CELL_WIDTH)}px;">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-semibold uppercase tracking-wider">
-                            <th class="min-w-[200px] w-[200px] max-w-[200px] border-r-2 border-slate-200 p-3 sticky left-0 z-30 bg-slate-50">
+                            <th class="sticky left-0 z-30 bg-slate-50 border-r border-slate-200 shadow-sm min-w-[160px] max-w-[160px] w-[160px] p-3">
                                 Room
                             </th>
         `;
@@ -714,7 +714,7 @@ export async function renderTapeChart() {
 
             tableHTML += `
                 <tr class="hover:bg-slate-50/50 transition-colors">
-                    <td class="min-w-[200px] w-[200px] max-w-[200px] border-r-2 border-slate-200 p-3 sticky left-0 z-20 bg-white shadow-xs">
+                    <td class="sticky left-0 z-20 bg-white border-r border-slate-200 shadow-sm min-w-[160px] max-w-[160px] p-3">
                         <div class="flex items-center justify-between gap-2">
                             <span class="font-bold text-slate-800">Kamar ${room.room_number}</span>
                             ${statusBadge}
@@ -777,7 +777,7 @@ export async function renderTapeChart() {
                         tableHTML += `
                             <div onclick="openEditReservation('${res.id}')"
                                  data-reservation-id="${res.id}"
-                                 class="absolute top-1.5 bottom-1.5 ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer transition-all z-20"
+                                 class="absolute top-1.5 bottom-1.5 ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-medium flex items-center shadow-xs overflow-hidden whitespace-nowrap cursor-pointer transition-all z-10"
                                  style="left: ${leftPx}px; width: ${widthPx}px;"
                                  title="${displayName.replace(/"/g, '&quot;')} (${source}) - ${res.check_in_date} s/d ${res.check_out_date} [Status: ${res.status || 'Reserved'}]">
                                 <i class="ph ph-user text-xs mr-1 shrink-0 opacity-80"></i>
@@ -830,7 +830,7 @@ export async function renderTapeChart() {
                         }
 
                         tableHTML += `
-                            <div class="absolute top-1.5 bottom-1.5 ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-semibold flex items-center justify-center shadow-xs overflow-hidden whitespace-nowrap z-20 pointer-events-auto"
+                            <div class="absolute top-1.5 bottom-1.5 ${capsuleBgClass} border rounded-md px-2 py-1 text-xs font-semibold flex items-center justify-center shadow-xs overflow-hidden whitespace-nowrap z-10 pointer-events-auto"
                                  style="left: ${leftPx}px; width: ${widthPx}px;"
                                  title="${blockType}: ${blockReason.replace(/"/g, '&quot;')} (${startDate} s/d ${endDate})">
                                 <span class="truncate">${blockType} - ${blockReason || 'Blocked'}</span>
