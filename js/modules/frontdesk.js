@@ -53,12 +53,14 @@ export function switchGroupSubTab(subTab) {
     const activeBtn = document.getElementById('group-subtab-active');
     const cancelBtn = document.getElementById('group-subtab-cancel');
     if (activeBtn && cancelBtn) {
+        const activeClass = 'px-4 py-2 bg-white/90 text-primary shadow-md shadow-primary/10 border border-white/80 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer';
+        const inactiveClass = 'px-4 py-2 bg-white/40 hover:bg-white/80 text-slate-600 hover:text-slate-900 border border-transparent hover:border-white/60 rounded-xl text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 cursor-pointer';
         if (subTab === 'active') {
-            activeBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 bg-white text-slate-800 shadow-xs border border-slate-200';
-            cancelBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 text-slate-600 hover:bg-white hover:text-slate-800';
+            activeBtn.className = activeClass;
+            cancelBtn.className = inactiveClass;
         } else {
-            cancelBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 bg-white text-slate-800 shadow-xs border border-slate-200';
-            activeBtn.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 text-slate-600 hover:bg-white hover:text-slate-800';
+            cancelBtn.className = activeClass;
+            activeBtn.className = inactiveClass;
         }
     }
     renderDashboardTable();
@@ -288,10 +290,10 @@ export function renderDashboardTable() {
             }
 
             let actionBtn = `
-                <button onclick="openEditGroupBookingModal('${g.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer">
+                <button onclick="openEditGroupBookingModal('${g.id}')" class="px-3 py-1.5 bg-white/60 hover:bg-white/90 backdrop-blur-md border border-white/80 text-slate-700 hover:text-slate-900 rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
                     <i class="ph ph-pencil-simple text-sm"></i> Edit
                 </button>
-                <button onclick="handleCancelGroupBooking('${g.id}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer">
+                <button onclick="handleCancelGroupBooking('${g.id}')" class="px-3 py-1.5 bg-rose-50/80 hover:bg-rose-100 backdrop-blur-md border border-rose-200/80 text-rose-700 rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
                     <i class="ph ph-x-circle text-sm"></i> Cancel
                 </button>
             `;
@@ -375,39 +377,39 @@ export function renderDashboardTable() {
         if (currentDashboardTab === 'arrival') {
             if (!r.room_id) {
                 mainActionHTML = `
-                    <button onclick="openEditReservation('${r.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
+                    <button onclick="openEditReservation('${r.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
                         <i class="ph ph-bed text-sm"></i> Assign Room
                     </button>
                 `;
             } else {
                 mainActionHTML = `
-                    <button onclick="handleDashboardCheckIn('${r.id}', '${r.room_id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
+                    <button onclick="handleDashboardCheckIn('${r.id}', '${r.room_id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
                         <i class="ph ph-check-circle text-sm"></i> Check-in
                     </button>
                 `;
             }
         } else if (currentDashboardTab === 'in-house') {
             mainActionHTML = `
-                <button onclick="openFolioModal('${r.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
+                <button onclick="openFolioModal('${r.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
                     <i class="ph ph-receipt text-sm"></i> Folio
                 </button>
             `;
         } else if (currentDashboardTab === 'departure') {
             mainActionHTML = `
-                <button onclick="openFolioModal('${r.id}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-bold transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer">
+                <button onclick="openFolioModal('${r.id}')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
                     <i class="ph ph-sign-out text-sm"></i> Check-out
                 </button>
             `;
         }
 
         const splitActionHTML = (r.qty && r.qty > 1) ? `
-            <button onclick="openFitSplitReservationModal('${r.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer" title="Split Reservasi">
+            <button onclick="openFitSplitReservationModal('${r.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer" title="Split Reservasi">
                 <i class="ph ph-scissors text-sm"></i> Split Reservasi
             </button>
         ` : '';
 
         const editActionHTML = `
-            <button onclick="openEditReservation('${r.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer" title="Edit Reservasi">
+            <button onclick="openEditReservation('${r.id}')" class="px-3 py-1.5 bg-white/60 hover:bg-white/90 backdrop-blur-md border border-white/80 text-slate-700 hover:text-slate-900 rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer" title="Edit Reservasi">
                 <i class="ph ph-pencil-simple text-sm"></i> Edit
             </button>
         `;
