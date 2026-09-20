@@ -10,10 +10,123 @@ export let currentMasterTransactions = [];
 export let transferTargetReservationsCache = [];
 export let folioRoutingAvailableArticles = [];
 export let folioRoutingRulesState = [];
+export let activeFolioTab = 'pribadi';
 
 // ==========================================
 // GUEST & MASTER FOLIO MODAL
 // ==========================================
+
+export async function switchFolioTab(tabName) {
+    activeFolioTab = tabName || 'pribadi';
+
+    const btnPribadi = document.getElementById('folioTabBtnPribadi');
+    const btnMaster = document.getElementById('folioTabBtnMaster');
+    const contentPribadi = document.getElementById('tabContentFolioPribadi');
+    const contentMaster = document.getElementById('tabContentMasterFolio');
+
+    const isMasterHidden = btnMaster ? btnMaster.classList.contains('hidden') : false;
+
+    if (activeFolioTab === 'master') {
+        if (btnPribadi) {
+            btnPribadi.className = "px-5 py-2.5 text-xs font-bold rounded-t-lg border-b-2 border-transparent bg-slate-200/70 text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-all";
+        }
+        if (btnMaster) {
+            btnMaster.className = `px-5 py-2.5 text-xs font-bold rounded-t-lg border-b-2 border-indigo-600 bg-white text-indigo-900 shadow-xs flex items-center gap-2 transition-all ${isMasterHidden ? 'hidden' : ''}`.trim();
+        }
+        if (contentPribadi) contentPribadi.classList.add('hidden');
+        if (contentMaster) contentMaster.classList.remove('hidden');
+
+        let masterFolioId = currentFolioReservation?.master_folio_id || currentMasterGroup?.master_folio_id || currentMasterGroup?.id;
+        if (!masterFolioId && currentFolioReservation) {
+            masterFolioId = await getOrCreateMasterFolioId(currentFolioReservation);
+        }
+        if (masterFolioId) {
+            await fetchMasterFolioDetails(masterFolioId);
+        }
+    } else { // 'pribadi'
+        if (btnPribadi) {
+            btnPribadi.className = "px-5 py-2.5 text-xs font-bold rounded-t-lg border-b-2 border-amber-500 bg-white text-slate-800 shadow-xs flex items-center gap-2 transition-all";
+        }
+        if (btnMaster) {
+            btnMaster.className = `px-5 py-2.5 text-xs font-bold rounded-t-lg border-b-2 border-transparent bg-slate-200/70 text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-all ${isMasterHidden ? 'hidden' : ''}`.trim();
+        }
+        if (contentPribadi) contentPribadi.classList.remove('hidden');
+        if (contentMaster) contentMaster.classList.add('hidden');
+    }
+}
+
+export async function getOrCreateMasterFolioId(res) {
+    if (!res) return null;
+
+    const groupId = res.group_id;
+    let bookingRef = res.booking_reference;
+    const parentResId = res.parent_reservation_id;
+
+    if (groupId) {
+        const { data } = await supabaseClient
+            .from('master_folios')
+            .select('id')
+            .eq('group_id', groupId)
+            .maybeSingle();
+        if (data) return data.id;
+    }
+
+    if (bookingRef) {
+        const { data } = await supabaseClient
+            .from('master_folios')
+            .select('id')
+            .eq('booking_reference', bookingRef)
+            .maybeSingle();
+        if (data) return data.id;
+    }
+
+    if (parentResId) {
+        const { data: parentRes } = await supabaseClient
+            .from('reservations')
+            .select('id, booking_reference, group_id')
+            .eq('id', parentResId)
+            .maybeSingle();
+
+        if (parentRes) {
+            if (parentRes.group_id) {
+                const { data } = await supabaseClient
+                    .from('master_folios')
+                    .select('id')
+                    .eq('group_id', parentRes.group_id)
+                    .maybeSingle();
+                if (data) return data.id;
+            }
+            if (parentRes.booking_reference) {
+                const { data } = await supabaseClient
+                    .from('master_folios')
+                    .select('id')
+                    .eq('booking_reference', parentRes.booking_reference)
+                    .maybeSingle();
+                if (data) return data.id;
+                bookingRef = parentRes.booking_reference;
+            }
+        }
+    }
+
+    const refForMaster = bookingRef || res.reservation_number || res.id.slice(0, 8);
+    const generatedFolioNo = 'MFOL-' + String(Date.now()).slice(-6);
+
+    const { data: newMaster, error } = await supabaseClient
+        .from('master_folios')
+        .insert([{
+            folio_number: generatedFolioNo,
+            group_id: groupId || null,
+            booking_reference: refForMaster || null
+        }])
+        .select()
+        .single();
+
+    if (!error && newMaster) {
+        return newMaster.id;
+    }
+
+    return null;
+}
 
 export async function openFolioModal(reservationId) {
     const modal = document.getElementById('folioModal');
@@ -23,7 +136,7 @@ export async function openFolioModal(reservationId) {
 
     // Reset UI
     const headerGuestEl = document.getElementById('folioHeaderGuestName');
-    const headerRoomEl = document.getElementById('folioHeaderRoom');
+    const headerRoomEl = document.getElementById('folioHeaderRoomNo');
     const headerResNoEl = document.getElementById('folioHeaderResNo');
     const headerFolioEl = document.getElementById('folioHeaderFolioNo');
     const totalChargeEl = document.getElementById('folioTotalCharge');
@@ -31,8 +144,8 @@ export async function openFolioModal(reservationId) {
     const currentBalanceEl = document.getElementById('folioCurrentBalance');
 
     if (headerGuestEl) headerGuestEl.textContent = 'Memuat...';
-    if (headerRoomEl) headerRoomEl.textContent = '-';
-    if (headerResNoEl) headerResNoEl.textContent = '-';
+    if (headerRoomEl) headerRoomEl.innerHTML = `<i class="ph ph-bed"></i> Room: -`;
+    if (headerResNoEl) headerResNoEl.innerHTML = `<i class="ph ph-hash"></i> Res #: -`;
     if (headerFolioEl) headerFolioEl.textContent = 'FOL-......';
     if (totalChargeEl) totalChargeEl.textContent = 'Rp 0';
     if (totalPaymentEl) totalPaymentEl.textContent = 'Rp 0';
@@ -56,9 +169,52 @@ export async function openFolioModal(reservationId) {
         const folioNo = res.folio_number || (`FOL-${resNo}`);
 
         if (headerGuestEl) headerGuestEl.textContent = guestName;
-        if (headerRoomEl) headerRoomEl.textContent = `Kamar ${roomNo}`;
-        if (headerResNoEl) headerResNoEl.textContent = resNo;
+        if (headerRoomEl) headerRoomEl.innerHTML = `<i class="ph ph-bed"></i> Room: Kamar ${roomNo}`;
+        if (headerResNoEl) headerResNoEl.innerHTML = `<i class="ph ph-hash"></i> Res #: ${resNo}`;
         if (headerFolioEl) headerFolioEl.textContent = folioNo;
+
+        // Check if Child Room or Parent Room
+        const isChildRoom = !!(res.parent_reservation_id && res.parent_reservation_id !== res.id);
+        const childBadge = document.getElementById('childRoomMasterBadge');
+        const childBadgeText = document.getElementById('childRoomMasterBadgeText');
+        const tabBtnMaster = document.getElementById('folioTabBtnMaster');
+
+        if (isChildRoom) {
+            // Fetch parent reservation info
+            let parentGuestName = 'Parent Guest';
+            let parentResNo = res.parent_reservation_id.slice(0, 8);
+
+            const { data: parentRes } = await supabaseClient
+                .from('reservations')
+                .select('reservation_number, booker_name, guest_profiles(full_name)')
+                .eq('id', res.parent_reservation_id)
+                .maybeSingle();
+
+            if (parentRes) {
+                const parentProfile = parentRes.guest_profiles ? (Array.isArray(parentRes.guest_profiles) ? parentRes.guest_profiles[0] : parentRes.guest_profiles) : null;
+                parentGuestName = parentProfile?.full_name || parentRes.booker_name || 'Parent Guest';
+                parentResNo = parentRes.reservation_number || parentResNo;
+            }
+
+            if (childBadgeText) {
+                childBadgeText.textContent = `Terhubung ke Master Folio: ${parentGuestName} (${parentResNo})`;
+            }
+            if (childBadge) childBadge.classList.remove('hidden');
+            if (tabBtnMaster) tabBtnMaster.classList.add('hidden');
+        } else {
+            if (childBadge) childBadge.classList.add('hidden');
+
+            // Determine if Tab 2 (Master Folio) should be shown
+            const hasMasterConnection = !!(res.group_id || res.booking_reference || res.is_parent || !res.parent_reservation_id);
+            if (hasMasterConnection) {
+                if (tabBtnMaster) tabBtnMaster.classList.remove('hidden');
+            } else {
+                if (tabBtnMaster) tabBtnMaster.classList.add('hidden');
+            }
+        }
+
+        // Reset to Tab 1 (Folio Pribadi) by default
+        await switchFolioTab('pribadi');
 
         // Check and update Master Folio Header / Button
         await checkAndUpdateMasterFolioHeader(res);
@@ -275,9 +431,9 @@ export function renderFolioTransactions() {
             let desc = tx.description || '-';
             if (isVoided) desc += ` (VOID: ${tx.void_reason || 'Batal'})`;
 
-            const transferMasterBtn = (isMasterConnected && !isVoided) ? `
-                <button type="button" onclick="handleTransferSingleToMaster('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition-colors" title="Transfer to Master Folio">
-                    <i class="ph ph-arrows-out-line-horizontal"></i> Transfer to Master
+            const transferMasterBtn = (isMasterConnected && !isVoided && txType === 'CHARGE') ? `
+                <button type="button" onclick="handleTransferToMaster('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition-colors flex items-center gap-1" title="Transfer to Master Folio">
+                    <i class="ph ph-arrows-out-line-horizontal"></i> Transfer ke Master
                 </button>
             ` : '';
 
@@ -329,6 +485,329 @@ export function renderFolioTransactions() {
     if (selectAllCb) selectAllCb.checked = false;
 
     updateTransferButtonsState();
+}
+
+export async function fetchMasterFolioDetails(masterFolioId) {
+    if (!masterFolioId) return;
+
+    try {
+        let masterRecord = null;
+
+        const { data: mfData } = await supabaseClient
+            .from('master_folios')
+            .select('*')
+            .eq('id', masterFolioId)
+            .maybeSingle();
+
+        masterRecord = mfData;
+
+        if (!masterRecord) {
+            const { data: mfGroup } = await supabaseClient
+                .from('master_folios')
+                .select('*')
+                .or(`group_id.eq.${masterFolioId},booking_reference.eq.${masterFolioId}`)
+                .maybeSingle();
+            masterRecord = mfGroup;
+        }
+
+        const effectiveMasterId = masterRecord ? masterRecord.id : masterFolioId;
+
+        let responsibleName = 'Penanggung Jawab Master';
+        let connectedRooms = [];
+        let resMap = {};
+
+        let queryOr = [];
+        if (masterRecord?.group_id) queryOr.push(`group_id.eq.${masterRecord.group_id}`);
+        if (masterRecord?.booking_reference) queryOr.push(`booking_reference.eq.${masterRecord.booking_reference}`);
+
+        if (currentFolioReservation) {
+            if (currentFolioReservation.parent_reservation_id) {
+                queryOr.push(`id.eq.${currentFolioReservation.parent_reservation_id}`);
+                queryOr.push(`parent_reservation_id.eq.${currentFolioReservation.parent_reservation_id}`);
+            } else {
+                queryOr.push(`id.eq.${currentFolioReservation.id}`);
+                queryOr.push(`parent_reservation_id.eq.${currentFolioReservation.id}`);
+            }
+            if (currentFolioReservation.booking_reference) {
+                queryOr.push(`booking_reference.eq.${currentFolioReservation.booking_reference}`);
+            }
+        }
+
+        if (queryOr.length > 0) {
+            const { data: connectedResList } = await supabaseClient
+                .from('reservations')
+                .select('id, reservation_number, parent_reservation_id, booker_name, guest_profiles(full_name), rooms(room_number)')
+                .or(queryOr.join(','));
+
+            if (connectedResList && connectedResList.length > 0) {
+                const parentRes = connectedResList.find(r => !r.parent_reservation_id || r.parent_reservation_id === r.id) || connectedResList[0];
+                if (parentRes) {
+                    const guestName = parentRes.guest_profiles ? (Array.isArray(parentRes.guest_profiles) ? parentRes.guest_profiles[0]?.full_name : parentRes.guest_profiles.full_name) : null;
+                    responsibleName = guestName || parentRes.booker_name || 'Penanggung Jawab';
+                }
+
+                connectedResList.forEach(r => {
+                    const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : null;
+                    if (roomNo && !connectedRooms.includes(`Kamar ${roomNo}`)) {
+                        connectedRooms.push(`Kamar ${roomNo}`);
+                    }
+                    if (roomNo) {
+                        resMap[r.id] = `Kamar ${roomNo}`;
+                        resMap[`Kamar ${roomNo}`] = r.id;
+                        if (r.reservation_number) resMap[r.reservation_number] = r.id;
+                    }
+                });
+            }
+        }
+
+        if (connectedRooms.length === 0 && currentFolioReservation?.rooms) {
+            const roomNo = currentFolioReservation.rooms.room_number;
+            if (roomNo) connectedRooms.push(`Kamar ${roomNo}`);
+        }
+
+        const { data: masterTxList, error: txErr } = await supabaseClient
+            .from('folio_transactions')
+            .select('*, reservations(id, reservation_number, rooms(room_number))')
+            .eq('master_folio_id', effectiveMasterId)
+            .order('transaction_date', { ascending: true })
+            .order('created_at', { ascending: true });
+
+        if (txErr) throw txErr;
+
+        currentMasterTransactions = masterTxList || [];
+
+        currentMasterGroup = {
+            id: effectiveMasterId,
+            master_folio_id: effectiveMasterId,
+            folio_number: masterRecord?.folio_number || (`MFOL-${effectiveMasterId.slice(0, 8)}`),
+            responsible_name: responsibleName,
+            connected_rooms: connectedRooms
+        };
+
+        const renderData = {
+            masterFolio: masterRecord,
+            masterFolioId: effectiveMasterId,
+            folioNumber: currentMasterGroup.folio_number,
+            responsibleName: responsibleName,
+            connectedRooms: connectedRooms,
+            resMap: resMap,
+            transactions: currentMasterTransactions
+        };
+
+        renderMasterFolioTab(renderData);
+
+        return renderData;
+
+    } catch (err) {
+        console.error('Error fetching master folio details:', err);
+        const tbody = document.getElementById('masterTabTransactionsTbody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500 font-semibold">Gagal memuat detail Master Folio: ${err.message}</td></tr>`;
+        }
+    }
+}
+
+export function renderMasterFolioTab(data) {
+    if (!data) return;
+
+    const respNameEl = document.getElementById('masterTabResponsibleName');
+    const folioNoEl = document.getElementById('masterTabFolioNo');
+    const roomsEl = document.getElementById('masterTabConnectedRooms');
+
+    if (respNameEl) respNameEl.textContent = data.responsibleName || 'Penanggung Jawab Master';
+    if (folioNoEl) folioNoEl.textContent = data.folioNumber || 'MFOL-......';
+
+    if (roomsEl) {
+        if (data.connectedRooms && data.connectedRooms.length > 0) {
+            roomsEl.innerHTML = data.connectedRooms.map(r => `
+                <span class="px-2.5 py-0.5 bg-indigo-900 text-indigo-100 text-xs font-bold rounded-md border border-indigo-700 shadow-2xs">${r}</span>
+            `).join('');
+        } else {
+            roomsEl.innerHTML = `<span class="px-2.5 py-0.5 bg-slate-800 text-slate-300 text-xs font-semibold rounded-md border border-slate-700">Kamar -</span>`;
+        }
+    }
+
+    let totalCharges = 0;
+    let totalPayments = 0;
+
+    const tbody = document.getElementById('masterTabTransactionsTbody');
+
+    if (!data.transactions || data.transactions.length === 0) {
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Belum ada transaksi di Master Folio ini.</td></tr>`;
+        }
+    } else if (tbody) {
+        tbody.innerHTML = data.transactions.map(tx => {
+            const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
+            const amount = Number(tx.amount || 0);
+            const isVoided = tx.is_voided === true;
+
+            if (!isVoided) {
+                if (txType === 'CHARGE') totalCharges += amount;
+                else if (txType === 'PAYMENT') totalPayments += amount;
+            }
+
+            const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+            const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '';
+            const chargeDisplay = txType === 'CHARGE' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
+            const paymentDisplay = txType === 'PAYMENT' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
+
+            let sourceRoomDisplay = '-';
+            let originalFolioId = tx.reservation_id || null;
+
+            if (!originalFolioId && tx.description) {
+                const resNoMatch = tx.description.match(/\(([^()]+)\)/);
+                if (resNoMatch && resNoMatch[1] && data.resMap && data.resMap[resNoMatch[1]]) {
+                    originalFolioId = data.resMap[resNoMatch[1]];
+                } else {
+                    const roomMatch = tx.description.match(/dr Kamar ([^\s()]+)/);
+                    if (roomMatch && roomMatch[1] && data.resMap && data.resMap[`Kamar ${roomMatch[1]}`]) {
+                        originalFolioId = data.resMap[`Kamar ${roomMatch[1]}`];
+                    }
+                }
+            }
+
+            if (tx.reservations?.rooms?.room_number) {
+                sourceRoomDisplay = `Kamar ${tx.reservations.rooms.room_number}`;
+            } else if (tx.description && tx.description.includes('dr Kamar ')) {
+                const match = tx.description.match(/dr Kamar ([^\s()]+)/);
+                if (match && match[1]) {
+                    sourceRoomDisplay = `Kamar ${match[1]}`;
+                }
+            } else if (tx.reservation_id && data.resMap && data.resMap[tx.reservation_id]) {
+                sourceRoomDisplay = data.resMap[tx.reservation_id];
+            } else if (originalFolioId && data.resMap && data.resMap[originalFolioId]) {
+                sourceRoomDisplay = data.resMap[originalFolioId];
+            } else if (txType === 'CHARGE') {
+                sourceRoomDisplay = 'Master';
+            }
+
+            let rowClass = isVoided ? 'bg-red-50/50 text-slate-400 line-through' : 'hover:bg-slate-50 text-slate-700';
+            let desc = tx.description || '-';
+            if (isVoided) desc += ` (VOID: ${tx.void_reason || 'Batal'})`;
+
+            const returnBtn = (!isVoided && txType === 'CHARGE') ? `
+                <button type="button" onclick="handleReturnFromMaster('${tx.id}', '${originalFolioId || ''}')" class="px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded transition-colors shadow-2xs flex items-center gap-1" title="Kembalikan transaksi ke folio kamar asal">
+                    <i class="ph ph-arrow-u-up-left text-sm"></i> Kembalikan / Return
+                </button>
+            ` : '';
+
+            const actionBtns = isVoided ? `<span class="text-xs font-semibold text-red-400">Voided</span>` : `
+                <div class="flex items-center justify-center gap-1">
+                    ${returnBtn}
+                </div>
+            `;
+
+            return `
+                <tr class="${rowClass} border-b border-slate-100 transition-colors text-xs">
+                    <td class="p-3 font-medium whitespace-nowrap text-slate-500">${dateStr}</td>
+                    <td class="p-3 font-semibold text-slate-800">${desc} ${categoryBadge}</td>
+                    <td class="p-3 text-center font-bold text-indigo-900">${sourceRoomDisplay}</td>
+                    <td class="p-3 text-right font-medium text-slate-900">${chargeDisplay}</td>
+                    <td class="p-3 text-right font-medium text-emerald-600">${paymentDisplay}</td>
+                    <td class="p-3 text-center">${actionBtns}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    const masterBalance = totalCharges - totalPayments;
+
+    const chargeEl = document.getElementById('masterTabTotalCharge');
+    const paymentEl = document.getElementById('masterTabTotalPayment');
+    const balanceEl = document.getElementById('masterTabBalance');
+
+    if (chargeEl) chargeEl.textContent = `Rp ${totalCharges.toLocaleString('id-ID')}`;
+    if (paymentEl) paymentEl.textContent = `Rp ${totalPayments.toLocaleString('id-ID')}`;
+    if (balanceEl) {
+        balanceEl.textContent = `Rp ${masterBalance.toLocaleString('id-ID')}`;
+        if (masterBalance > 0) balanceEl.className = "text-lg font-bold text-red-600";
+        else if (masterBalance < 0) balanceEl.className = "text-lg font-bold text-amber-600";
+        else balanceEl.className = "text-lg font-bold text-emerald-600";
+    }
+}
+
+export async function handleTransferToMaster(transactionId, masterFolioId) {
+    if (!transactionId) return;
+
+    let targetMasterId = masterFolioId;
+    if (!targetMasterId && currentMasterGroup?.master_folio_id) {
+        targetMasterId = currentMasterGroup.master_folio_id;
+    }
+    if (!targetMasterId && currentFolioReservation) {
+        targetMasterId = await getOrCreateMasterFolioId(currentFolioReservation);
+    }
+
+    if (!targetMasterId) {
+        alert('Master Folio ID tidak ditemukan.');
+        return;
+    }
+
+    try {
+        const { data: rpcData, error } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
+            p_transaction_ids: [transactionId],
+            p_target_reservation_id: null,
+            p_target_master_folio_id: targetMasterId
+        });
+
+        if (error) throw error;
+
+        if (currentFolioReservation?.id) {
+            await fetchFolioTransactions(currentFolioReservation.id);
+        }
+        await fetchMasterFolioDetails(targetMasterId);
+
+    } catch (err) {
+        console.error('Error transferring transaction to master folio:', err);
+        alert('Gagal mentransfer transaksi ke Master: ' + err.message);
+    }
+}
+
+export async function handleReturnFromMaster(transactionId, originalFolioId) {
+    if (!transactionId) return;
+
+    try {
+        let targetResId = (originalFolioId && originalFolioId !== 'null' && originalFolioId !== 'undefined') ? originalFolioId : null;
+
+        if (!targetResId) {
+            const { data: tx } = await supabaseClient
+                .from('folio_transactions')
+                .select('reservation_id')
+                .eq('id', transactionId)
+                .single();
+            if (tx && tx.reservation_id) {
+                targetResId = tx.reservation_id;
+            }
+        }
+
+        if (!targetResId && currentFolioReservation) {
+            targetResId = currentFolioReservation.id;
+        }
+
+        if (!targetResId) {
+            alert('Tidak dapat menentukan folio kamar asal.');
+            return;
+        }
+
+        const { data: rpcData, error } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
+            p_transaction_ids: [transactionId],
+            p_target_reservation_id: targetResId,
+            p_target_master_folio_id: null
+        });
+
+        if (error) throw error;
+
+        if (currentMasterGroup?.master_folio_id) {
+            await fetchMasterFolioDetails(currentMasterGroup.master_folio_id);
+        }
+        if (currentFolioReservation?.id) {
+            await fetchFolioTransactions(currentFolioReservation.id);
+        }
+
+    } catch (err) {
+        console.error('Error returning transaction from master folio:', err);
+        alert('Gagal mengembalikan transaksi: ' + err.message);
+    }
 }
 
 export async function openMasterFolioModal(groupId, bookingRef, masterId) {

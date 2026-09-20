@@ -115,6 +115,13 @@ import {
     transferTargetReservationsCache,
     folioRoutingAvailableArticles,
     folioRoutingRulesState,
+    activeFolioTab,
+    switchFolioTab,
+    getOrCreateMasterFolioId,
+    fetchMasterFolioDetails,
+    renderMasterFolioTab,
+    handleTransferToMaster,
+    handleReturnFromMaster,
     openFolioModal,
     closeFolioModal,
     checkAndUpdateMasterFolioHeader,
@@ -616,6 +623,13 @@ if (typeof window !== 'undefined') {
     window.transferTargetReservationsCache = transferTargetReservationsCache;
     window.folioRoutingAvailableArticles = folioRoutingAvailableArticles;
     window.folioRoutingRulesState = folioRoutingRulesState;
+    window.activeFolioTab = activeFolioTab;
+    window.switchFolioTab = switchFolioTab;
+    window.getOrCreateMasterFolioId = getOrCreateMasterFolioId;
+    window.fetchMasterFolioDetails = fetchMasterFolioDetails;
+    window.renderMasterFolioTab = renderMasterFolioTab;
+    window.handleTransferToMaster = handleTransferToMaster;
+    window.handleReturnFromMaster = handleReturnFromMaster;
     window.openFolioModal = openFolioModal;
     window.closeFolioModal = closeFolioModal;
     window.checkAndUpdateMasterFolioHeader = checkAndUpdateMasterFolioHeader;
