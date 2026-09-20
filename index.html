@@ -95,11 +95,11 @@
     </aside>
 
     <!-- Modal Add NSG Account -->
-    <div id="nsgAccountModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="nsgAccountModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="nsgAccountModalTitle" class="text-lg font-semibold text-slate-800">New NSG Account</h3>
-                <button type="button" onclick="closeNsgAccountModal()" class="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                <button type="button" onclick="closeNsgAccountModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -107,19 +107,19 @@
             <form id="nsgAccountForm" onsubmit="handleSaveNsg(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Nama Akun <span class="text-red-500">*</span></label>
-                    <input type="text" id="nsgAccountName" required placeholder="Contoh: NSG - Restaurant / Event" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="nsgAccountName" required placeholder="Contoh: NSG - Restaurant / Event" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Keterangan</label>
-                    <textarea id="nsgAccountDescription" rows="3" placeholder="Keterangan akun Non-Stay Guest..." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                    <textarea id="nsgAccountDescription" rows="3" placeholder="Keterangan akun Non-Stay Guest..." class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs"></textarea>
                 </div>
 
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeNsgAccountModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors cursor-pointer">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeNsgAccountModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Batal
                     </button>
-                    <button type="submit" id="nsgAccountSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors cursor-pointer">
+                    <button type="submit" id="nsgAccountSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Simpan
                     </button>
                 </div>
@@ -128,11 +128,11 @@
     </div>
 
     <!-- Modal Add / Edit Corporate Profile -->
-    <div id="corporateModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative">
+    <div id="corporateModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-lg w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="corporateModalTitle" class="text-lg font-semibold text-slate-800">Add Corporate Profile</h3>
-                <button type="button" onclick="closeCorporateModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeCorporateModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -140,37 +140,37 @@
                 <input type="hidden" id="edit-corporate-id">
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Nama Perusahaan <span class="text-red-500">*</span></label>
-                    <input type="text" id="corpCompanyName" required placeholder="e.g. PT Nusantara Jaya" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="corpCompanyName" required placeholder="e.g. PT Nusantara Jaya" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1">NPWP</label>
-                        <input type="text" id="corpNpwp" placeholder="01.234.567.8-012.000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <input type="text" id="corpNpwp" placeholder="01.234.567.8-012.000" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1">PIC Name</label>
-                        <input type="text" id="corpPicName" placeholder="Nama Person in Charge" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <input type="text" id="corpPicName" placeholder="Nama Person in Charge" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </div>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Alamat Billing</label>
-                    <textarea id="corpBillingAddress" rows="2" placeholder="Alamat penagihan perusahaan..." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                    <textarea id="corpBillingAddress" rows="2" placeholder="Alamat penagihan perusahaan..." class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs"></textarea>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1">Term of Payment (Hari)</label>
-                        <input type="number" id="corpTermOfPayment" min="0" value="30" placeholder="30" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <input type="number" id="corpTermOfPayment" min="0" value="30" placeholder="30" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1">Credit Limit (Rp)</label>
-                        <input type="number" id="corpCreditLimit" min="0" step="any" value="0" placeholder="50000000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <input type="number" id="corpCreditLimit" min="0" step="any" value="0" placeholder="50000000" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </div>
                 </div>
-                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                    <button type="button" onclick="closeCorporateModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeCorporateModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Batal
                     </button>
-                    <button type="submit" id="corporateSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="corporateSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Simpan
                     </button>
                 </div>
@@ -179,11 +179,11 @@
     </div>
 
     <!-- Modal Add Bed Type -->
-    <div id="bedTypeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="bedTypeModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="bedTypeModalTitle" class="text-lg font-semibold text-slate-800">Add Bed Type</h3>
-                <button type="button" onclick="closeBedTypeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeBedTypeModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -193,15 +193,15 @@
                 <!-- Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
-                    <input type="text" id="bedTypeName" required placeholder="e.g. King Bed" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="bedTypeName" required placeholder="e.g. King Bed" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeBedTypeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeBedTypeModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="bedTypeSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="bedTypeSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -210,11 +210,11 @@
     </div>
 
     <!-- Modal Add / Edit Extra Charge -->
-    <div id="extraChargeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="extraChargeModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="extraChargeModalTitle" class="text-lg font-semibold text-slate-800">Add Extra Charge</h3>
-                <button type="button" onclick="closeExtraChargeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeExtraChargeModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -225,13 +225,13 @@
                 <!-- Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
-                    <input type="text" id="extra-charge-name" required placeholder="e.g. Extra Bed" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="extra-charge-name" required placeholder="e.g. Extra Bed" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Category -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Category</label>
-                    <select id="extra-charge-category" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    <select id="extra-charge-category" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                         <option value="F&B">F&B</option>
                         <option value="Front Office">Front Office</option>
                         <option value="Housekeeping">Housekeeping</option>
@@ -244,24 +244,24 @@
                 <!-- Price -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Price</label>
-                    <input type="number" id="extra-charge-price" required min="0" step="any" placeholder="e.g. 150000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="number" id="extra-charge-price" required min="0" step="any" placeholder="e.g. 150000" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Taxable -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Taxable</label>
-                    <select id="extra-charge-taxable" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    <select id="extra-charge-taxable" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                         <option value="true">Yes</option>
                         <option value="false">No</option>
                     </select>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeExtraChargeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeExtraChargeModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="extraChargeSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="extraChargeSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -270,11 +270,11 @@
     </div>
 
     <!-- Modal Add / Edit Department -->
-    <div id="departmentModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="departmentModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="departmentModalTitle" class="text-lg font-semibold text-slate-800">Add Department</h3>
-                <button type="button" onclick="closeDepartmentModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeDepartmentModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -284,15 +284,15 @@
                 <!-- Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
-                    <input type="text" id="departmentName" required placeholder="e.g. Food & Beverage" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="departmentName" required placeholder="e.g. Food & Beverage" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeDepartmentModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeDepartmentModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="departmentSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="departmentSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -301,11 +301,11 @@
     </div>
 
     <!-- Modal Add / Edit Outlet -->
-    <div id="outletModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="outletModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="outletModalTitle" class="text-lg font-semibold text-slate-800">Add Outlet</h3>
-                <button type="button" onclick="closeOutletModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeOutletModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -316,22 +316,22 @@
                 <!-- Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Outlet Name</label>
-                    <input type="text" id="outletName" required placeholder="e.g. Main Restaurant" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="outletName" required placeholder="e.g. Main Restaurant" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Department -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Department</label>
-                    <select id="outletDepartment" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    <select id="outletDepartment" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </select>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeOutletModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeOutletModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="outletSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="outletSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -340,11 +340,11 @@
     </div>
 
     <!-- Modal Add / Edit Meal Plan -->
-    <div id="mealPlanModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 relative max-h-[90vh] flex flex-col">
+    <div id="mealPlanModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-2xl max-h-[90vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
             <div class="flex justify-between items-center pb-4 border-b mb-4 shrink-0">
                 <h3 id="mealPlanModalTitle" class="text-lg font-semibold text-slate-800">Add Meal Plan</h3>
-                <button type="button" onclick="closeMealPlanModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeMealPlanModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -361,7 +361,7 @@
                 <!-- Package Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Package Name</label>
-                    <input type="text" id="mealPlanPackageName" required placeholder="e.g. Bed & Breakfast (BB)" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="mealPlanPackageName" required placeholder="e.g. Bed & Breakfast (BB)" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Revenue Breakdown Area -->
@@ -380,10 +380,10 @@
 
                 <!-- Action Buttons -->
                 <div class="flex justify-end gap-3 pt-4 border-t mt-6 shrink-0">
-                    <button type="button" onclick="closeMealPlanModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                    <button type="button" onclick="closeMealPlanModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="mealPlanSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="mealPlanSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -392,11 +392,11 @@
     </div>
 
     <!-- Modal Add / Edit Payment Method -->
-    <div id="paymentMethodModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="paymentMethodModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="paymentMethodModalTitle" class="text-lg font-semibold text-slate-800">Add Payment Method</h3>
-                <button type="button" onclick="closePaymentMethodModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closePaymentMethodModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -407,13 +407,13 @@
                 <!-- Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
-                    <input type="text" id="payment-method-name" required placeholder="e.g. BCA Transfer / Cash / GoPay" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="payment-method-name" required placeholder="e.g. BCA Transfer / Cash / GoPay" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Method Type -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Method Type</label>
-                    <select id="payment-method-type" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    <select id="payment-method-type" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                         <option value="Cash">Cash</option>
                         <option value="Debit Card">Debit Card</option>
                         <option value="Credit Card">Credit Card</option>
@@ -426,18 +426,18 @@
                 <!-- Status -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                    <select id="payment-method-status" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    <select id="payment-method-status" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                     </select>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closePaymentMethodModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closePaymentMethodModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="paymentMethodSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="paymentMethodSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -446,11 +446,11 @@
     </div>
 
     <!-- Modal Add / Edit Main Group -->
-    <div id="mainGroupModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="mainGroupModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="mainGroupModalTitle" class="text-lg font-semibold text-slate-800">Add Main Group</h3>
-                <button type="button" onclick="closeMainGroupModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeMainGroupModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -460,15 +460,15 @@
                 <!-- Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
-                    <input type="text" id="mainGroupName" required placeholder="e.g. FIT / Direct" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="mainGroupName" required placeholder="e.g. FIT / Direct" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeMainGroupModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeMainGroupModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="mainGroupSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="mainGroupSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -477,11 +477,11 @@
     </div>
 
     <!-- Modal Add / Edit Rate Plan -->
-    <div id="ratePlanModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+    <div id="ratePlanModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="ratePlanModalTitle" class="text-lg font-semibold text-slate-800">Add Rate Plan</h3>
-                <button type="button" onclick="closeRatePlanModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeRatePlanModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -535,10 +535,10 @@
                 </div>
 
                 <div class="flex justify-end space-x-3 pt-4 border-t">
-                    <button type="button" onclick="closeRatePlanModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                    <button type="button" onclick="closeRatePlanModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="ratePlanSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="ratePlanSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -547,11 +547,11 @@
     </div>
 
     <!-- Modal Add / Edit Segment Code -->
-    <div id="segmentCodeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="segmentCodeModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="segmentCodeModalTitle" class="text-lg font-semibold text-slate-800">Add Segment Code</h3>
-                <button type="button" onclick="closeSegmentCodeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeSegmentCodeModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -562,28 +562,28 @@
                 <!-- Segment Code -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Segment Code</label>
-                    <input type="text" id="segmentCodeInput" required placeholder="e.g. DIR-WALK" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="segmentCodeInput" required placeholder="e.g. DIR-WALK" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Description -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Description</label>
-                    <input type="text" id="segmentCodeDescription" required placeholder="e.g. Direct Walk-in Guest" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="segmentCodeDescription" required placeholder="e.g. Direct Walk-in Guest" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Main Group -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Main Group</label>
-                    <select id="segmentCodeMainGroup" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    <select id="segmentCodeMainGroup" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </select>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeSegmentCodeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeSegmentCodeModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="segmentCodeSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="segmentCodeSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -592,11 +592,11 @@
     </div>
 
     <!-- Modal Add / Edit Tax & Service -->
-    <div id="taxServiceModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="taxServiceModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="taxServiceModalTitle" class="text-lg font-semibold text-slate-800">Add Tax & Service</h3>
-                <button type="button" onclick="closeTaxServiceModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeTaxServiceModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -607,7 +607,7 @@
                 <!-- Type -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Type</label>
-                    <select id="tax-service-type" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <select id="tax-service-type" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                         <option value="tax">Tax</option>
                         <option value="service">Service</option>
                     </select>
@@ -616,21 +616,21 @@
                 <!-- Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Name</label>
-                    <input type="text" id="tax-service-name" required placeholder="e.g. Government Tax (PB1)" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="tax-service-name" required placeholder="e.g. Government Tax (PB1)" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Value / Percentage -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Value / Percentage (%)</label>
-                    <input type="number" id="tax-service-percentage" step="any" required placeholder="e.g. 10" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="number" id="tax-service-percentage" step="any" required placeholder="e.g. 10" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeTaxServiceModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeTaxServiceModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="taxServiceSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="taxServiceSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -639,11 +639,11 @@
     </div>
 
     <!-- Modal Block Room (OOO / OOS) -->
-    <div id="blockRoomModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="blockRoomModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 class="text-lg font-semibold text-slate-800">Block Room Maintenance</h3>
-                <button type="button" onclick="closeBlockRoomModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeBlockRoomModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -660,27 +660,27 @@
                 <!-- Start Date -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Start Date</label>
-                    <input type="date" id="block-start-date" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="date" id="block-start-date" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- End Date -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">End Date</label>
-                    <input type="date" id="block-end-date" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="date" id="block-end-date" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Reason -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Reason</label>
-                    <textarea id="block-reason" rows="3" required placeholder="Masukkan alasan pemblokiran kamar..." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                    <textarea id="block-reason" rows="3" required placeholder="Masukkan alasan pemblokiran kamar..." class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs"></textarea>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeBlockRoomModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeBlockRoomModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save Block
                     </button>
                 </div>
@@ -689,11 +689,11 @@
     </div>
 
     <!-- Modal Add / Edit Room -->
-    <div id="roomModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="roomModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="roomModalTitle" class="text-lg font-semibold text-slate-800">Add New Room</h3>
-                <button type="button" onclick="closeRoomModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeRoomModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -704,21 +704,21 @@
                 <!-- Room Number -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Room Number</label>
-                    <textarea id="room-number-input" rows="2" required placeholder="Contoh: 101, 102, 103" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                    <textarea id="room-number-input" rows="2" required placeholder="Contoh: 101, 102, 103" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs"></textarea>
                     <p class="text-xs text-slate-400 mt-1">Pisahkan dengan koma untuk tambah banyak kamar sekaligus.</p>
                 </div>
 
                 <!-- Room Type -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Room Type</label>
-                    <select id="roomTypeSelect" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    <select id="roomTypeSelect" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </select>
                 </div>
 
                 <!-- Room View -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Room View</label>
-                    <select id="roomViewSelect" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    <select id="roomViewSelect" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                         <option value="No View">No View</option>
                         <option value="City View">City View</option>
                         <option value="Garden View">Garden View</option>
@@ -738,21 +738,21 @@
                 <!-- Floor Setting -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Floor Setting</label>
-                    <input type="text" id="roomFloor" placeholder="e.g. 1 or Ground" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="roomFloor" placeholder="e.g. 1 or Ground" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Building Setting -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Building Setting</label>
-                    <input type="text" id="roomBuilding" placeholder="e.g. Main Building" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="roomBuilding" placeholder="e.g. Main Building" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeRoomModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeRoomModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="roomSubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="roomSubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -761,11 +761,11 @@
     </div>
 
     <!-- Modal Add Room Category -->
-    <div id="roomCategoryModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="roomCategoryModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 id="roomCategoryModalTitle" class="text-lg font-semibold text-slate-800">Add Room Category</h3>
-                <button type="button" onclick="closeRoomCategoryModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeRoomCategoryModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -775,28 +775,28 @@
                 <!-- Room Name -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Room Name</label>
-                    <input type="text" id="roomCategoryName" required placeholder="e.g. Standard" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="text" id="roomCategoryName" required placeholder="e.g. Standard" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Bed Type -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Bed Type</label>
-                    <select id="roomCategoryBedType" required class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                    <select id="roomCategoryBedType" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </select>
                 </div>
 
                 <!-- Base Price -->
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Base Price</label>
-                    <input type="number" id="roomCategoryBasePrice" required placeholder="500000" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                    <input type="number" id="roomCategoryBasePrice" required placeholder="500000" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 pt-4 border-t mt-6">
-                    <button type="button" onclick="closeRoomCategoryModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md text-sm font-medium transition-colors">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
+                    <button type="button" onclick="closeRoomCategoryModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="roomCategorySubmitBtn" class="px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                    <button type="submit" id="roomCategorySubmitBtn" class="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl text-xs shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer border border-primary/20">
                         Save
                     </button>
                 </div>
@@ -805,8 +805,8 @@
     </div>
 
     <!-- Modal Guest Folio / Billing System -->
-    <div id="folioModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden relative">
+    <div id="folioModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-4xl max-h-[92vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header Info -->
             <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-900 text-white shrink-0">
@@ -837,7 +837,7 @@
             </div>
 
             <!-- Tab Navigation Bar -->
-            <div id="folioModalTabNav" class="flex border-b border-slate-200 bg-slate-800/10 px-6 pt-3 gap-2 shrink-0">
+            <div id="folioModalTabNav" class="flex items-center gap-1.5 bg-slate-100/80 backdrop-blur-md p-1.5 rounded-2xl border border-white/60 shadow-inner mb-6 shrink-0">
                 <button type="button" id="folioTabBtnPribadi" onclick="switchFolioTab('pribadi')" class="px-5 py-2.5 text-xs font-bold rounded-t-lg border-b-2 border-amber-500 bg-white text-slate-800 shadow-xs flex items-center gap-2 transition-all">
                     <i class="ph ph-user text-base"></i> Folio Pribadi
                 </button>
@@ -1039,7 +1039,7 @@
             <!-- Footer -->
             <div class="px-6 py-4 border-t border-slate-200 flex justify-between items-center bg-white shrink-0">
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="closeFolioModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                    <button type="button" onclick="closeFolioModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Close
                     </button>
                     <button type="button" onclick="handlePrintFolio()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2">
@@ -1054,8 +1054,8 @@
     </div>
 
     <!-- Modal Master Folio / Billing System -->
-    <div id="masterFolioModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden relative">
+    <div id="masterFolioModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-4xl max-h-[92vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header Info -->
             <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-indigo-950 text-white shrink-0">
@@ -1156,7 +1156,7 @@
             <!-- Footer Actions -->
             <div class="px-6 py-4 border-t border-slate-200 flex justify-between items-center bg-white shrink-0">
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="closeMasterFolioModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                    <button type="button" onclick="closeMasterFolioModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                         Close
                     </button>
                     <button type="button" onclick="handlePrintMasterFolio()" class="px-5 py-2.5 bg-indigo-900 hover:bg-indigo-950 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2">
@@ -1168,8 +1168,8 @@
     </div>
 
     <!-- Modal Group Deposit Error (NSG Required) -->
-    <div id="groupDepositErrorModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative border border-red-100">
+    <div id="groupDepositErrorModal" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
             <div class="p-6 text-center space-y-4">
                 <div class="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-3xl shrink-0">
                     <i class="ph ph-warning-circle"></i>
@@ -1190,8 +1190,8 @@
     </div>
 
     <!-- Modal Cancel Deposit Settlement -->
-    <div id="cancelDepositModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative border border-slate-100">
+    <div id="cancelDepositModal" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
             <div class="p-6 text-center space-y-4">
                 <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-3xl">
                     <i class="ph ph-warning-circle"></i>
@@ -1218,11 +1218,11 @@
     </div>
 
     <!-- Modal Add Folio Transaction (Charge / Payment) -->
-    <div id="folioTransactionModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative">
+    <div id="folioTransactionModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+            <div class="pb-4 border-b border-slate-200/60 flex justify-between items-center shrink-0 mb-6">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2" id="folioTxModalTitle">
                     <i class="ph ph-plus-circle text-xl text-primary"></i> Add Transaction
                 </h3>
@@ -1312,11 +1312,11 @@
     </div>
 
     <!-- Modal Transfer Bill / Tagihan -->
-    <div id="transferBillModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden relative">
+    <div id="transferBillModal" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+            <div class="pb-4 border-b border-slate-200/60 flex justify-between items-center shrink-0 mb-6">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i class="ph ph-arrows-left-right text-xl text-purple-600"></i> Transfer Tagihan
                 </h3>
@@ -1354,18 +1354,18 @@
     </div>
 
     <!-- Modal New Reservation (4-Card Smart Form) -->
-    <div id="reservationModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden relative">
+    <div id="reservationModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-5xl max-h-[92vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+            <div class="pb-4 border-b border-slate-200/60 flex justify-between items-center shrink-0 mb-6">
                 <div>
                     <h3 id="reservationModalTitle" class="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
                         <i id="reservationModalIcon" class="ph ph-calendar-plus text-primary text-2xl"></i> <span id="reservationModalTitleText">New Reservation</span>
                     </h3>
                     <p id="reservationModalSubTitle" class="text-xs text-slate-500 mt-0.5">Buat reservasi kamar baru dengan informasi tamu dan rincian menginap.</p>
                 </div>
-                <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                <button type="button" onclick="closeModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-2xl"></i>
                 </button>
             </div>
@@ -1403,14 +1403,14 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Guest Type <span class="text-red-500">*</span></label>
-                                <select id="res-guest-type" onchange="handleGuestTypeChange()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-guest-type" onchange="handleGuestTypeChange()" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                                     <option value="Staying Guest">Staying Guest</option>
                                     <option value="Non-Staying Guest">Non-Staying Guest (NSG)</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Reserve / Booker Name</label>
-                                <input type="text" id="res-booker-name" placeholder="Nama Pemesan / Booker" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="text" id="res-booker-name" placeholder="Nama Pemesan / Booker" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
                         </div>
 
@@ -1435,13 +1435,13 @@
                             <!-- ID Card No -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">ID Card No (KTP/Passport)</label>
-                                <input type="text" id="res-id-card" placeholder="No. KTP / Paspor" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="text" id="res-id-card" placeholder="No. KTP / Paspor" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- Phone -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Phone Number</label>
-                                <input type="tel" id="res-phone" placeholder="08123456789" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="tel" id="res-phone" placeholder="08123456789" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
                         </div>
 
@@ -1449,13 +1449,13 @@
                             <!-- Email -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
-                                <input type="email" id="res-email" placeholder="email@contoh.com" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="email" id="res-email" placeholder="email@contoh.com" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- Birth Date -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Birth Date</label>
-                                <input type="date" id="res-birth-date" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="date" id="res-birth-date" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
                         </div>
 
@@ -1478,7 +1478,7 @@
                             <!-- Address -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Address</label>
-                                <input type="text" id="res-address" placeholder="Alamat Lengkap Tamu" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="text" id="res-address" placeholder="Alamat Lengkap Tamu" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
                         </div>
 
@@ -1486,13 +1486,13 @@
                             <!-- City -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">City</label>
-                                <input type="text" id="res-city" placeholder="Kota" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="text" id="res-city" placeholder="Kota" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- Nationality -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Nationality</label>
-                                <input type="text" id="res-nationality" value="Indonesia" placeholder="Kewarganegaraan" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="text" id="res-nationality" value="Indonesia" placeholder="Kewarganegaraan" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
                         </div>
                     </div>
@@ -1509,13 +1509,13 @@
                             <!-- Check-in Date -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Check-in Date <span class="text-red-500">*</span></label>
-                                <input type="date" id="res-check-in" required onchange="handleStayDatesChange('check-in')" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="date" id="res-check-in" required onchange="handleStayDatesChange('check-in')" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- Check-out Date -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Check-out Date <span class="text-red-500">*</span></label>
-                                <input type="date" id="res-check-out" required onchange="handleStayDatesChange('check-out')" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="date" id="res-check-out" required onchange="handleStayDatesChange('check-out')" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- Nights -->
@@ -1529,13 +1529,13 @@
                             <!-- ETA -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">ETA (Estimated Time Arrival)</label>
-                                <input type="time" id="res-eta" value="14:00" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="time" id="res-eta" value="14:00" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- ETD -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">ETD (Estimated Time Departure)</label>
-                                <input type="time" id="res-etd" value="12:00" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="time" id="res-etd" value="12:00" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
                         </div>
 
@@ -1543,13 +1543,13 @@
                             <!-- Adult -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Adult Count</label>
-                                <input type="number" id="res-adult" required min="1" value="2" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="number" id="res-adult" required min="1" value="2" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- Child -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Child Count</label>
-                                <input type="number" id="res-child" required min="0" value="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="number" id="res-child" required min="0" value="0" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
                         </div>
                     </div>
@@ -1567,7 +1567,7 @@
                             <!-- Room Type -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Room Type <span class="text-red-500">*</span></label>
-                                <select id="res-room-type" required onchange="handleRoomTypeChange()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-room-type" required onchange="handleRoomTypeChange()" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                                     <option value="">-- Select Room Type --</option>
                                 </select>
                             </div>
@@ -1575,7 +1575,7 @@
                             <!-- Room Number -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Room Number (Optional)</label>
-                                <select id="res-room-number" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-room-number" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                                     <option value="">Belum Dialokasikan</option>
                                 </select>
                             </div>
@@ -1583,7 +1583,7 @@
                             <!-- Rate Code -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Rate Code <span class="text-red-500">*</span></label>
-                                <select id="res-rate-code" required onchange="handleRateCodeChange()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-rate-code" required onchange="handleRateCodeChange()" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                                     <option value="">-- Select Rate Code --</option>
                                 </select>
                             </div>
@@ -1599,7 +1599,7 @@
                             <!-- Meal Plan -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Meal Plan</label>
-                                <select id="res-meal-plan" onchange="syncMasterMealPlanToGrid()" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-meal-plan" onchange="syncMasterMealPlanToGrid()" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                                     <option value="">-- None --</option>
                                 </select>
                             </div>
@@ -1607,7 +1607,7 @@
                             <!-- Segment -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Market Segment</label>
-                                <select id="res-segment" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-segment" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                                     <option value="">-- Select Segment --</option>
                                 </select>
                             </div>
@@ -1615,7 +1615,7 @@
                             <!-- Booking Source -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Reservation Source <span class="text-red-500">*</span></label>
-                                <select id="res-source" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-source" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                                     <option value="Direct">Direct</option>
                                     <option value="Walk-in">Walk-in</option>
                                     <option value="Phone">Phone</option>
@@ -1631,13 +1631,13 @@
                             <!-- Voucher Number -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Voucher Number</label>
-                                <input type="text" id="res-voucher" placeholder="e.g. VCH-1234" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="text" id="res-voucher" placeholder="e.g. VCH-1234" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- Bill Receiver (Corporate) -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Bill Receiver (Corporate)</label>
-                                <select id="res-corporate-id" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary bg-white">
+                                <select id="res-corporate-id" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                                     <option value="">-- Personal / Individual --</option>
                                 </select>
                             </div>
@@ -1647,13 +1647,13 @@
                             <!-- Qty -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Qty (Jumlah Kamar)</label>
-                                <input type="number" id="res-qty" required min="1" value="1" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="number" id="res-qty" required min="1" value="1" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- Extra Bed -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Extrabed (Qty)</label>
-                                <input type="number" id="res-extrabed" min="0" value="0" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="number" id="res-extrabed" min="0" value="0" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <!-- Total Estimated Charge Preview -->
@@ -1761,7 +1761,7 @@
                         <!-- Reservation Comment -->
                         <div>
                             <label class="block text-xs font-medium text-slate-700 mb-1">Reservation Comment / Special Request</label>
-                            <textarea id="res-comment" rows="2" placeholder="Catatan khusus reservasi..." class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                            <textarea id="res-comment" rows="2" placeholder="Catatan khusus reservasi..." class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs"></textarea>
                         </div>
                     </div>
 
@@ -1830,10 +1830,10 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="pt-4 border-t border-slate-200 shrink-0 bg-white">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
                     <!-- Create Mode Footer -->
                     <div id="resModalCreateFooter" class="flex justify-end gap-3">
-                        <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                             Cancel
                         </button>
                         <button type="submit" id="resSubmitBtn" class="px-6 py-2.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
@@ -1842,7 +1842,7 @@
                     </div>
                     <!-- Edit Mode Footer -->
                     <div id="resModalEditFooter" class="flex justify-end gap-3 hidden">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-slate-100/80 hover:bg-slate-200/80 text-slate-700 font-semibold rounded-xl text-xs transition-all duration-200 active:scale-95 cursor-pointer">
                             Close
                         </button>
                         <button type="button" id="resCheckInBtn" onclick="handleCheckInReservation()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
@@ -1867,13 +1867,13 @@
     </div>
 
     <!-- Modal Webcam -->
-    <div id="webcamModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="webcamModal" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i class="ph ph-webcam text-xl text-primary"></i> Ambil Foto ID / Passport
                 </h3>
-                <button type="button" onclick="closeWebcamModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeWebcamModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -1895,18 +1895,18 @@
     </div>
 
     <!-- Modal New Group Reservation -->
-    <div id="groupBookingModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden relative">
+    <div id="groupBookingModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-2xl max-h-[92vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+            <div class="pb-4 border-b border-slate-200/60 flex justify-between items-center shrink-0 mb-6">
                 <div>
                     <h3 class="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
                         <i class="ph ph-users-three text-blue-600 text-2xl"></i> <span>+ New Group Reservation</span>
                     </h3>
                     <p class="text-xs text-slate-500 mt-0.5">Buat alokasi grup booking baru & room allotment.</p>
                 </div>
-                <button type="button" onclick="closeGroupBookingModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors">
+                <button type="button" onclick="closeGroupBookingModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -1919,13 +1919,13 @@
                     <!-- Group Name -->
                     <div class="md:col-span-2">
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Grup <span class="text-red-500">*</span></label>
-                        <input type="text" id="group-name" required placeholder="Contoh: Grup Tour Kemenag" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <input type="text" id="group-name" required placeholder="Contoh: Grup Tour Kemenag" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </div>
 
                     <!-- Bill Receiver (Corporate Profiles) -->
                     <div class="md:col-span-2">
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Bill Receiver (Corporate)</label>
-                        <select id="group-corporate-id" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <select id="group-corporate-id" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             <option value="">-- Pilih Corporate (Opsional) --</option>
                         </select>
                     </div>
@@ -1933,13 +1933,13 @@
                     <!-- Check-in Date -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Check-in Date <span class="text-red-500">*</span></label>
-                        <input type="date" id="group-checkin" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <input type="date" id="group-checkin" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </div>
 
                     <!-- Check-out Date -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Check-out Date <span class="text-red-500">*</span></label>
-                        <input type="date" id="group-checkout" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:border-primary">
+                        <input type="date" id="group-checkout" required class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                     </div>
                 </div>
 
@@ -1987,18 +1987,18 @@
     </div>
 
     <!-- Modal Rooming List / Split Reservasi -->
-    <div id="roomingListModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden relative">
+    <div id="roomingListModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-4xl max-h-[92vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header -->
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+            <div class="pb-4 border-b border-slate-200/60 flex justify-between items-center shrink-0 mb-6">
                 <div>
                     <h3 id="roomingListModalTitle" class="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
                         <i class="ph ph-scissors text-indigo-600 text-2xl"></i> <span>Rooming List - Split Reservasi</span>
                     </h3>
                     <p id="roomingListModalSubTitle" class="text-xs text-slate-500 mt-0.5">Pecah alokasi kuota grup booking ke reservasi per perorangan.</p>
                 </div>
-                <button type="button" onclick="closeRoomingListModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors">
+                <button type="button" onclick="closeRoomingListModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -2040,13 +2040,13 @@
     </div>
 
     <!-- Modal Open Shift -->
-    <div id="openShiftModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="openShiftModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i class="ph ph-play-circle text-xl text-emerald-600"></i> Buka Shift Kasir
                 </h3>
-                <button type="button" onclick="closeStartShiftModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeStartShiftModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -2071,7 +2071,7 @@
                     <input type="number" id="open-shift-float" min="0" value="0" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary font-bold">
                 </div>
 
-                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
                     <button type="button" onclick="closeStartShiftModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition-colors">
                         Batal
                     </button>
@@ -2084,13 +2084,13 @@
     </div>
 
     <!-- Modal Close Shift -->
-    <div id="closeShiftModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="closeShiftModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i class="ph ph-stop-circle text-xl text-rose-600"></i> Penutupan Shift & Settlement
                 </h3>
-                <button type="button" onclick="closeCloseShiftModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeCloseShiftModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -2122,7 +2122,7 @@
                     <textarea id="close-shift-notes" rows="3" placeholder="Catatan penutupan shift..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"></textarea>
                 </div>
 
-                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-200/60">
                     <button type="button" onclick="closeCloseShiftModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition-colors">
                         Batal
                     </button>
@@ -2135,13 +2135,13 @@
     </div>
 
     <!-- Modal Shift Settlement Summary / Variance -->
-    <div id="shiftSummaryModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative">
-            <div class="flex justify-between items-center pb-4 border-b mb-4">
+    <div id="shiftSummaryModal" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-lg w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-200/60 mb-6">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i class="ph ph-receipt text-xl text-primary"></i> Ringkasan Settlement Shift Kasir
                 </h3>
-                <button type="button" onclick="closeShiftSummaryModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeShiftSummaryModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -2189,13 +2189,13 @@
     </div>
 
     <!-- Modal Shift Logbook Handover -->
-    <div id="shiftLogbookModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden relative">
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+    <div id="shiftLogbookModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-3xl max-h-[90vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+            <div class="pb-4 border-b border-slate-200/60 flex justify-between items-center shrink-0 mb-6">
                 <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i class="ph ph-notebook text-xl text-amber-600"></i> Shift Handover Logbook
                 </h3>
-                <button type="button" onclick="closeLogbookModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <button type="button" onclick="closeLogbookModal()" class="bg-slate-100/80 hover:bg-slate-200/80 text-slate-600 rounded-full p-2 transition-transform active:scale-90 cursor-pointer">
                     <i class="ph ph-x text-xl"></i>
                 </button>
             </div>
@@ -2952,17 +2952,17 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-slate-600 mb-1">Invoice Prefix</label>
-                                <input type="text" id="invoice-prefix" required placeholder="e.g. INV-" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary">
+                                <input type="text" id="invoice-prefix" required placeholder="e.g. INV-" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
                             <div>
                                 <label class="block text-xs font-medium text-slate-600 mb-1">Footer Notes / Terms</label>
-                                <textarea id="invoice-footer-notes" rows="4" placeholder="e.g. Thank you for staying with us. Payment is due within 14 days." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                                <textarea id="invoice-footer-notes" rows="4" placeholder="e.g. Thank you for staying with us. Payment is due within 14 days." class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs"></textarea>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-medium text-slate-600 mb-1">Registration Card Terms & Conditions</label>
-                                <textarea id="invoice-rc-terms" rows="5" placeholder="Syarat & ketentuan yang akan ditampilkan pada Registration Card..." class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:border-primary"></textarea>
+                                <textarea id="invoice-rc-terms" rows="5" placeholder="Syarat & ketentuan yang akan ditampilkan pada Registration Card..." class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs"></textarea>
                             </div>
 
                             <div class="pt-2">
