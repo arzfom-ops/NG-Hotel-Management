@@ -27,6 +27,39 @@
             z-index: 30 !important;
             border-width: 2px !important;
         }
+
+        /* Custom Sleek Scrollbar */
+        ::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+          background: rgba(241, 245, 249, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+          background: rgba(203, 213, 225, 0.8);
+          border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(148, 163, 184, 1);
+        }
+
+        /* Table Sticky Cell Enhancement */
+        .sticky-glass-head {
+          position: sticky;
+          left: 0;
+          z-index: 20;
+          background-color: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(8px);
+        }
+
+        @keyframes bounceOnce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        .animate-bounce-once {
+          animation: bounceOnce 0.5s ease-in-out 1;
+        }
     </style>
     <script>
         tailwind.config = {
@@ -1699,8 +1732,9 @@
                             <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                                 <i class="ph ph-credit-card text-primary text-lg"></i> D. Deposit History & Status
                             </h4>
-                            <div id="res-status-badge" class="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold">
-                                <i class="ph ph-check-circle text-sm"></i> <span id="res-status-text">Status: Reserved</span>
+                                <div id="res-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+                                    <span id="res-status-text">Status: Reserved</span>
                             </div>
                         </div>
 
@@ -3210,6 +3244,9 @@
             </div>
         </div>
     </main>
+
+    <!-- Floating Glassy Toast Notifications Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <script type="module" src="./js/app.js"></script>
 </body>

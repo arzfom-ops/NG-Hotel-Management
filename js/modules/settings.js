@@ -1,4 +1,5 @@
 import { supabaseClient } from '../config/supabase.js';
+import { getStatusBadgeHTML } from '../utils/formatters.js';
 
 // State variables
 export let outletsCache = [];
@@ -240,8 +241,7 @@ export let outletsCache = [];
                         const roomView = r.room_view || '-';
                         const floor = r.floor || '-';
                         const building = r.building || '-';
-                        const status = r.status || 'Clean';
-                        const statusColor = status.toLowerCase() === 'dirty' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+                        const status = r.status || 'VC';
 
                         const escapedNumber = (r.room_number || '').replace(/'/g, "\\'");
                         const escapedView = (r.room_view || 'No View').replace(/'/g, "\\'");
@@ -256,7 +256,7 @@ export let outletsCache = [];
                                 <td class="py-3 px-4">${roomView}</td>
                                 <td class="py-3 px-4">${floor}</td>
                                 <td class="py-3 px-4">${building}</td>
-                                <td class="py-3 px-4"><span class="px-2 py-1 text-xs rounded-full ${statusColor} font-medium">${status}</span></td>
+                                <td class="py-3 px-4">${getStatusBadgeHTML(status)}</td>
                                 <td class="py-3 px-4 text-right space-x-2">
                                     <button onclick="openEditRoom('${r.id}', '${escapedNumber}', '${roomTypeId}', '${escapedView}', '${escapedFloor}', '${escapedBuilding}')" class="text-blue-600 hover:text-blue-800 transition-colors p-1 cursor-pointer" title="Edit"><i class="ph ph-pencil text-lg"></i></button>
                                     <button onclick="deleteRoom('${r.id}')" class="text-red-600 hover:text-red-800 transition-colors p-1 cursor-pointer" title="Delete"><i class="ph ph-trash text-lg"></i></button>
@@ -1480,6 +1480,11 @@ export let outletsCache = [];
         }
 
         export async function fetchRatePlans() {
+            const tbody = document.getElementById('rate-plans-tbody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4"><div class="space-y-3"><div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-full"></div><div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-3/4"></div></div></td></tr>`;
+            }
+
             try {
                 const { data, error } = await supabaseClient
                     .from('rate_plans')
@@ -1487,7 +1492,6 @@ export let outletsCache = [];
                     .order('created_at', { ascending: true });
                 if (error) throw error;
 
-                const tbody = document.getElementById('rate-plans-tbody');
                 if (tbody) {
                     if (!data || data.length === 0) {
                         tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">Tidak ada data rate plan.</td></tr>`;

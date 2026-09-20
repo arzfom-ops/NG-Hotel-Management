@@ -1,5 +1,5 @@
 import { supabaseClient } from '../config/supabase.js';
-import { formatDateISO, formatStayDatesCompact, addDays } from '../utils/formatters.js';
+import { formatDateISO, formatStayDatesCompact, getStatusBadgeHTML } from '../utils/formatters.js';
 
 // Global State for Frontdesk Dashboard
 export var currentDashboardTab = 'arrival';
@@ -284,9 +284,11 @@ export function renderDashboardTable() {
             const roomTypeDisplay = roomTypesArr.length > 0 ? roomTypesArr.join(', ') : '-';
 
             const isCancelled = g.status === 'Cancelled';
-            let statusBadge = '<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Active Group</span>';
-            if (isCancelled) {
-                statusBadge = '<span class="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">Cancelled Group</span>';
+            let statusBadge = getStatusBadgeHTML(isCancelled ? 'Cancelled' : 'VC');
+            if (!isCancelled) {
+                statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Active Group</span>`;
+            } else {
+                statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 border border-rose-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>Cancelled Group</span>`;
             }
 
             let actionBtn = `
@@ -691,22 +693,7 @@ export async function renderTapeChart() {
         `;
 
         function getStatusBadgeMarkup(status) {
-            const s = (status || '').toUpperCase().trim();
-            if (s === 'VD' || s === 'DIRTY' || s === 'VACANT DIRTY') {
-                return '<span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border bg-yellow-100 text-yellow-900 border-yellow-200">VD</span>';
-            } else if (s === 'VC' || s === 'CLEAN' || s === 'VACANT CLEAN') {
-                return '<span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border bg-emerald-100 text-emerald-900 border-emerald-200">VC</span>';
-            } else if (s === 'OC' || s === 'OCCUPIED CLEAN') {
-                return '<span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border bg-blue-100 text-blue-900 border-blue-200">OC</span>';
-            } else if (s === 'OD' || s === 'OCCUPIED DIRTY') {
-                return '<span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border bg-orange-100 text-orange-900 border-orange-200">OD</span>';
-            } else if (s === 'OOO' || s === 'OUT OF ORDER') {
-                return '<span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border bg-red-100 text-red-900 border-red-200">OOO</span>';
-            } else if (s === 'OOS' || s === 'OUT OF SERVICE') {
-                return '<span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border bg-slate-200 text-slate-800 border-slate-300">OOS</span>';
-            } else {
-                return '<span class="inline-block px-1.5 py-0.5 text-xs font-bold rounded border bg-yellow-100 text-yellow-900 border-yellow-200">VD</span>';
-            }
+            return getStatusBadgeHTML(status);
         }
 
         // Render Room Rows

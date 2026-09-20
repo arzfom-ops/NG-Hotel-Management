@@ -1,5 +1,5 @@
 import { supabaseClient } from '../config/supabase.js';
-import { formatDateISO, formatStayDatesCompact } from '../utils/formatters.js';
+import { formatDateISO, formatStayDatesCompact, getStatusBadgeHTML } from '../utils/formatters.js';
 
 // --- Housekeeping Management Logic ---
 export function getHousekeepingBgColor(status) {
@@ -32,9 +32,12 @@ export async function fetchHousekeepingRooms() {
     if (!grid) return;
 
     grid.innerHTML = `
-        <div class="col-span-full py-12 text-center text-slate-400">
-            <i class="ph ph-spinner animate-spin text-3xl inline-block mb-2 text-primary"></i>
-            <div>Memuat data kamar housekeeping...</div>
+        <div class="col-span-full py-8">
+            <div class="space-y-3 max-w-2xl mx-auto">
+                <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-full"></div>
+                <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-3/4"></div>
+                <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-5/6"></div>
+            </div>
         </div>
     `;
 
@@ -126,7 +129,7 @@ export async function fetchHousekeepingRooms() {
                                 <span class="text-2xl font-bold text-slate-800 tracking-tight">Kamar ${room.room_number || '-'}</span>
                                 <div class="text-xs font-medium text-slate-500 mt-0.5">${roomTypeName}</div>
                             </div>
-                            <span class="px-2.5 py-1 text-xs font-bold rounded-full border ${statusBadgeClass}">${currentStatus}</span>
+                            ${getStatusBadgeHTML(currentStatus)}
                         </div>
                     </div>
                     <div class="pt-4 border-t border-slate-100 mt-2">
@@ -274,9 +277,12 @@ export async function fetchNsgList() {
 
     tbody.innerHTML = `
         <tr>
-            <td colspan="5" class="py-8 text-center text-slate-400">
-                <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
-                <div>Memuat data Non-Stay Guest...</div>
+            <td colspan="5" class="p-4">
+                <div class="space-y-3">
+                    <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-full"></div>
+                    <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-3/4"></div>
+                    <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-5/6"></div>
+                </div>
             </td>
         </tr>
     `;
@@ -324,9 +330,7 @@ export async function fetchNsgList() {
                     <td class="py-3 px-4 font-medium text-slate-900">${accountName}</td>
                     <td class="py-3 px-4 text-slate-600">${description}</td>
                     <td class="py-3 px-4">
-                        <span class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            ${status}
-                        </span>
+                        ${getStatusBadgeHTML(status)}
                     </td>
                     <td class="py-3 px-4 text-right">
                         <button onclick="openFolioModal('${item.id}')" class="px-3 py-1.5 bg-primary hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs inline-flex items-center gap-1 cursor-pointer">
@@ -421,9 +425,12 @@ export async function fetchCorporateProfiles() {
         if (!tbody) return;
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="py-8 text-center text-slate-400">
-                    <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
-                    <div>Memuat data corporate...</div>
+                <td colspan="7" class="p-4">
+                    <div class="space-y-3">
+                        <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-full"></div>
+                        <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-3/4"></div>
+                        <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-5/6"></div>
+                    </div>
                 </td>
             </tr>
         `;
@@ -764,9 +771,12 @@ export async function fetchCancelList() {
 
     tbody.innerHTML = `
         <tr>
-            <td colspan="6" class="py-8 text-center text-slate-400">
-                <i class="ph ph-spinner animate-spin text-2xl inline-block mb-2"></i>
-                <div>Memuat data reservasi batal...</div>
+            <td colspan="6" class="p-4">
+                <div class="space-y-3">
+                    <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-full"></div>
+                    <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-3/4"></div>
+                    <div class="bg-slate-200/60 backdrop-blur-xs animate-pulse rounded-xl h-6 w-5/6"></div>
+                </div>
             </td>
         </tr>
     `;
