@@ -146,6 +146,7 @@ import {
     filterTransferTargets,
     closeTransferBillModal,
     executeTransferBill,
+    handleTransferSingleToMaster,
     handleMoveToMasterFolio,
     populateFolioRoutingDualList,
     renderRoutingDualList,
@@ -646,6 +647,7 @@ if (typeof window !== 'undefined') {
     window.filterTransferTargets = filterTransferTargets;
     window.closeTransferBillModal = closeTransferBillModal;
     window.executeTransferBill = executeTransferBill;
+    window.handleTransferSingleToMaster = handleTransferSingleToMaster;
     window.handleMoveToMasterFolio = handleMoveToMasterFolio;
     window.populateFolioRoutingDualList = populateFolioRoutingDualList;
     window.renderRoutingDualList = renderRoutingDualList;

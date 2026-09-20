@@ -1557,6 +1557,22 @@ export async function handleSaveReservation(event) {
 
         let savedReservationId = editId;
 
+        // Collect daily rates from DOM breakdown table
+        const dailyRatesRowsData = [];
+        const rows = document.querySelectorAll('#daily-breakdown-tbody tr');
+        rows.forEach(row => {
+            const stayDateInput = row.querySelector('.daily-stay-date');
+            const rateInput = row.querySelector('.daily-rate-input');
+            const mealSelect = row.querySelector('.daily-meal-select');
+            if (stayDateInput && rateInput) {
+                dailyRatesRowsData.push({
+                    stay_date: stayDateInput.value,
+                    room_rate: parseFloat(rateInput.value) || 0,
+                    meal_plan_id: mealSelect ? (mealSelect.value || null) : null
+                });
+            }
+        });
+
         if (editId) {
             if (isReactivateMode) {
                 reservationPayload.status = 'Reserved';
@@ -1574,76 +1590,19 @@ export async function handleSaveReservation(event) {
             } else {
                 alert('Data reservasi berhasil diperbarui!');
             }
-        } else {
-            if (!reservationPayload.reservation_number) {
-                const randomNum = Math.floor(1000 + Math.random() * 9000);
-                reservationPayload.reservation_number = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
-            }
-            if (!reservationPayload.status) {
-                reservationPayload.status = 'Reserved';
-            }
 
-            const { data: newResData, error: insertResErr } = await supabaseClient
-                .from('reservations')
-                .insert([reservationPayload])
-                .select();
+            if (dailyRatesRowsData.length > 0) {
+                await supabaseClient
+                    .from('reservation_daily_rates')
+                    .delete()
+                    .eq('reservation_id', editId);
 
-            if (insertResErr) throw insertResErr;
-
-            if (newResData && newResData.length > 0) {
-                savedReservationId = newResData[0].id;
-            }
-
-            if (savedReservationId && pendingNewReservationDeposits && pendingNewReservationDeposits.length > 0) {
-                const txPayloads = pendingNewReservationDeposits.map(d => ({
-                    reservation_id: savedReservationId,
-                    transaction_type: 'PAYMENT',
-                    description: 'Deposit',
-                    amount: d.amount,
-                    payment_method_id: d.payment_method_id,
-                    transaction_date: d.transaction_date || new Date().toISOString()
+                const dailyRatesPayload = dailyRatesRowsData.map(d => ({
+                    reservation_id: editId,
+                    stay_date: d.stay_date,
+                    room_rate: d.room_rate,
+                    meal_plan_id: d.meal_plan_id
                 }));
-
-                const { error: depositTxErr } = await supabaseClient
-                    .from('folio_transactions')
-                    .insert(txPayloads);
-
-                if (depositTxErr) {
-                    console.error('Error auto-posting pending deposits to folio_transactions:', depositTxErr);
-                }
-            }
-        }
-
-        if (savedReservationId) {
-            const rows = document.querySelectorAll('#daily-breakdown-tbody tr');
-            const dailyRatesPayload = [];
-
-            rows.forEach(row => {
-                const stayDateInput = row.querySelector('.daily-stay-date');
-                const rateInput = row.querySelector('.daily-rate-input');
-                const mealSelect = row.querySelector('.daily-meal-select');
-
-                if (stayDateInput && rateInput) {
-                    const sDate = stayDateInput.value;
-                    const rRate = parseFloat(rateInput.value) || 0;
-                    const mPlanId = mealSelect ? (mealSelect.value || null) : null;
-
-                    dailyRatesPayload.push({
-                        reservation_id: savedReservationId,
-                        stay_date: sDate,
-                        room_rate: rRate,
-                        meal_plan_id: mPlanId
-                    });
-                }
-            });
-
-            if (dailyRatesPayload.length > 0) {
-                if (editId) {
-                    await supabaseClient
-                        .from('reservation_daily_rates')
-                        .delete()
-                        .eq('reservation_id', savedReservationId);
-                }
 
                 const { error: dailyInsertErr } = await supabaseClient
                     .from('reservation_daily_rates')
@@ -1652,6 +1611,149 @@ export async function handleSaveReservation(event) {
                 if (dailyInsertErr) {
                     console.error('Error saving reservation_daily_rates:', dailyInsertErr);
                 }
+            }
+        } else {
+            // New Reservation Mode
+            if (qty > 1) {
+                // Multi-Room Reservation
+                const baseNum = Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
+                const baseResRef = `RES-${baseNum}`;
+
+                // 1. Parent Room (Kamar Pertama: suffix -1)
+                const parentResNumber = `${baseResRef}-1`;
+                const parentPayload = {
+                    ...reservationPayload,
+                    qty: 1,
+                    reservation_number: parentResNumber,
+                    parent_reservation_id: null,
+                    booking_reference: baseResRef,
+                    status: 'Reserved'
+                };
+
+                const { data: parentData, error: parentErr } = await supabaseClient
+                    .from('reservations')
+                    .insert([parentPayload])
+                    .select()
+                    .single();
+
+                if (parentErr) throw parentErr;
+
+                savedReservationId = parentData.id;
+
+                // Save daily rates for Parent
+                if (dailyRatesRowsData.length > 0) {
+                    const parentDailyRates = dailyRatesRowsData.map(d => ({
+                        reservation_id: savedReservationId,
+                        stay_date: d.stay_date,
+                        room_rate: d.room_rate,
+                        meal_plan_id: d.meal_plan_id
+                    }));
+                    await supabaseClient.from('reservation_daily_rates').insert(parentDailyRates);
+                }
+
+                // Auto-post deposits to Parent folio
+                if (pendingNewReservationDeposits && pendingNewReservationDeposits.length > 0) {
+                    const txPayloads = pendingNewReservationDeposits.map(d => ({
+                        reservation_id: savedReservationId,
+                        transaction_type: 'PAYMENT',
+                        description: 'Deposit',
+                        amount: d.amount,
+                        payment_method_id: d.payment_method_id,
+                        transaction_date: d.transaction_date || new Date().toISOString()
+                    }));
+                    await supabaseClient.from('folio_transactions').insert(txPayloads);
+                }
+
+                // Automatically create 1 record in master_folios bound to Parent
+                const masterFolioNo = `MFOL-${baseNum}`;
+                const { error: mfErr } = await supabaseClient
+                    .from('master_folios')
+                    .insert([{
+                        folio_number: masterFolioNo,
+                        booking_reference: baseResRef
+                    }]);
+
+                if (mfErr) {
+                    console.error('Error creating master_folio for multi-room reservation:', mfErr);
+                }
+
+                // 2. Child Rooms (Kamar Berikutnya: Child 1, Child 2, dst. - suffix -2, -3, ...)
+                for (let i = 2; i <= qty; i++) {
+                    const childResNumber = `${baseResRef}-${i}`;
+                    const childPayload = {
+                        ...reservationPayload,
+                        qty: 1,
+                        room_id: null, // Unallocated room for child by default
+                        reservation_number: childResNumber,
+                        parent_reservation_id: savedReservationId,
+                        booking_reference: baseResRef,
+                        status: 'Reserved'
+                    };
+
+                    const { data: childData, error: childErr } = await supabaseClient
+                        .from('reservations')
+                        .insert([childPayload])
+                        .select()
+                        .single();
+
+                    if (!childErr && childData) {
+                        if (dailyRatesRowsData.length > 0) {
+                            const childDailyRates = dailyRatesRowsData.map(d => ({
+                                reservation_id: childData.id,
+                                stay_date: d.stay_date,
+                                room_rate: d.room_rate,
+                                meal_plan_id: d.meal_plan_id
+                            }));
+                            await supabaseClient.from('reservation_daily_rates').insert(childDailyRates);
+                        }
+                    } else if (childErr) {
+                        console.error(`Error inserting child reservation ${childResNumber}:`, childErr);
+                    }
+                }
+
+                alert(`Berhasil membuat multi-kamar reservasi (${qty} kamar) dengan Master Folio ${masterFolioNo}!`);
+
+            } else {
+                // Single Room Reservation
+                const randomNum = Math.floor(1000 + Math.random() * 9000);
+                const singleResNumber = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
+                reservationPayload.reservation_number = singleResNumber;
+                reservationPayload.qty = 1;
+                reservationPayload.status = 'Reserved';
+
+                const { data: newResData, error: insertResErr } = await supabaseClient
+                    .from('reservations')
+                    .insert([reservationPayload])
+                    .select()
+                    .single();
+
+                if (insertResErr) throw insertResErr;
+
+                savedReservationId = newResData.id;
+
+                if (dailyRatesRowsData.length > 0) {
+                    const dailyRatesPayload = dailyRatesRowsData.map(d => ({
+                        reservation_id: savedReservationId,
+                        stay_date: d.stay_date,
+                        room_rate: d.room_rate,
+                        meal_plan_id: d.meal_plan_id
+                    }));
+                    await supabaseClient.from('reservation_daily_rates').insert(dailyRatesPayload);
+                }
+
+                if (pendingNewReservationDeposits && pendingNewReservationDeposits.length > 0) {
+                    const txPayloads = pendingNewReservationDeposits.map(d => ({
+                        reservation_id: savedReservationId,
+                        transaction_type: 'PAYMENT',
+                        description: 'Deposit',
+                        amount: d.amount,
+                        payment_method_id: d.payment_method_id,
+                        transaction_date: d.transaction_date || new Date().toISOString()
+                    }));
+                    await supabaseClient.from('folio_transactions').insert(txPayloads);
+                }
+
+                alert('Reservasi berhasil disimpan!');
             }
         }
 

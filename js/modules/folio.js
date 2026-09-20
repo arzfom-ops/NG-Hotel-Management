@@ -91,9 +91,10 @@ export async function checkAndUpdateMasterFolioHeader(res) {
     }
 
     const groupId = res.group_id;
-    const bookingRef = res.booking_reference;
+    let bookingRef = res.booking_reference;
+    const parentResId = res.parent_reservation_id;
 
-    if (!groupId && !bookingRef) {
+    if (!groupId && !bookingRef && !parentResId) {
         btnMaster.classList.add('hidden');
         return;
     }
@@ -117,6 +118,33 @@ export async function checkAndUpdateMasterFolioHeader(res) {
                 .eq('booking_reference', bookingRef)
                 .maybeSingle();
             master = data;
+        }
+        if (!master && parentResId) {
+            const { data: parentRes } = await supabaseClient
+                .from('reservations')
+                .select('booking_reference, group_id')
+                .eq('id', parentResId)
+                .maybeSingle();
+
+            if (parentRes) {
+                if (parentRes.group_id) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('*')
+                        .eq('group_id', parentRes.group_id)
+                        .maybeSingle();
+                    master = data;
+                }
+                if (!master && parentRes.booking_reference) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('*')
+                        .eq('booking_reference', parentRes.booking_reference)
+                        .maybeSingle();
+                    master = data;
+                    if (!bookingRef) bookingRef = parentRes.booking_reference;
+                }
+            }
         }
 
         if (master) {
@@ -216,6 +244,12 @@ export function renderFolioTransactions() {
     let totalCharge = 0;
     let totalPayment = 0;
 
+    const isMasterConnected = !!(currentFolioReservation && (
+        currentFolioReservation.group_id ||
+        currentFolioReservation.booking_reference ||
+        currentFolioReservation.parent_reservation_id
+    ));
+
     if (currentFolioTransactions.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada transaksi di folio ini.</td></tr>`;
     } else {
@@ -241,8 +275,20 @@ export function renderFolioTransactions() {
             let desc = tx.description || '-';
             if (isVoided) desc += ` (VOID: ${tx.void_reason || 'Batal'})`;
 
-            const actionBtn = isVoided ? `<span class="text-xs font-semibold text-red-400">Voided</span>` :
-                `<button onclick="handleVoidTransaction('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded transition-colors" title="Void Transaksi"><i class="ph ph-prohibit"></i> Void</button>`;
+            const transferMasterBtn = (isMasterConnected && !isVoided) ? `
+                <button type="button" onclick="handleTransferSingleToMaster('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition-colors" title="Transfer to Master Folio">
+                    <i class="ph ph-arrows-out-line-horizontal"></i> Transfer to Master
+                </button>
+            ` : '';
+
+            const actionBtn = isVoided ? `<span class="text-xs font-semibold text-red-400">Voided</span>` : `
+                <div class="flex items-center justify-center gap-1">
+                    ${transferMasterBtn}
+                    <button type="button" onclick="handleVoidTransaction('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded transition-colors" title="Void Transaksi">
+                        <i class="ph ph-prohibit"></i> Void
+                    </button>
+                </div>
+            `;
 
             return `
                 <tr class="${rowClass} border-b border-slate-100 transition-colors text-xs">
@@ -905,7 +951,11 @@ export function updateTransferButtonsState() {
     const btnTransferSelected = document.getElementById('btnTransferSelected');
     const btnMoveToMaster = document.getElementById('btnMoveToMaster');
 
-    const isConnectedToMaster = !!(currentFolioReservation && (currentFolioReservation.group_id || currentFolioReservation.booking_reference));
+    const isConnectedToMaster = !!(currentFolioReservation && (
+        currentFolioReservation.group_id ||
+        currentFolioReservation.booking_reference ||
+        currentFolioReservation.parent_reservation_id
+    ));
 
     if (checkedCount > 0) {
         if (btnTransferSelected) btnTransferSelected.disabled = false;
@@ -1093,20 +1143,31 @@ export async function executeTransferBill() {
     }
 }
 
+export async function handleTransferSingleToMaster(txId) {
+    if (!txId || !currentFolioReservation) return;
+
+    const checkboxes = document.querySelectorAll('.folio-tx-checkbox, .folio-tx-cb');
+    checkboxes.forEach(cb => cb.checked = (cb.value === txId));
+    updateTransferButtonsState();
+
+    await handleMoveToMasterFolio();
+}
+
 export async function handleMoveToMasterFolio() {
     if (!currentFolioReservation) return;
 
     const groupId = currentFolioReservation.group_id;
-    const bookingRef = currentFolioReservation.booking_reference;
+    let bookingRef = currentFolioReservation.booking_reference;
+    const parentResId = currentFolioReservation.parent_reservation_id;
 
-    if (!groupId && !bookingRef) {
-        alert('Reservasi ini tidak terhubung dengan Grup atau Booking Reference.');
+    if (!groupId && !bookingRef && !parentResId) {
+        alert('Reservasi ini tidak terhubung dengan Master Folio, Grup, atau Parent Reservation.');
         return;
     }
 
     const checkedBoxes = Array.from(document.querySelectorAll('.folio-tx-checkbox:checked, .folio-tx-cb:checked'));
     if (checkedBoxes.length === 0) {
-        alert('Pilih minimal satu transaksi untuk dipindahkan.');
+        alert('Pilih minimal satu transaksi untuk dipindahkan ke Master Folio.');
         return;
     }
 
@@ -1127,6 +1188,33 @@ export async function handleMoveToMasterFolio() {
                 .eq('booking_reference', bookingRef)
                 .maybeSingle();
             if (data) masterFolioId = data.id;
+        }
+        if (!masterFolioId && parentResId) {
+            const { data: parentRes } = await supabaseClient
+                .from('reservations')
+                .select('booking_reference, group_id')
+                .eq('id', parentResId)
+                .maybeSingle();
+
+            if (parentRes) {
+                if (parentRes.group_id) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('id')
+                        .eq('group_id', parentRes.group_id)
+                        .maybeSingle();
+                    if (data) masterFolioId = data.id;
+                }
+                if (!masterFolioId && parentRes.booking_reference) {
+                    const { data } = await supabaseClient
+                        .from('master_folios')
+                        .select('id')
+                        .eq('booking_reference', parentRes.booking_reference)
+                        .maybeSingle();
+                    if (data) masterFolioId = data.id;
+                    if (!bookingRef) bookingRef = parentRes.booking_reference;
+                }
+            }
         }
 
         if (!masterFolioId) {
@@ -1152,26 +1240,30 @@ export async function handleMoveToMasterFolio() {
             }
         }
 
-        if (!confirm(`Pindahkan ${checkedBoxes.length} transaksi yang dipilih ke Master Folio?`)) {
+        if (!confirm(`Transfer ${checkedBoxes.length} transaksi terpilih ke Master Folio?`)) {
             return;
         }
 
         const selectedIds = checkedBoxes.map(cb => cb.value);
 
-        if (selectedIds.length > 0) {
-            const { error: updErr } = await supabaseClient
-                .from('folio_transactions')
-                .update({
-                    reservation_id: null,
-                    master_folio_id: masterFolioId
-                })
-                .in('id', selectedIds);
-            if (updErr) throw updErr;
+        const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
+            p_transaction_ids: selectedIds,
+            p_target_reservation_id: null,
+            p_target_master_folio_id: masterFolioId
+        });
+
+        if (rpcErr) throw rpcErr;
+
+        await fetchFolioTransactions(currentFolioReservation.id);
+
+        if (currentMasterGroup) {
+            await fetchMasterFolioTransactions(currentMasterGroup);
         }
 
         await checkAndUpdateMasterFolioHeader(currentFolioReservation);
-        await fetchFolioTransactions(currentFolioReservation.id);
-        alert(`${selectedIds.length} transaksi berhasil dipindahkan ke Master Folio.`);
+
+        const msg = (rpcData && rpcData.message) ? rpcData.message : `${selectedIds.length} transaksi berhasil dipindahkan ke Master Folio.`;
+        alert(msg);
 
     } catch (err) {
         console.error('Error moving transactions to master folio:', err);
