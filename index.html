@@ -1919,12 +1919,260 @@
         </div>
     </div>
 
+    <!-- Modal Open Shift -->
+    <div id="openShiftModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-play-circle text-xl text-emerald-600"></i> Buka Shift Kasir
+                </h3>
+                <button type="button" onclick="closeStartShiftModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="openShiftForm" onsubmit="handleOpenShift(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Kasir <span class="text-red-500">*</span></label>
+                    <input type="text" id="open-shift-cashier" required placeholder="Nama Kasir / User" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Shift <span class="text-red-500">*</span></label>
+                    <select id="open-shift-name" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary bg-white">
+                        <option value="Pagi">Shift Pagi (Morning)</option>
+                        <option value="Siang">Shift Siang (Evening)</option>
+                        <option value="Malam">Shift Malam (Night)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Opening Float / Modal Awal Kasir (Rp)</label>
+                    <input type="number" id="open-shift-float" min="0" value="0" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary font-bold">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeStartShiftModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                        <i class="ph ph-check-circle text-base"></i> Buka Shift Sekarang
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Close Shift -->
+    <div id="closeShiftModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-stop-circle text-xl text-rose-600"></i> Penutupan Shift & Settlement
+                </h3>
+                <button type="button" onclick="closeCloseShiftModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-4 text-xs space-y-1">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Kasir Aktif:</span>
+                    <span id="close-shift-cashier-display" class="font-bold text-slate-800">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Shift Name:</span>
+                    <span id="close-shift-name-display" class="font-bold text-slate-800">-</span>
+                </div>
+            </div>
+
+            <form id="closeShiftForm" onsubmit="executeCloseShift(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Cash Count / Uang Fisik di Laci (Rp) <span class="text-red-500">*</span></label>
+                    <input type="number" id="close-shift-actual-cash" required min="0" placeholder="Hitung uang tunai di laci kasir" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary font-bold text-slate-800">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Cash Drop / Setoran Brankas (Rp)</label>
+                    <input type="number" id="close-shift-cash-drop" min="0" value="0" placeholder="Nominal uang tunai yang dimasukkan ke brankas" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary font-bold text-slate-800">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Shift Notes / Remarks</label>
+                    <textarea id="close-shift-notes" rows="3" placeholder="Catatan penutupan shift..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-primary"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeCloseShiftModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                        <i class="ph ph-check text-base"></i> Proses Tutup Shift
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Shift Settlement Summary / Variance -->
+    <div id="shiftSummaryModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative">
+            <div class="flex justify-between items-center pb-4 border-b mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-receipt text-xl text-primary"></i> Ringkasan Settlement Shift Kasir
+                </h3>
+                <button type="button" onclick="closeShiftSummaryModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600">Modal Awal (Opening Float):</span>
+                        <span id="summary-opening-float" class="font-bold text-slate-800">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600">Uang Tunai Sistem (System Cash):</span>
+                        <span id="summary-system-cash" class="font-bold text-slate-800">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t border-slate-200 pt-2">
+                        <span class="text-slate-600">Fisik Laci (Actual Cash):</span>
+                        <span id="summary-actual-cash" class="font-bold text-slate-800">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600">Setoran Safe (Cash Drop):</span>
+                        <span id="summary-cash-drop" class="font-bold text-slate-800">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl flex justify-between items-center">
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Selisih Kasir (Variance)</div>
+                        <div class="text-xs text-slate-500 mt-0.5">Fisik Laci - (System Cash + Opening Float)</div>
+                    </div>
+                    <div id="summary-variance" class="font-mono text-xl font-bold text-emerald-600">Rp 0</div>
+                </div>
+
+                <div class="p-3 bg-white border border-slate-200 rounded-lg">
+                    <span class="font-semibold text-slate-700">Catatan Shift:</span>
+                    <p id="summary-notes" class="text-slate-600 mt-1 whitespace-pre-wrap">-</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-4 border-t border-slate-100 mt-4">
+                <button type="button" onclick="closeShiftSummaryModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors">
+                    Selesai
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Shift Logbook Handover -->
+    <div id="shiftLogbookModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden relative">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-notebook text-xl text-amber-600"></i> Shift Handover Logbook
+                </h3>
+                <button type="button" onclick="closeLogbookModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-50">
+                <!-- Add Logbook Form -->
+                <form id="addLogbookForm" onsubmit="handleAddLogbookEntry(event)" class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="ph ph-plus-circle text-amber-600 text-sm"></i> Tambah Catatan Gantung Baru
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Kategori</label>
+                            <select id="logbook-category" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-primary bg-white">
+                                <option value="General">General</option>
+                                <option value="Front Office">Front Office</option>
+                                <option value="Housekeeping">Housekeeping</option>
+                                <option value="Engineering">Engineering</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">No. Kamar (Opsional)</label>
+                            <input type="text" id="logbook-room-number" placeholder="Contoh: 101" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-primary">
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Pesan / Catatan Shift <span class="text-red-500">*</span></label>
+                            <textarea id="logbook-message" rows="2" required placeholder="Tuliskan instruksi atau catatan gantung untuk shift berikutnya..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-primary"></textarea>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-1">
+                        <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer">
+                            <i class="ph ph-paper-plane-right text-sm"></i> Simpan Catatan
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Logbook Entries Table -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+                    <div class="px-4 py-3 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Daftar Catatan Shift</h4>
+                        <button type="button" onclick="fetchShiftLogbooks()" class="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
+                            <i class="ph ph-arrows-clockwise text-sm"></i> Refresh Logbook
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto max-h-64">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200 text-[11px]">
+                                <tr>
+                                    <th class="py-2.5 px-4">Waktu</th>
+                                    <th class="py-2.5 px-4">Kategori</th>
+                                    <th class="py-2.5 px-4">Catatan</th>
+                                    <th class="py-2.5 px-4">Status</th>
+                                    <th class="py-2.5 px-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logbook-list-tbody" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="5" class="py-6 text-center text-slate-400">Loading logbooks...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-slate-200 flex justify-end bg-white shrink-0">
+                <button type="button" onclick="closeLogbookModal()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-1 flex flex-col h-full mt-14 md:mt-0 w-full overflow-hidden">
         <!-- Topbar -->
         <header id="frontdesk-topbar" class="bg-white border-b px-6 py-4 flex justify-between items-center">
             <h2 class="text-xl font-semibold hidden md:block">Frontdesk / Tape Chart</h2>
-            <div class="flex items-center gap-4 ml-auto">
+            <div class="flex items-center gap-3 ml-auto">
+                <!-- Logbook Button -->
+                <button type="button" onclick="openLogbookModal()" class="relative px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer">
+                    <i class="ph ph-notebook text-base"></i> Logbook
+                    <span id="logbook-pending-count" class="hidden bg-rose-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
+                </button>
+
+                <!-- Shift Status & Buttons -->
+                <div id="topbar-shift-badge" class="hidden items-center gap-1.5 px-3 py-1.5 border rounded-lg text-xs font-semibold">
+                    <i class="ph ph-clock text-base"></i>
+                    <span id="topbar-shift-name">Shift Active</span>
+                </div>
+                <button type="button" id="btn-open-shift-modal" onclick="openStartShiftModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                    <i class="ph ph-play-circle text-base"></i> Start Shift
+                </button>
+                <button type="button" id="btn-close-shift-modal" onclick="handleCloseShiftModal()" class="hidden px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                    <i class="ph ph-stop-circle text-base"></i> Close Shift
+                </button>
+
                 <div class="flex items-center gap-2 px-3 py-1.5 border rounded-md cursor-pointer hover:bg-slate-50">
                     <span id="active-property-name" class="text-sm font-medium">Memuat...</span>
                     <i class="ph ph-caret-down text-sm"></i>
