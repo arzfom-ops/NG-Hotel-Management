@@ -347,14 +347,17 @@ export async function switchView(viewName) {
     const navDrr = document.getElementById('nav-report-drr') || document.getElementById('nav-drr');
     const navSettings = document.getElementById('nav-settings');
 
+    const inactiveNavClass = "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-sm font-semibold cursor-pointer";
+    const activeNavClass = "flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/90 text-primary shadow-md shadow-primary/10 border border-white/80 text-sm font-bold";
+
     const allSubNavBtns = [navFrontdesk, navRoomForecast, navNsg];
     allSubNavBtns.forEach(btn => {
-        if (btn) btn.className = "flex items-center gap-3 p-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors text-sm font-normal";
+        if (btn) btn.className = inactiveNavClass;
     });
 
     const allMainNavBtns = [navHousekeeping, navCorporate, navCancelList, navDrr, navSettings];
     allMainNavBtns.forEach(btn => {
-        if (btn) btn.className = "flex items-center gap-3 p-3 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors font-normal";
+        if (btn) btn.className = inactiveNavClass;
     });
 
     if (viewName === 'settings') {
@@ -368,7 +371,7 @@ export async function switchView(viewName) {
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.remove('hidden');
 
-        if (navSettings) navSettings.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+        if (navSettings) navSettings.className = activeNavClass;
     } else if (viewName === 'drr' || viewName === 'report-drr' || viewName === 'reports') {
         if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
@@ -383,7 +386,7 @@ export async function switchView(viewName) {
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (drrView) drrView.classList.remove('hidden');
 
-        if (navDrr) navDrr.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
+        if (navDrr) navDrr.className = activeNavClass;
 
         fetchDailyRevenueReport();
     } else if (viewName === 'nsg') {
@@ -401,7 +404,7 @@ export async function switchView(viewName) {
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (nsgView) nsgView.classList.remove('hidden');
 
-        if (navNsg) navNsg.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
+        if (navNsg) navNsg.className = activeNavClass;
 
         fetchNsgList();
     } else if (viewName === 'room-forecast') {
@@ -419,7 +422,7 @@ export async function switchView(viewName) {
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (roomForecastView) roomForecastView.classList.remove('hidden');
 
-        if (navRoomForecast) navRoomForecast.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
+        if (navRoomForecast) navRoomForecast.className = activeNavClass;
 
         renderRoomForecast();
     } else if (viewName === 'corporate') {
@@ -436,7 +439,7 @@ export async function switchView(viewName) {
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (corporateView) corporateView.classList.remove('hidden');
 
-        if (navCorporate) navCorporate.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+        if (navCorporate) navCorporate.className = activeNavClass;
 
         fetchCorporateProfiles();
     } else if (viewName === 'cancel-list') {
@@ -453,7 +456,7 @@ export async function switchView(viewName) {
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.remove('hidden');
 
-        if (navCancelList) navCancelList.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+        if (navCancelList) navCancelList.className = activeNavClass;
 
         fetchCancelList();
     } else if (viewName === 'housekeeping') {
@@ -470,7 +473,7 @@ export async function switchView(viewName) {
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (housekeepingView) housekeepingView.classList.remove('hidden');
 
-        if (navHousekeeping) navHousekeeping.className = "flex items-center gap-3 p-3 rounded-lg bg-blue-50 text-primary font-semibold transition-colors";
+        if (navHousekeeping) navHousekeeping.className = activeNavClass;
 
         fetchHousekeepingRooms();
     } else {
@@ -488,7 +491,7 @@ export async function switchView(viewName) {
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
 
-        if (navFrontdesk) navFrontdesk.className = "flex items-center gap-3 p-2.5 rounded-lg bg-blue-50 text-primary font-semibold transition-colors text-sm";
+        if (navFrontdesk) navFrontdesk.className = activeNavClass;
 
         await fetchRooms();
         await fetchFrontdeskDashboard();
