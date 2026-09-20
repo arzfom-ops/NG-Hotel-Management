@@ -194,6 +194,25 @@ import {
 } from './modules/reports.js';
 
 import {
+    getActiveShift,
+    updateShiftUI,
+    openStartShiftModal,
+    closeStartShiftModal,
+    handleOpenShift,
+    handleCloseShiftModal,
+    closeCloseShiftModal,
+    executeCloseShift,
+    openShiftSummaryModal,
+    closeShiftSummaryModal,
+    openLogbookModal,
+    closeLogbookModal,
+    fetchShiftLogbooks,
+    renderShiftLogbooks,
+    handleAddLogbookEntry,
+    handleResolveLogbook
+} from './modules/shift.js';
+
+import {
     switchSettingsTab,
     fetchBedTypes,
     openBedTypeModal,
@@ -672,6 +691,24 @@ if (typeof window !== 'undefined') {
     window.handleDRRDateChange = handleDRRDateChange;
     window.handlePrintDRR = handlePrintDRR;
 
+    // Shift & Settlement Module
+    window.getActiveShift = getActiveShift;
+    window.updateShiftUI = updateShiftUI;
+    window.openStartShiftModal = openStartShiftModal;
+    window.closeStartShiftModal = closeStartShiftModal;
+    window.handleOpenShift = handleOpenShift;
+    window.handleCloseShiftModal = handleCloseShiftModal;
+    window.closeCloseShiftModal = closeCloseShiftModal;
+    window.executeCloseShift = executeCloseShift;
+    window.openShiftSummaryModal = openShiftSummaryModal;
+    window.closeShiftSummaryModal = closeShiftSummaryModal;
+    window.openLogbookModal = openLogbookModal;
+    window.closeLogbookModal = closeLogbookModal;
+    window.fetchShiftLogbooks = fetchShiftLogbooks;
+    window.renderShiftLogbooks = renderShiftLogbooks;
+    window.handleAddLogbookEntry = handleAddLogbookEntry;
+    window.handleResolveLogbook = handleResolveLogbook;
+
     // Settings Module
     window.switchSettingsTab = switchSettingsTab;
     window.fetchBedTypes = fetchBedTypes;
@@ -875,6 +912,10 @@ export async function initApp() {
 
         // Initialize Realtime Listener
         initRealtimeSubscriptions();
+
+        // Initialize Shift UI state & Logbooks
+        if (typeof window.updateShiftUI === 'function') window.updateShiftUI();
+        if (typeof window.fetchShiftLogbooks === 'function') window.fetchShiftLogbooks();
 
     } catch (err) {
         console.error('Inisialisasi gagal:', err);
