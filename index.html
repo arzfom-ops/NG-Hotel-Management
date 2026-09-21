@@ -44,6 +44,11 @@
           background: rgba(148, 163, 184, 1);
         }
 
+        /* Smooth Touch Scrolling for Tables */
+        .overflow-x-auto {
+          -webkit-overflow-scrolling: touch;
+        }
+
         /* Table Sticky Cell Enhancement */
         .sticky-glass-head {
           position: sticky;
@@ -69,14 +74,8 @@
 </head>
 <body class="bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50/40 min-h-screen font-sans text-slate-800 antialiased selection:bg-primary/20 selection:text-primary flex h-screen overflow-hidden">
 
-    <!-- Mobile Header -->
-    <div class="md:hidden fixed top-0 w-full bg-white/70 backdrop-blur-md border-b border-white/80 z-50 flex justify-between items-center p-4 shadow-xs">
-        <h1 class="text-lg font-bold text-primary">NG Hotel</h1>
-        <button id="mobileMenuBtn" class="text-slate-600"><i class="ph ph-list text-2xl"></i></button>
-    </div>
-
     <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 bg-white/70 backdrop-blur-xl border-r border-white/80 shadow-lg shadow-slate-200/40 flex flex-col justify-between p-4 fixed md:sticky top-0 h-screen z-30 transition-all duration-300 transform -translate-x-full md:translate-x-0 mt-14 md:mt-0">
+    <aside id="sidebar" class="hidden md:flex w-64 bg-white/70 backdrop-blur-xl border-r border-white/80 shadow-lg shadow-slate-200/40 flex-col justify-between p-4 sticky top-0 h-screen z-30 transition-all duration-300">
         <div class="p-4 hidden md:block">
             <h1 class="text-xl font-bold text-primary tracking-tight">NG Hotel Mgt.</h1>
         </div>
@@ -126,6 +125,63 @@
             </a>
         </div>
     </aside>
+
+    <!-- Mobile Sidebar Drawer Overlay -->
+    <div id="mobile-sidebar-overlay" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm md:hidden hidden transition-opacity duration-300" onclick="window.toggleMobileSidebar()">
+      <div id="mobile-sidebar-drawer" class="w-72 bg-white/95 backdrop-blur-2xl h-full p-4 shadow-2xl flex flex-col justify-between transform -translate-x-full transition-transform duration-300" onclick="event.stopPropagation()">
+        <div class="p-2 border-b border-slate-200/60 pb-3 flex items-center justify-between">
+            <h1 class="text-xl font-bold text-primary tracking-tight">NG Hotel Mgt.</h1>
+            <button type="button" onclick="window.toggleMobileSidebar()" class="text-slate-500 hover:text-slate-800 p-1">
+                <i class="ph ph-x text-xl"></i>
+            </button>
+        </div>
+        <nav class="flex-1 space-y-1.5 mt-2 overflow-y-auto">
+            <!-- Frontdesk Accordion -->
+            <div>
+                <button type="button" onclick="toggleFrontdeskAccordion()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-sm font-semibold cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <i class="ph ph-desktop-tower text-xl"></i>
+                        <span class="font-semibold">Frontdesk</span>
+                    </div>
+                    <i class="ph ph-caret-down text-sm transition-transform duration-200 rotate-180"></i>
+                </button>
+                <div class="pl-3 space-y-1 mt-1">
+                    <a href="#" onclick="switchView('frontdesk')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                        <i class="ph ph-squares-four text-lg"></i> Dashboard & Tape Chart
+                    </a>
+                    <a href="#" onclick="switchView('room-forecast')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                        <i class="ph ph-chart-line-up text-lg"></i> Room Forecast
+                    </a>
+                    <a href="#" onclick="switchView('nsg')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                        <i class="ph ph-user-list text-lg"></i> Non-Stay Guest (NSG)
+                    </a>
+                </div>
+            </div>
+
+            <a href="#" onclick="switchView('housekeeping')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                <i class="ph ph-broom text-xl"></i> Housekeeping
+            </a>
+            <a href="#" onclick="switchView('corporate')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                <i class="ph ph-buildings text-xl"></i> Corporate / Travel Agent
+            </a>
+            <!-- Reports Section -->
+            <div class="pt-2 space-y-1">
+                <div class="px-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reports</div>
+                <a href="#" onclick="switchView('report-drr')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                    <i class="ph ph-chart-bar text-xl"></i> Daily Revenue Report (DRR)
+                </a>
+                <a href="#" onclick="switchView('cancel-list')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                    <i class="ph ph-x-circle text-xl"></i> Cancel List
+                </a>
+            </div>
+        </nav>
+        <div class="pt-3 border-t border-slate-200/60 mt-auto">
+            <a href="#" onclick="switchView('settings')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                <i class="ph ph-gear text-xl"></i> Settings
+            </a>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal Add NSG Account -->
     <div id="nsgAccountModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
@@ -839,7 +895,7 @@
 
     <!-- Modal Guest Folio / Billing System -->
     <div id="folioModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
-        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-4xl max-h-[92vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-h-[92vh] overflow-y-auto w-[95%] sm:w-full max-w-4xl flex flex-col mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header Info -->
             <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-900 text-white shrink-0">
@@ -1088,7 +1144,7 @@
 
     <!-- Modal Master Folio / Billing System -->
     <div id="masterFolioModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
-        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-4xl max-h-[92vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-h-[92vh] overflow-y-auto w-[95%] sm:w-full max-w-4xl flex flex-col mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header Info -->
             <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-indigo-950 text-white shrink-0">
@@ -1388,7 +1444,7 @@
 
     <!-- Modal New Reservation (4-Card Smart Form) -->
     <div id="reservationModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
-        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-5xl max-h-[92vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-h-[92vh] overflow-y-auto w-[95%] sm:w-full max-w-5xl flex flex-col mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header -->
             <div class="pb-4 border-b border-slate-200/60 flex justify-between items-center shrink-0 mb-6">
@@ -1433,7 +1489,7 @@
                         </div>
 
                         <!-- Guest Type & Reserve Name -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Guest Type <span class="text-red-500">*</span></label>
                                 <select id="res-guest-type" onchange="handleGuestTypeChange()" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
@@ -1464,7 +1520,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- ID Card No -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">ID Card No (KTP/Passport)</label>
@@ -1478,7 +1534,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Email -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
@@ -1515,7 +1571,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- City -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">City</label>
@@ -2022,7 +2078,7 @@
 
     <!-- Modal Rooming List / Split Reservasi -->
     <div id="roomingListModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
-        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-4xl max-h-[92vh] flex flex-col w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+        <div class="bg-white/85 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-h-[92vh] overflow-y-auto w-[95%] sm:w-full max-w-4xl flex flex-col mx-auto transform transition-all duration-300 relative overflow-hidden">
 
             <!-- Header -->
             <div class="pb-4 border-b border-slate-200/60 flex justify-between items-center shrink-0 mb-6">
@@ -2304,10 +2360,16 @@
     </div>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col h-full mt-14 md:mt-0 w-full overflow-hidden">
+    <main class="flex-1 flex flex-col h-full w-full overflow-hidden">
         <!-- Topbar -->
-        <header id="frontdesk-topbar" class="bg-white/60 backdrop-blur-md border-b border-white/80 sticky top-0 z-20 px-6 py-3.5 flex justify-between items-center shadow-xs transition-all duration-300">
-            <h2 class="text-xl font-semibold text-slate-800 hidden md:block">Frontdesk / Tape Chart</h2>
+        <header id="frontdesk-topbar" class="bg-white/60 backdrop-blur-md border-b border-white/80 sticky top-0 z-20 px-4 md:px-6 py-3.5 flex justify-between items-center shadow-xs transition-all duration-300">
+            <div class="flex items-center gap-3">
+                <button id="btn-mobile-menu" onclick="window.toggleMobileSidebar()" class="md:hidden p-2 bg-white/70 hover:bg-white backdrop-blur-md rounded-xl text-slate-700 border border-white/80 shadow-xs cursor-pointer">
+                  <i class="ph ph-list text-xl"></i>
+                </button>
+                <h2 class="text-xl font-semibold text-slate-800 hidden md:block">Frontdesk / Tape Chart</h2>
+                <h1 class="text-lg font-bold text-primary md:hidden">NG Hotel</h1>
+            </div>
             <div class="flex items-center gap-3 ml-auto">
                 <!-- Logbook Button -->
                 <button type="button" onclick="openLogbookModal()" class="relative px-3.5 py-2 bg-white/70 hover:bg-white/95 backdrop-blur-md border border-white/80 text-slate-700 hover:text-slate-900 rounded-xl text-xs font-semibold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 cursor-pointer">
