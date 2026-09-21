@@ -311,6 +311,25 @@ todayDate.setHours(0, 0, 0, 0);
 
 export let initializedAppDate = new Date().toDateString();
 
+// Mobile Drawer Toggle Function
+window.toggleMobileSidebar = function() {
+    const overlay = document.getElementById('mobile-sidebar-overlay');
+    const drawer = document.getElementById('mobile-sidebar-drawer');
+    if (!overlay || !drawer) return;
+
+    if (overlay.classList.contains('hidden')) {
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+            drawer.classList.remove('-translate-x-full');
+        }, 10);
+    } else {
+        drawer.classList.add('-translate-x-full');
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 300);
+    }
+};
+
 // Frontdesk Accordion Toggle Function
 export function toggleFrontdeskAccordion(forceOpen) {
     const submenu = document.getElementById('frontdesk-submenu');
@@ -498,10 +517,10 @@ export async function switchView(viewName) {
         await renderTapeChart();
     }
 
-    // Toggle Mobile Menu closed if open
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
-        sidebar.classList.add('-translate-x-full');
+    // Toggle Mobile Drawer closed if open
+    const overlay = document.getElementById('mobile-sidebar-overlay');
+    if (overlay && !overlay.classList.contains('hidden')) {
+        window.toggleMobileSidebar();
     }
 }
 
