@@ -1,5 +1,5 @@
 import { supabaseClient } from '../config/supabase.js';
-import { formatDateISO, formatStayDatesCompact } from '../utils/formatters.js';
+import { formatDateISO, formatStayDatesCompact, formatCurrency } from '../utils/formatters.js';
 
 // State Variables
 export let currentFolioReservation = null;
@@ -150,6 +150,8 @@ export async function openFolioModal(reservationId) {
     if (totalChargeEl) totalChargeEl.textContent = 'Rp 0';
     if (totalPaymentEl) totalPaymentEl.textContent = 'Rp 0';
     if (currentBalanceEl) currentBalanceEl.textContent = 'Rp 0';
+    const expectedTotalEl = document.getElementById('expected-total-amount') || document.getElementById('folioExpectedTotal');
+    if (expectedTotalEl) expectedTotalEl.textContent = 'Rp 0';
 
     try {
         const { data: res, error } = await supabaseClient
@@ -161,6 +163,7 @@ export async function openFolioModal(reservationId) {
         if (error) throw error;
 
         currentFolioReservation = res;
+        renderFolioModal(res);
 
         // Render Guest & Room Info
         const guestName = res.guest_profiles ? res.guest_profiles.full_name : (res.booker_name || 'Guest');
@@ -226,6 +229,20 @@ export async function openFolioModal(reservationId) {
         console.error('Error opening folio modal:', err);
         alert('Gagal memuat data folio: ' + err.message);
         closeFolioModal();
+    }
+}
+
+export function renderFolioModal(reservation) {
+    if (!reservation) return;
+
+    const roomRate = parseFloat(reservation.room_rate || 0);
+    const nights = parseInt(reservation.nights || 1);
+    const expectedTotal = roomRate * nights;
+    const formattedTotal = formatCurrency(expectedTotal);
+
+    const expectedTotalEl = document.getElementById('expected-total-amount') || document.getElementById('folioExpectedTotal');
+    if (expectedTotalEl) {
+        expectedTotalEl.textContent = formattedTotal;
     }
 }
 
