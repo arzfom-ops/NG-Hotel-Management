@@ -1,9 +1,9 @@
 import { supabaseClient } from '../config/supabase.js';
 
 /**
-/ Guest Card File (GCF) Service Module
-/ Handles searching, fetching, saving guest cards, and auto-filling reservation form.
-*/
+ * Guest Card File (GCF) Service Module
+ * Handles searching, fetching, saving guest cards, and auto-filling reservation form.
+ */
 
 /**
  * 1. searchGuestCards(query, cardType)
@@ -13,7 +13,6 @@ import { supabaseClient } from '../config/supabase.js';
 export async function searchGuestCards(query = '', cardType = null) {
     const trimmedQuery = (query || '').trim();
     try {
-        // Attempt RPC call with flexible parameter naming
         const rpcParams = {
             p_query: trimmedQuery,
             p_card_type: cardType || null,
@@ -24,7 +23,13 @@ export async function searchGuestCards(query = '', cardType = null) {
         const { data, error } = await supabaseClient.rpc('rpc_search_guest_cards', rpcParams);
 
         if (!error && data) {
-            return data;
+            return data.map(item => ({
+                ...item,
+                full_name: item.full_name || item.name || item.company_name || '',
+                phone: item.phone || item.mobile_no || item.phone_number || '',
+                mobile_no: item.mobile_no || item.phone || item.phone_number || '',
+                discount_pct: item.discount_pct || item.special_discount || item.discount || 0
+            }));
         }
 
         if (error) {
@@ -43,12 +48,18 @@ export async function searchGuestCards(query = '', cardType = null) {
         }
 
         if (trimmedQuery) {
-            q = q.or(`full_name.ilike.%${trimmedQuery}%,company_name.ilike.%${trimmedQuery}%,email.ilike.%${trimmedQuery}%,phone_number.ilike.%${trimmedQuery}%,id_card_no.ilike.%${trimmedQuery}%`);
+            q = q.or(`name.ilike.%${trimmedQuery}%,email.ilike.%${trimmedQuery}%,phone.ilike.%${trimmedQuery}%,mobile_no.ilike.%${trimmedQuery}%,id_card_no.ilike.%${trimmedQuery}%`);
         }
 
         const { data: fallbackData, error: fallbackError } = await q.limit(20);
         if (fallbackError) throw fallbackError;
-        return fallbackData || [];
+        return (fallbackData || []).map(item => ({
+            ...item,
+            full_name: item.full_name || item.name || item.company_name || '',
+            phone: item.phone || item.mobile_no || item.phone_number || '',
+            mobile_no: item.mobile_no || item.phone || item.phone_number || '',
+            discount_pct: item.discount_pct || item.special_discount || item.discount || 0
+        }));
     } catch (err) {
         console.error('Error fetching guest cards fallback:', err);
         return [];
@@ -63,7 +74,6 @@ export async function getGuestCardById(id) {
     if (!id) return null;
 
     try {
-        // Query guest_card_files with optional joins or additional fetches
         const { data: guestCard, error } = await supabaseClient
             .from('guest_card_files')
             .select('*')
@@ -71,7 +81,6 @@ export async function getGuestCardById(id) {
             .single();
 
         if (error) {
-            // Try fetching from guest_profiles as fallback
             const { data: profile, error: profErr } = await supabaseClient
                 .from('guest_profiles')
                 .select('*')
@@ -79,7 +88,18 @@ export async function getGuestCardById(id) {
                 .single();
 
             if (profErr) throw profErr;
+            if (profile) {
+                profile.full_name = profile.full_name || profile.name || '';
+                profile.phone = profile.phone || profile.phone_number || profile.mobile_no || '';
+            }
             return profile;
+        }
+
+        if (guestCard) {
+            guestCard.full_name = guestCard.full_name || guestCard.name || guestCard.company_name || '';
+            guestCard.phone = guestCard.phone || guestCard.mobile_no || guestCard.phone_number || '';
+            guestCard.mobile_no = guestCard.mobile_no || guestCard.phone || guestCard.phone_number || '';
+            guestCard.discount_pct = guestCard.discount_pct || guestCard.special_discount || guestCard.discount || 0;
         }
 
         // Fetch contacts if separate table exists
@@ -116,24 +136,21 @@ export async function getGuestCardById(id) {
 export async function saveGuestCard(guestData) {
     if (!guestData) throw new Error('Guest data is required.');
 
+    const nameVal = guestData.name || guestData.full_name || guestData.guest_name || '';
     const payload = {
-        full_name: guestData.full_name || guestData.guest_name || '',
-        company_name: guestData.company_name || null,
+        name: nameVal,
         card_type: guestData.card_type || 'Individual',
         email: guestData.email || null,
-        phone_number: guestData.phone_number || guestData.phone || null,
+        phone: guestData.phone || guestData.phone_number || guestData.mobile_no || null,
+        mobile_no: guestData.mobile_no || guestData.phone || guestData.phone_number || null,
         id_card_no: guestData.id_card_no || guestData.id_card || null,
         address: guestData.address || null,
         city: guestData.city || null,
-        nationality: guestData.nationality || 'Indonesia',
-        birth_date: guestData.birth_date || null,
-        special_discount: guestData.special_discount || guestData.discount || 0,
-        notes: guestData.notes || guestData.comment || null,
-        updated_at: new Date().toISOString()
+        discount_pct: parseFloat(guestData.discount_pct || guestData.special_discount || guestData.discount || 0),
+        comments: guestData.notes || guestData.comments || guestData.comment || null
     };
 
     if (guestData.id) {
-        // Update existing guest card
         const { data, error } = await supabaseClient
             .from('guest_card_files')
             .update(payload)
@@ -144,7 +161,6 @@ export async function saveGuestCard(guestData) {
         if (error) throw error;
         return data;
     } else {
-        // Insert new guest card
         payload.created_at = new Date().toISOString();
         const { data, error } = await supabaseClient
             .from('guest_card_files')
@@ -174,42 +190,41 @@ export async function applyGuestCardToReservation(guestId) {
         }
 
         const nameInput = document.getElementById('res-guest-name');
+        const bookerInput = document.getElementById('res-booker-name');
         const emailInput = document.getElementById('res-email');
         const phoneInput = document.getElementById('res-phone');
         const idCardInput = document.getElementById('res-id-card');
         const profileIdInput = document.getElementById('res-guest-profile-id');
+        const cardIdInput = document.getElementById('res-guest-card-id');
         const addressInput = document.getElementById('res-address');
         const cityInput = document.getElementById('res-city');
         const nationalityInput = document.getElementById('res-nationality');
         const birthDateInput = document.getElementById('res-birth-date');
         const commentInput = document.getElementById('res-comment');
+        const discountInput = document.getElementById('res-discount-pct');
 
-        if (profileIdInput) profileIdInput.value = guest.id || guestId;
-        if (nameInput) nameInput.value = guest.full_name || guest.name || '';
+        const fullName = guest.full_name || guest.name || '';
+
+        if (cardIdInput) cardIdInput.value = guest.id || guestId;
+        if (profileIdInput && !profileIdInput.value) profileIdInput.value = guest.id || guestId;
+        if (nameInput) nameInput.value = fullName;
+        if (bookerInput) bookerInput.value = fullName;
         if (emailInput) emailInput.value = guest.email || '';
-        if (phoneInput) phoneInput.value = guest.phone_number || guest.phone || '';
+        if (phoneInput) phoneInput.value = guest.phone || guest.mobile_no || guest.phone_number || '';
         if (idCardInput) idCardInput.value = guest.id_card_no || guest.id_card || '';
         if (addressInput) addressInput.value = guest.address || '';
         if (cityInput) cityInput.value = guest.city || '';
-        if (nationalityInput) nationalityInput.value = guest.nationality || 'Indonesia';
-        if (birthDateInput && guest.birth_date) birthDateInput.value = guest.birth_date;
+        if (nationalityInput) nationalityInput.value = guest.nationality || guest.nationality_code || 'Indonesia';
+        if (birthDateInput && guest.birthdate) birthDateInput.value = guest.birthdate;
 
-        // Populate special terms / discount if present
-        if (guest.special_discount || guest.discount) {
-            const discountNote = `Diskon Khusus GCF: ${guest.special_discount || guest.discount}%`;
+        const discountVal = guest.discount_pct || guest.special_discount || guest.discount || 0;
+        if (discountInput) discountInput.value = discountVal;
+
+        if (guest.comments) {
             if (commentInput) {
                 const currentComment = commentInput.value ? commentInput.value.trim() : '';
-                if (!currentComment.includes(discountNote)) {
-                    commentInput.value = currentComment ? `${currentComment} | ${discountNote}` : discountNote;
-                }
-            }
-        }
-
-        if (guest.notes) {
-            if (commentInput) {
-                const currentComment = commentInput.value ? commentInput.value.trim() : '';
-                if (!currentComment.includes(guest.notes)) {
-                    commentInput.value = currentComment ? `${currentComment} | Notes: ${guest.notes}` : `Notes: ${guest.notes}`;
+                if (!currentComment.includes(guest.comments)) {
+                    commentInput.value = currentComment ? `${currentComment} | ${guest.comments}` : guest.comments;
                 }
             }
         }

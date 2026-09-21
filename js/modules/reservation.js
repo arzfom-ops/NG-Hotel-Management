@@ -1,8 +1,10 @@
 import { supabaseClient } from '../config/supabase.js';
-import { formatDateISO, addDays, formatStayDatesCompact } from '../utils/formatters.js';
+import { formatDateISO, addDays, formatStayDatesCompact, showToast } from '../utils/formatters.js';
+import { searchGuestCards, getGuestCardById, saveGuestCard, applyGuestCardToReservation } from '../services/guestService.js';
 
 // Global/Module Caches & State
 export let guestSearchDebounceTimer = null;
+export let gcfSearchDebounceTimer = null;
 export let mealPlansCache = [];
 export let roomTypesCache = [];
 export let ratePlansCache = [];
@@ -331,18 +333,129 @@ export function selectGuestProfile(id, name, idCard, phone, email, birthDate, ad
 }
 
 export function clearSelectedGuest() {
-    document.getElementById('res-guest-profile-id').value = '';
-    document.getElementById('res-guest-name').value = '';
-    document.getElementById('res-id-card').value = '';
-    document.getElementById('res-phone').value = '';
-    document.getElementById('res-email').value = '';
-    document.getElementById('res-birth-date').value = '';
-    document.getElementById('res-address').value = '';
-    document.getElementById('res-city').value = '';
-    document.getElementById('res-nationality').value = 'Indonesia';
+    if (document.getElementById('res-guest-profile-id')) document.getElementById('res-guest-profile-id').value = '';
+    if (document.getElementById('res-guest-card-id')) document.getElementById('res-guest-card-id').value = '';
+    if (document.getElementById('res-guest-name')) document.getElementById('res-guest-name').value = '';
+    if (document.getElementById('res-id-card')) document.getElementById('res-id-card').value = '';
+    if (document.getElementById('res-phone')) document.getElementById('res-phone').value = '';
+    if (document.getElementById('res-email')) document.getElementById('res-email').value = '';
+    if (document.getElementById('res-birth-date')) document.getElementById('res-birth-date').value = '';
+    if (document.getElementById('res-address')) document.getElementById('res-address').value = '';
+    if (document.getElementById('res-city')) document.getElementById('res-city').value = '';
+    if (document.getElementById('res-nationality')) document.getElementById('res-nationality').value = 'Indonesia';
+    if (document.getElementById('res-discount-pct')) document.getElementById('res-discount-pct').value = '0';
+    if (document.getElementById('res-save-to-gcf')) document.getElementById('res-save-to-gcf').checked = false;
 
     const suggestionsDiv = document.getElementById('res-guest-suggestions');
     if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
+}
+
+// GCF Lookup Modal & Auto-Fill Functions
+export function openGuestLookupModal() {
+    const modal = document.getElementById('modal-guest-lookup');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+    const searchInput = document.getElementById('gcf-lookup-search');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    handleGcfSearchInput();
+}
+
+export function closeGuestLookupModal() {
+    const modal = document.getElementById('modal-guest-lookup');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+export function handleGcfSearchInput() {
+    if (gcfSearchDebounceTimer) {
+        clearTimeout(gcfSearchDebounceTimer);
+    }
+    gcfSearchDebounceTimer = setTimeout(async () => {
+        const searchInput = document.getElementById('gcf-lookup-search');
+        const typeSelect = document.getElementById('gcf-lookup-type');
+        const query = searchInput ? searchInput.value.trim() : '';
+        const cardType = typeSelect ? typeSelect.value : null;
+
+        const tbody = document.getElementById('gcf-lookup-tbody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 font-medium"><i class="ph ph-spinner animate-spin text-base"></i> Memuat profil GCF...</td></tr>`;
+        }
+
+        const results = await searchGuestCards(query, cardType);
+
+        if (!tbody) return;
+
+        if (!results || results.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 font-medium">Tidak ada profil GCF yang ditemukan.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = results.map(g => {
+            const name = g.full_name || g.name || g.company_name || '-';
+            const type = g.card_type || 'Individual';
+            const phone = g.phone || g.mobile_no || g.phone_number || '-';
+            const email = g.email || '-';
+            const idCard = g.id_card_no || g.id_card || '-';
+            const limitVal = g.credit_limit ? Number(g.credit_limit) : 0;
+            const limit = `Rp ${limitVal.toLocaleString('id-ID')}`;
+
+            return `<tr class="hover:bg-slate-50 transition-colors">
+                <td class="p-3 font-semibold text-slate-800">${name}</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">${type}</span></td>
+                <td class="p-3 text-slate-600">${phone}</td>
+                <td class="p-3 text-slate-600">${email}</td>
+                <td class="p-3 text-slate-600">${idCard}</td>
+                <td class="p-3 font-bold text-slate-700">${limit}</td>
+                <td class="p-3 text-center">
+                    <button type="button" onclick="window.selectGuestFromLookup('${g.id}')" class="px-3 py-1 bg-primary hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">
+                        Pilih
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+    }, 300);
+}
+
+export async function selectGuestFromLookup(guestId) {
+    if (!guestId) return;
+
+    const guest = await getGuestCardById(guestId);
+    if (!guest) {
+        alert('Data profil GCF tidak ditemukan.');
+        return;
+    }
+
+    const nameVal = guest.full_name || guest.name || '';
+    const bookerInput = document.getElementById('res-booker-name');
+    const guestNameInput = document.getElementById('res-guest-name');
+    const phoneInput = document.getElementById('res-phone');
+    const emailInput = document.getElementById('res-email');
+    const idCardInput = document.getElementById('res-id-card');
+    const discountInput = document.getElementById('res-discount-pct');
+    const cardIdInput = document.getElementById('res-guest-card-id');
+    const profileIdInput = document.getElementById('res-guest-profile-id');
+    const addressInput = document.getElementById('res-address');
+    const cityInput = document.getElementById('res-city');
+    const nationalityInput = document.getElementById('res-nationality');
+
+    if (bookerInput) bookerInput.value = nameVal;
+    if (guestNameInput) guestNameInput.value = nameVal;
+    if (phoneInput) phoneInput.value = guest.phone || guest.mobile_no || guest.phone_number || '';
+    if (emailInput) emailInput.value = guest.email || '';
+    if (idCardInput) idCardInput.value = guest.id_card_no || guest.id_card || '';
+    if (discountInput) discountInput.value = guest.discount_pct || guest.special_discount || 0;
+    if (cardIdInput) cardIdInput.value = guest.id || guestId;
+    if (profileIdInput && !profileIdInput.value) profileIdInput.value = guest.id || guestId;
+    if (addressInput) addressInput.value = guest.address || '';
+    if (cityInput) cityInput.value = guest.city || '';
+    if (nationalityInput) nationalityInput.value = guest.nationality || guest.nationality_code || 'Indonesia';
+
+    closeGuestLookupModal();
+    showToast(`Profil ${nameVal} berhasil dimuat`, 'success');
 }
 
 // 3. Kalkulasi Tanggal & Daily Rates
@@ -1495,6 +1608,35 @@ export async function handleSaveReservation(event) {
                     nationality: nationalityVal || 'Indonesia'
                 })
                 .eq('id', guestProfileId);
+        }
+
+        // Save to GCF if checkbox is checked
+        const saveToGcfChecked = document.getElementById('res-save-to-gcf')?.checked;
+        let guestCardId = document.getElementById('res-guest-card-id')?.value || null;
+        const discountPctVal = parseFloat(document.getElementById('res-discount-pct')?.value) || 0;
+
+        if (saveToGcfChecked) {
+            try {
+                const gcfData = await saveGuestCard({
+                    id: guestCardId || undefined,
+                    full_name: bookerNameVal || guestNameVal,
+                    name: bookerNameVal || guestNameVal,
+                    phone: phoneVal,
+                    email: emailVal,
+                    id_card_no: idCardVal,
+                    address: addressVal,
+                    city: cityVal,
+                    discount_pct: discountPctVal,
+                    comments: document.getElementById('res-comment')?.value || null
+                });
+                if (gcfData && gcfData.id) {
+                    guestCardId = gcfData.id;
+                    const cardIdEl = document.getElementById('res-guest-card-id');
+                    if (cardIdEl) cardIdEl.value = guestCardId;
+                }
+            } catch (gcfErr) {
+                console.warn('Error saving/updating GCF profile:', gcfErr);
+            }
         }
 
         const checkInDate = document.getElementById('res-check-in').value;

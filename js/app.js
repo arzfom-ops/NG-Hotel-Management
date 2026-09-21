@@ -83,7 +83,11 @@ import {
     handleCheckInReservation,
     handleCheckIn,
     handlePrintRegistrationCard,
-    handleSaveReservation
+    handleSaveReservation,
+    openGuestLookupModal,
+    closeGuestLookupModal,
+    handleGcfSearchInput,
+    selectGuestFromLookup
 } from './modules/reservation.js';
 
 import {
@@ -620,6 +624,10 @@ if (typeof window !== 'undefined') {
     window.handleCheckInReservation = handleCheckInReservation;
     window.handleCheckIn = handleCheckIn;
     window.handlePrintRegistrationCard = handlePrintRegistrationCard;
+    window.openGuestLookupModal = openGuestLookupModal;
+    window.closeGuestLookupModal = closeGuestLookupModal;
+    window.handleGcfSearchInput = handleGcfSearchInput;
+    window.selectGuestFromLookup = selectGuestFromLookup;
     window.mealPlansCache = mealPlansCache;
     window.roomTypesCache = roomTypesCache;
     window.ratePlansCache = ratePlansCache;
