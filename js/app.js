@@ -223,6 +223,13 @@ import {
 } from './modules/shift.js';
 
 import {
+    searchGuestCards,
+    getGuestCardById,
+    saveGuestCard,
+    applyGuestCardToReservation
+} from './services/guestService.js';
+
+import {
     switchSettingsTab,
     fetchBedTypes,
     openBedTypeModal,
@@ -750,6 +757,12 @@ if (typeof window !== 'undefined') {
     window.renderShiftLogbooks = renderShiftLogbooks;
     window.handleAddLogbookEntry = handleAddLogbookEntry;
     window.handleResolveLogbook = handleResolveLogbook;
+
+    // Guest Service (GCF Module)
+    window.searchGuestCards = searchGuestCards;
+    window.getGuestCardById = getGuestCardById;
+    window.saveGuestCard = saveGuestCard;
+    window.applyGuestCardToReservation = applyGuestCardToReservation;
 
     // Settings Module
     window.switchSettingsTab = switchSettingsTab;
