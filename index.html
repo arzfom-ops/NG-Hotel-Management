@@ -108,6 +108,9 @@
             <a href="#" onclick="switchView('corporate')" id="nav-corporate" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-sm font-semibold cursor-pointer">
                 <i class="ph ph-buildings text-xl"></i> Corporate / Travel Agent
             </a>
+            <a href="#guest-profiles" id="nav-guest-profiles" onclick="switchView('guest-profiles')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-sm font-semibold cursor-pointer">
+                <i class="ph ph-identification-card text-xl"></i> Guest Profiles (GCF)
+            </a>
             <!-- Reports Section -->
             <div class="pt-2 space-y-1">
                 <div class="px-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reports</div>
@@ -163,6 +166,9 @@
             </a>
             <a href="#" onclick="switchView('corporate')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
                 <i class="ph ph-buildings text-xl"></i> Corporate / Travel Agent
+            </a>
+            <a href="#guest-profiles" onclick="switchView('guest-profiles')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                <i class="ph ph-identification-card text-xl"></i> Guest Profiles (GCF)
             </a>
             <!-- Reports Section -->
             <div class="pt-2 space-y-1">
@@ -2886,6 +2892,72 @@
             </div>
         </div>
 
+        <!-- Content Area: Guest Profiles / GCF Master View -->
+        <div id="view-guest-profiles" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
+            <div class="space-y-6">
+                <!-- Header & Action Bar -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Guest Card File (GCF) Master</h2>
+                        <p class="text-sm text-slate-500 mt-1">Kelola data profil tamu individual, perusahaan, dan agen perjalanan.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="window.openMergeProfilesModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-all shadow-sm flex items-center gap-2 cursor-pointer">
+                            <i class="ph ph-git-merge text-lg"></i>
+                            <span>Merge Profiles</span>
+                        </button>
+                        <button type="button" onclick="window.openGcfEditorModal()" class="px-4 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer">
+                            <i class="ph ph-plus-circle text-lg"></i>
+                            <span>+ Add New Profile</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search & Category Tab Bar -->
+                <div class="bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                    <!-- Search input -->
+                    <div class="relative w-full md:w-96">
+                        <i class="ph ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                        <input type="text" oninput="window.handleGcfTableSearch(this.value)" placeholder="Cari Nama / HP / Email / KTP / Company..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all">
+                    </div>
+
+                    <!-- Filter Category Tabs -->
+                    <div class="flex items-center bg-slate-100/80 p-1 rounded-xl w-full md:w-auto justify-stretch md:justify-start gap-1">
+                        <button type="button" id="gcf-tab-all" onclick="window.setGcfTab('All')" class="px-4 py-2 text-sm font-bold rounded-lg bg-white text-primary shadow-sm transition-all">All</button>
+                        <button type="button" id="gcf-tab-individual" onclick="window.setGcfTab('Individual')" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all">Individual</button>
+                        <button type="button" id="gcf-tab-company" onclick="window.setGcfTab('Company')" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all">Company</button>
+                        <button type="button" id="gcf-tab-ta" onclick="window.setGcfTab('TravelAgent')" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all">Travel Agent</button>
+                    </div>
+                </div>
+
+                <!-- Glassy Data Table -->
+                <div class="bg-white/70 backdrop-blur-xl border border-white/80 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200/80 bg-slate-50/50 text-slate-500 uppercase text-[11px] font-bold tracking-wider">
+                                    <th class="py-3.5 px-4">Tipe</th>
+                                    <th class="py-3.5 px-4">Nama Lengkap / Perusahaan</th>
+                                    <th class="py-3.5 px-4">No. Kontak (HP/Email)</th>
+                                    <th class="py-3.5 px-4">No. Identitas / Reg</th>
+                                    <th class="py-3.5 px-4">Credit Limit</th>
+                                    <th class="py-3.5 px-4">Diskon</th>
+                                    <th class="py-3.5 px-4 text-center">Aksi (Edit / History / Delete)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gcf-table-body">
+                                <tr>
+                                    <td colspan="7" class="py-8 text-center text-slate-500 font-medium">
+                                        Memuat data Guest Card Files...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Content Area: Cancel List View -->
         <div id="cancel-list-view" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px] flex flex-col">
@@ -3395,6 +3467,326 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- Modal: Comprehensive GCF Editor -->
+    <div id="modal-gcf-editor" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto hidden">
+        <form id="gcf-editor-form" onsubmit="window.saveGcfProfile(event)" class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+                <div>
+                    <h3 id="gcf-modal-title" class="text-xl font-extrabold text-slate-800">Add New Guest Card Profile (GCF)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Lengkapi informasi profil tamu, perusahaan, atau agen perjalanan.</p>
+                </div>
+                <button type="button" onclick="window.closeGcfEditorModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+                <!-- Card Type Selector & Sub-Tabs Header -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/70 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <i class="ph ph-identification-card text-primary text-lg"></i>
+                            <span>Tipe Profil Guest Card:</span>
+                        </label>
+                        <select id="gcf-card-type" onchange="window.handleGcfCardTypeChange()" class="px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none shadow-sm">
+                            <option value="Individual">Individual (Tamu Perorangan)</option>
+                            <option value="Company">Company (Perusahaan / B2B)</option>
+                            <option value="Travel Agent">Travel Agent (Agen Perjalanan / OTA)</option>
+                        </select>
+                    </div>
+
+                    <!-- Sub-Tab Navigation (Company / Travel Agent only) -->
+                    <div id="gcf-modal-subtabs" class="flex gap-2 border-b border-slate-200 pt-2 hidden">
+                        <button type="button" id="gcf-modal-tab-basic" onclick="window.switchGcfModalTab('basic')" class="px-4 py-2 border-b-2 border-primary font-bold text-primary text-sm transition-all">
+                            Basic Info
+                        </button>
+                        <button type="button" id="gcf-modal-tab-contacts" onclick="window.switchGcfModalTab('contacts')" class="px-4 py-2 border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-800 text-sm transition-all">
+                            Contact Persons (PIC)
+                        </button>
+                        <button type="button" id="gcf-modal-tab-rates" onclick="window.switchGcfModalTab('rates')" class="px-4 py-2 border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-800 text-sm transition-all">
+                            Contract Rates
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Content 1: Basic Info -->
+                <div id="gcf-tab-content-basic" class="space-y-4">
+                    <!-- Dynamic Fields for Individual -->
+                    <div id="gcf-individual-fields" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Title</label>
+                                <select id="gcf-title" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                                    <option value="Mr">Mr (Tn)</option>
+                                    <option value="Mrs">Mrs (Ny)</option>
+                                    <option value="Ms">Ms (Nn)</option>
+                                    <option value="Dr">Dr</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Nama Depan</label>
+                                <input type="text" id="gcf-first-name" placeholder="Nama Depan" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Nama Belakang / Lengkap *</label>
+                                <input type="text" id="gcf-last-name" placeholder="Nama Belakang / Lengkap" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Tipe Identitas</label>
+                                <select id="gcf-id-card-type" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                                    <option value="KTP">KTP</option>
+                                    <option value="PASSPORT">Paspor</option>
+                                    <option value="SIM">SIM</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">No. Identitas (KTP/Paspor)</label>
+                                <input type="text" id="gcf-id-card" placeholder="317xxxxxxxxxxxxx" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Tanggal Lahir</label>
+                                <input type="date" id="gcf-birthdate" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Jenis Kelamin</label>
+                                <select id="gcf-sex" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                                    <option value="">-- Pilih --</option>
+                                    <option value="L">Laki-Laki</option>
+                                    <option value="P">Perempuan</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Pekerjaan</label>
+                                <input type="text" id="gcf-occupation" placeholder="Swasta/PNS/DLL" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Kota</label>
+                                <input type="text" id="gcf-city" placeholder="Jakarta" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">No HP / Whatsapp</label>
+                                <input type="text" id="gcf-mobile" placeholder="0812xxxxxxxx" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Email</label>
+                                <input type="email" id="gcf-email" placeholder="tamu@email.com" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Alamat Tempat Tinggal</label>
+                            <textarea id="gcf-address" rows="2" placeholder="Alamat lengkap..." class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Fields for Company / Travel Agent -->
+                    <div id="gcf-company-fields" class="space-y-4 hidden">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Nama Perusahaan / TA *</label>
+                                <input type="text" id="gcf-company-name" placeholder="PT. Contoh Indonesia / Travel Agent ABC" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">No. Telepon Kantor</label>
+                                <input type="text" id="gcf-office-phone" placeholder="021-xxxxxxxx" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Alamat Kantor</label>
+                            <textarea id="gcf-office-address" rows="2" placeholder="Alamat kantor perusahaan..." class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Credit Limit (Rp)</label>
+                                <input type="number" id="gcf-credit-limit" placeholder="10000000" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Sales Executive / PIC Sales</label>
+                                <input type="text" id="gcf-sales-exec" placeholder="Nama Sales Executive" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Contract Expired Date</label>
+                                <input type="date" id="gcf-contract-exp" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Diskon Khusus (%)</label>
+                                <input type="number" id="gcf-discount-pct" placeholder="0" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Common Comments -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Catatan / Special Request / Preferences</label>
+                        <textarea id="gcf-comments" rows="2" placeholder="Catatan khusus atau preference tamu..." class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- Tab Content 2: Contact Persons (PIC) -->
+                <div id="gcf-tab-content-contacts" class="space-y-4 hidden">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-bold text-slate-700">Daftar Contact Person (PIC)</h4>
+                        <button type="button" onclick="window.addGcfContactRow()" class="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-lg text-xs transition-colors flex items-center gap-1">
+                            <i class="ph ph-plus"></i> Tambah PIC
+                        </button>
+                    </div>
+                    <div class="border border-slate-200 rounded-xl overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+                                    <th class="p-2">Nama Lengkap PIC</th>
+                                    <th class="p-2">Departemen</th>
+                                    <th class="p-2">Jabatan</th>
+                                    <th class="p-2">No. HP / Telp</th>
+                                    <th class="p-2">Email</th>
+                                    <th class="p-2 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gcf-contacts-table-body">
+                                <tr>
+                                    <td colspan="6" class="py-6 text-center text-slate-400 text-sm italic">Belum ada PIC ditambahkan.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab Content 3: Contract Rates -->
+                <div id="gcf-tab-content-rates" class="space-y-4 hidden">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-bold text-slate-700">Pengaturan Contract Rates (Harga Per Tipe Kamar)</h4>
+                        <button type="button" onclick="window.addGcfContractRateRow()" class="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-lg text-xs transition-colors flex items-center gap-1">
+                            <i class="ph ph-plus"></i> Tambah Contract Rate
+                        </button>
+                    </div>
+                    <div class="border border-slate-200 rounded-xl overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+                                    <th class="p-2">Tipe Kamar</th>
+                                    <th class="p-2">Nominal Harga (Rp)</th>
+                                    <th class="p-2">Valid Dari</th>
+                                    <th class="p-2">Valid Sampai</th>
+                                    <th class="p-2 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gcf-rates-table-body">
+                                <tr>
+                                    <td colspan="5" class="py-6 text-center text-slate-400 text-sm italic">Belum ada Contract Rate ditambahkan.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 shrink-0">
+                <button type="button" onclick="window.closeGcfEditorModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold transition-all shadow-md">
+                    Simpan Profil GCF
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal: GCF Stay History -->
+    <div id="modal-gcf-history" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-3xl overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div>
+                    <h3 class="text-lg font-extrabold text-slate-800">Riwayat Reservasi & Menginap</h3>
+                    <p class="text-xs text-slate-500 mt-0.5"><span id="gcf-history-guest-name" class="font-bold text-slate-700"></span></p>
+                </div>
+                <button type="button" onclick="window.closeGcfHistoryModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[60vh]">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+                            <th class="py-2.5 px-3">No. Reservasi</th>
+                            <th class="py-2.5 px-3">Tanggal Inap</th>
+                            <th class="py-2.5 px-3">Tipe & Kamar</th>
+                            <th class="py-2.5 px-3">Room Rate</th>
+                            <th class="py-2.5 px-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gcf-history-table-body">
+                        <tr>
+                            <td colspan="5" class="py-6 text-center text-slate-400 text-sm">Memuat riwayat...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button type="button" onclick="window.closeGcfHistoryModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: GCF Profile Merging -->
+    <div id="modal-gcf-merge" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto hidden">
+        <form onsubmit="window.executeMergeProfiles(event)" class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div>
+                    <h3 class="text-lg font-extrabold text-slate-800">Merge Profiles (Penggabungan GCF)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Pindahkan riwayat dari profil duplikat ke profil utama.</p>
+                </div>
+                <button type="button" onclick="window.closeMergeProfilesModal()" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-sm">
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+                    <i class="ph ph-warning text-base text-amber-600 shrink-0 mt-0.5"></i>
+                    <span><strong>Perhatian:</strong> Profil sumber akan dihapus permanen, dan seluruh riwayat reservasi & PIC akan dialihkan ke Profil Tujuan.</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Profil Sumber (Akan Dihapus / Duplicate)</label>
+                    <select id="gcf-merge-source" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-primary focus:outline-none">
+                        <option value="">-- Pilih Profil Sumber --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Profil Tujuan (Tersimpan / Master Profile)</label>
+                    <select id="gcf-merge-target" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-primary focus:outline-none">
+                        <option value="">-- Pilih Profil Tujuan --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button type="button" onclick="window.closeMergeProfilesModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5">
+                    <i class="ph ph-git-merge text-sm"></i> Gabungkan Profil
+                </button>
+            </div>
+        </form>
     </div>
 
     <!-- Floating Glassy Toast Notifications Container -->
