@@ -122,6 +122,7 @@ import {
     renderMasterFolioTab,
     handleTransferToMaster,
     handleReturnFromMaster,
+    renderFolioModal,
     openFolioModal,
     closeFolioModal,
     checkAndUpdateMasterFolioHeader,
@@ -652,6 +653,7 @@ if (typeof window !== 'undefined') {
     window.renderMasterFolioTab = renderMasterFolioTab;
     window.handleTransferToMaster = handleTransferToMaster;
     window.handleReturnFromMaster = handleReturnFromMaster;
+    window.renderFolioModal = renderFolioModal;
     window.openFolioModal = openFolioModal;
     window.closeFolioModal = closeFolioModal;
     window.checkAndUpdateMasterFolioHeader = checkAndUpdateMasterFolioHeader;
