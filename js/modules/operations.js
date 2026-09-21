@@ -44,7 +44,8 @@ export async function fetchHousekeepingRooms() {
     try {
         const { data, error } = await supabaseClient
             .from('rooms')
-            .select('id, room_number, status, room_type_id, room_types(name)')
+            .select('id, room_number, status, room_type_id, is_virtual, room_types(name)')
+            .eq('is_virtual', false)
             .order('room_number', { ascending: true });
 
         if (error) throw error;

@@ -579,6 +579,7 @@ export async function renderTapeChart() {
                 room_number,
                 status,
                 room_type_id,
+                is_virtual,
                 room_types (name)
             `);
 
@@ -615,8 +616,8 @@ export async function renderTapeChart() {
         const minDateStr = formatDateISO(datesList[0]);
         const maxDateStr = formatDateISO(datesList[TOTAL_DAYS - 1]);
 
-        // Filter rooms by room type if selected & exclude PM / Paymaster rooms
-        let displayRooms = roomsCache.filter(r => !r.room_number || !r.room_number.toLowerCase().startsWith('pm-'));
+        // Filter rooms by room type if selected & exclude PM / Paymaster / Virtual rooms
+        let displayRooms = roomsCache.filter(r => !r.is_virtual && (!r.room_number || !r.room_number.toLowerCase().startsWith('pm-')));
         if (selectedRoomTypeFilter) {
             displayRooms = displayRooms.filter(r => r.room_type_id === selectedRoomTypeFilter);
         }
@@ -1005,17 +1006,20 @@ export async function renderRoomForecast() {
         const minDateStr = formatDateISO(datesList[0]);
         const maxDateStr = formatDateISO(datesList[13]);
 
-        // 1. Fetch total rooms count from DB or roomsCache
+        // 1. Fetch total physical rooms count from DB or roomsCache (exclude is_virtual = true & PM- rooms)
         let totalRoomsCount = 0;
         const roomsCache = window.roomsCache || [];
         if (roomsCache && roomsCache.length > 0) {
-            totalRoomsCount = roomsCache.length;
+            const physicalRooms = roomsCache.filter(r => !r.is_virtual && (!r.room_number || !r.room_number.toLowerCase().startsWith('pm-')));
+            totalRoomsCount = physicalRooms.length;
         } else {
             const { data: roomsData, error: roomsErr } = await supabaseClient
                 .from('rooms')
-                .select('id, status');
+                .select('id, room_number, status, is_virtual')
+                .eq('is_virtual', false);
             if (roomsErr) throw roomsErr;
-            totalRoomsCount = roomsData ? roomsData.length : 0;
+            const physicalRooms = (roomsData || []).filter(r => !r.room_number || !r.room_number.toLowerCase().startsWith('pm-'));
+            totalRoomsCount = physicalRooms.length;
         }
 
         // 2. Fetch OOO / OOS room blocks overlapping 14 days
@@ -1026,14 +1030,27 @@ export async function renderRoomForecast() {
             .gte('end_date', minDateStr);
         if (blocksErr) console.error('Error fetching room_blocks for forecast:', blocksErr);
 
-        // 3. Fetch active reservations overlapping 14 days (Reserved, Checkin)
+        // 3. Fetch active reservations overlapping 14 days (Reserved, Checkin) excluding non-staying / virtual PM room reservations
         const { data: resData, error: resErr } = await supabaseClient
             .from('reservations')
-            .select('id, check_in_date, check_out_date, qty, reservation_source, segment_id, status')
+            .select('id, check_in_date, check_out_date, qty, reservation_source, segment_id, status, guest_type, room_id, rooms (room_number, is_virtual)')
             .in('status', ['Reserved', 'Checkin'])
             .lt('check_in_date', addDaysISO(maxDateStr, 1))
             .gte('check_out_date', minDateStr);
         if (resErr) throw resErr;
+
+        const activeReservationsRaw = resData || [];
+        const activeReservations = activeReservationsRaw.filter(r => {
+            if (r.guest_type === 'Non-Staying Guest') return false;
+            if (r.rooms) {
+                const roomObj = Array.isArray(r.rooms) ? r.rooms[0] : r.rooms;
+                if (roomObj) {
+                    if (roomObj.is_virtual) return false;
+                    if (roomObj.room_number && String(roomObj.room_number).toLowerCase().startsWith('pm-')) return false;
+                }
+            }
+            return true;
+        });
 
         // Daily metrics calculation for each of the 14 days
         const metrics = {
@@ -1046,7 +1063,6 @@ export async function renderRoomForecast() {
         };
 
         const activeBlocks = roomBlocks || [];
-        const activeReservations = resData || [];
 
         datesList.forEach(d => {
             const dateISO = formatDateISO(d);
