@@ -1269,7 +1269,20 @@ export async function handleSaveFolioTransaction(e) {
     const isMasterMode = txModal && txModal.dataset.isMasterMode === "true";
 
     if (!isMasterMode && !currentFolioReservation) return;
-    if (isMasterMode && !currentMasterGroup) return;
+
+    let resId = isMasterMode ? null : currentFolioReservation?.id;
+    let masterId = null;
+
+    if (isMasterMode) {
+        masterId = currentMasterGroup?.master_folio_id || currentMasterGroup?.id;
+        if (!masterId && currentFolioReservation) {
+            masterId = await getOrCreateMasterFolioId(currentFolioReservation);
+        }
+        if (!masterId) {
+            alert('Master Folio ID tidak ditemukan.');
+            return;
+        }
+    }
 
     const txType = document.getElementById('folio-tx-type').value;
     let description = '';
@@ -1278,6 +1291,7 @@ export async function handleSaveFolioTransaction(e) {
     let unitPrice = null;
     let amount = 0;
     let referenceNumber = null;
+    let paymentMethodId = null;
 
     if (txType === 'CHARGE') {
         const chargeSelect = document.getElementById('folio-tx-charge-item');
@@ -1306,22 +1320,41 @@ export async function handleSaveFolioTransaction(e) {
         amount = parseFloat(document.getElementById('folio-tx-amount').value) || 0;
 
         const paymentMethodSelect = document.getElementById('folio-tx-payment-method');
+        const selectedOption = paymentMethodSelect ? paymentMethodSelect.options[paymentMethodSelect.selectedIndex] : null;
         const paymentMethod = paymentMethodSelect ? paymentMethodSelect.value : '';
+        paymentMethodId = selectedOption ? selectedOption.getAttribute('data-id') : null;
+        const rawType = selectedOption ? (selectedOption.getAttribute('data-type') || paymentMethod) : paymentMethod;
         const refInput = document.getElementById('folio-tx-reference');
         referenceNumber = refInput ? refInput.value.trim() : '';
 
         const methodLabel = paymentMethod ? `[${paymentMethod}]` : '';
         description = noteDesc ? `${methodLabel} ${noteDesc}`.trim() : `Payment ${methodLabel}`.trim();
         referenceNumber = referenceNumber || paymentMethod || null;
+
+        // Determine PAYMENT category (CASH, CREDIT_CARD, BANK_TRANSFER, DEPOSIT)
+        const checkStr = (rawType + ' ' + paymentMethod + ' ' + noteDesc).toUpperCase();
+        if (checkStr.includes('DEPOSIT')) {
+            category = 'DEPOSIT';
+        } else if (checkStr.includes('TRANSFER') || checkStr.includes('BANK')) {
+            category = 'BANK_TRANSFER';
+        } else if (checkStr.includes('CREDIT') || checkStr.includes('DEBIT') || checkStr.includes('EDC') || checkStr.includes('CARD')) {
+            category = 'CREDIT_CARD';
+        } else if (checkStr.includes('CASH')) {
+            category = 'CASH';
+        } else {
+            const upperType = rawType.toUpperCase().replace(/\s+/g, '_');
+            if (['CASH', 'CREDIT_CARD', 'BANK_TRANSFER', 'DEPOSIT'].includes(upperType)) {
+                category = upperType;
+            } else {
+                category = 'CASH';
+            }
+        }
     }
 
     if (isNaN(amount) || amount <= 0) {
         alert('Jumlah transaksi (amount) harus lebih dari 0.');
         return;
     }
-
-    const resId = isMasterMode ? null : currentFolioReservation.id;
-    const masterId = isMasterMode ? (currentMasterGroup.master_folio_id || currentMasterGroup.id) : null;
 
     const submitBtn = document.getElementById('folioTxSubmitBtn');
     if (submitBtn) {
@@ -1359,6 +1392,7 @@ export async function handleSaveFolioTransaction(e) {
                 transaction_type: txType,
                 description: description,
                 category: category,
+                payment_method_id: paymentMethodId || null,
                 qty: qty,
                 unit_price: unitPrice,
                 amount: amount,
@@ -1375,8 +1409,13 @@ export async function handleSaveFolioTransaction(e) {
 
         closeFolioTransactionModal();
         if (isMasterMode) {
-            await fetchMasterFolioTransactions(currentMasterGroup);
-        } else {
+            if (masterId) {
+                await fetchMasterFolioDetails(masterId);
+            }
+            if (currentMasterGroup) {
+                await fetchMasterFolioTransactions(currentMasterGroup);
+            }
+        } else if (currentFolioReservation?.id) {
             await fetchFolioTransactions(currentFolioReservation.id);
         }
 
@@ -2186,19 +2225,143 @@ export function handlePrintFolio() {
     try { printWindow.print(); } catch (e) {}
 }
 
-export function handlePrintMasterFolio() {
-    if (!currentMasterGroup) return;
+export async function handlePrintMasterFolio() {
+    let masterFolioId = currentMasterGroup?.master_folio_id || currentMasterGroup?.id || currentFolioReservation?.master_folio_id;
 
-    const gb = currentMasterGroup;
-    const folioNo = gb.folio_number || ('MFOL-' + (gb.id ? gb.id.slice(0, 8) : '000000'));
-    const groupName = gb.group_name || 'Master Folio';
-    const corpName = gb.corporate_name || (gb.booking_reference ? `OTA Ref: ${gb.booking_reference}` : 'Non-Corporate');
+    if (!masterFolioId && currentFolioReservation) {
+        masterFolioId = await getOrCreateMasterFolioId(currentFolioReservation);
+    }
+
+    if (!masterFolioId && !currentMasterGroup) {
+        alert('Master Folio tidak ditemukan.');
+        return;
+    }
+
+    let folioNo = currentMasterGroup?.folio_number || 'MFOL-000000';
+    let groupName = currentMasterGroup?.group_name || 'Master Folio';
+    let rawCorpName = currentMasterGroup?.corporate_name || null;
+    let groupId = currentMasterGroup?.group_id || currentFolioReservation?.group_id;
+    let bookingRef = currentMasterGroup?.booking_reference || currentFolioReservation?.booking_reference;
+
+    // Fetch master folio record if masterFolioId exists
+    if (masterFolioId) {
+        const { data: mf } = await supabaseClient
+            .from('master_folios')
+            .select('*')
+            .eq('id', masterFolioId)
+            .maybeSingle();
+
+        if (mf) {
+            folioNo = mf.folio_number || folioNo;
+            groupId = mf.group_id || groupId;
+            bookingRef = mf.booking_reference || bookingRef;
+        }
+    }
+
+    // Fetch group booking info if group_id is set
+    if (groupId && !rawCorpName) {
+        const { data: gb } = await supabaseClient
+            .from('group_bookings')
+            .select('group_name, corporate_profiles(company_name)')
+            .eq('id', groupId)
+            .maybeSingle();
+
+        if (gb) {
+            if (gb.group_name) groupName = gb.group_name;
+            if (gb.corporate_profiles) {
+                rawCorpName = Array.isArray(gb.corporate_profiles) ? gb.corporate_profiles[0]?.company_name : gb.corporate_profiles.company_name;
+            }
+        }
+    }
+
+    // Query connected reservations
+    let queryOr = [];
+    if (groupId) queryOr.push(`group_id.eq.${groupId}`);
+    if (bookingRef) queryOr.push(`booking_reference.eq.${bookingRef}`);
+    if (currentFolioReservation) {
+        const parentId = currentFolioReservation.parent_reservation_id || currentFolioReservation.id;
+        queryOr.push(`id.eq.${parentId}`);
+        queryOr.push(`parent_reservation_id.eq.${parentId}`);
+    }
+
+    let parentRes = null;
+    let connectedRooms = [];
+    let connectedResList = [];
+
+    if (queryOr.length > 0) {
+        const { data: resList } = await supabaseClient
+            .from('reservations')
+            .select('id, reservation_number, parent_reservation_id, booker_name, check_in_date, check_out_date, guest_profiles(full_name), rooms(room_number), corporate_profiles(company_name)')
+            .or(queryOr.join(','));
+
+        if (resList && resList.length > 0) {
+            connectedResList = resList;
+            parentRes = resList.find(r => !r.parent_reservation_id || r.parent_reservation_id === r.id) || resList[0];
+
+            resList.forEach(r => {
+                const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : null;
+                if (roomNo && !connectedRooms.includes(`Kamar ${roomNo}`)) {
+                    connectedRooms.push(`Kamar ${roomNo}`);
+                }
+            });
+        }
+    }
+
+    if (!parentRes && currentFolioReservation) {
+        parentRes = currentFolioReservation;
+        if (currentFolioReservation.rooms?.room_number) {
+            const roomNo = currentFolioReservation.rooms.room_number;
+            if (!connectedRooms.includes(`Kamar ${roomNo}`)) connectedRooms.push(`Kamar ${roomNo}`);
+        }
+    }
+
+    // Sort connected rooms naturally
+    connectedRooms.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+    // 1. Nama Penanggung Jawab / Nama Grup (Must not be static "Master Folio")
+    let responsibleName = '';
+    if (parentRes) {
+        const profileName = parentRes.guest_profiles ? (Array.isArray(parentRes.guest_profiles) ? parentRes.guest_profiles[0]?.full_name : parentRes.guest_profiles.full_name) : null;
+        responsibleName = profileName || parentRes.booker_name || parentRes.guest_name || '';
+    }
+    if (!responsibleName) {
+        responsibleName = currentMasterGroup?.responsible_name || (groupName && groupName !== 'Master Folio' ? groupName : 'Individual Guest');
+    }
+
+    // 2. Daftar Kamar Terhubung
+    const connectedRoomsDisplay = connectedRooms.length > 0 ? connectedRooms.join(', ') : '-';
+
+    // 3. Perusahaan / Corporate (If empty / null / Non-Corporate -> display "Individual Guest" or "-")
+    let corpName = rawCorpName;
+    if (!corpName && parentRes?.corporate_profiles) {
+        corpName = Array.isArray(parentRes.corporate_profiles) ? parentRes.corporate_profiles[0]?.company_name : parentRes.corporate_profiles.company_name;
+    }
+    const corporateDisplay = (corpName && corpName !== 'Non-Corporate' && corpName.trim() !== '') ? corpName : 'Individual Guest';
+
+    // 4. Periode Check-in & Check-out
+    const checkInDate = parentRes?.check_in_date || currentFolioReservation?.check_in_date || '-';
+    const checkOutDate = parentRes?.check_out_date || currentFolioReservation?.check_out_date || '-';
+    const stayPeriodDisplay = (checkInDate !== '-' && checkOutDate !== '-') ? `${checkInDate} s/d ${checkOutDate}` : '-';
+
     const printDate = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+
+    // Fetch transactions
+    let masterTxList = currentMasterTransactions;
+    if (masterFolioId) {
+        const { data: txList } = await supabaseClient
+            .from('folio_transactions')
+            .select('*, reservations(id, reservation_number, rooms(room_number))')
+            .eq('master_folio_id', masterFolioId)
+            .order('transaction_date', { ascending: true })
+            .order('created_at', { ascending: true });
+
+        if (txList) masterTxList = txList;
+    }
 
     let totalCharges = 0;
     let totalPayments = 0;
 
-    const rowsHtml = currentMasterTransactions.map(tx => {
+    const rowsHtml = (masterTxList || []).map(tx => {
         const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
         const amount = Number(tx.amount || 0);
         const isVoided = tx.is_voided === true;
@@ -2228,7 +2391,7 @@ export function handlePrintMasterFolio() {
 
     const printWindow = window.open('', '_blank', 'width=800,height=900');
     if (!printWindow) {
-        alert('Pop-up terblokir. Izinkan pop-up untuk mencetak Master Folio.');
+        alert('Pop-up terblokir. Izinkan pop-up untuk mencetak Master Invoice.');
         return;
     }
 
@@ -2236,7 +2399,7 @@ export function handlePrintMasterFolio() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Master Folio Invoice - ${groupName}</title>
+            <title>Master Folio Invoice - ${responsibleName}</title>
             <style>
                 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #1e293b; background: #fff; }
                 .header-container { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; }
@@ -2244,7 +2407,6 @@ export function handlePrintMasterFolio() {
                 .hotel-info p { margin: 2px 0 0; font-size: 11px; color: #64748b; }
                 .reference-box { text-align: right; }
                 .folio-highlight { background: #e0e7ff; color: #3730a3; padding: 4px 10px; font-weight: 800; font-family: monospace; font-size: 16px; border-radius: 4px; display: inline-block; }
-                .res-sub { font-size: 11px; color: #64748b; margin-top: 4px; }
                 .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
                 .details-item label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block; }
                 .details-item span { font-size: 13px; font-weight: 600; color: #0f172a; }
@@ -2264,7 +2426,7 @@ export function handlePrintMasterFolio() {
             <div class="header-container">
                 <div class="hotel-info">
                     <h1>NG HOTEL MANAGEMENT</h1>
-                    <p>Official Group Master Billing & Invoice</p>
+                    <p>Official Group / Master Billing Invoice</p>
                 </div>
                 <div class="reference-box">
                     <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">MASTER FOLIO NUMBER</div>
@@ -2274,14 +2436,22 @@ export function handlePrintMasterFolio() {
 
             <div class="details-grid">
                 <div class="details-item">
-                    <label>Nama Grup</label>
-                    <span>${groupName}</span>
+                    <label>Penanggung Jawab / Nama Grup</label>
+                    <span>${responsibleName}</span>
                 </div>
                 <div class="details-item">
                     <label>Perusahaan / Corporate</label>
-                    <span>${corpName}</span>
+                    <span>${corporateDisplay}</span>
                 </div>
                 <div class="details-item">
+                    <label>Kamar Terhubung</label>
+                    <span>${connectedRoomsDisplay}</span>
+                </div>
+                <div class="details-item">
+                    <label>Periode Inap (Check-in / Check-out)</label>
+                    <span>${stayPeriodDisplay}</span>
+                </div>
+                <div class="details-item" style="grid-column: span 2;">
                     <label>Tanggal Cetak</label>
                     <span>${printDate}</span>
                 </div>
@@ -2326,3 +2496,5 @@ export function handlePrintMasterFolio() {
     printWindow.document.close();
     try { printWindow.print(); } catch (e) {}
 }
+
+export const printMasterInvoice = handlePrintMasterFolio;

@@ -163,7 +163,8 @@ import {
     handleProcessCheckout,
     handleCheckOut,
     handlePrintFolio,
-    handlePrintMasterFolio
+    handlePrintMasterFolio,
+    printMasterInvoice
 } from './modules/folio.js';
 
 import {
@@ -695,6 +696,7 @@ if (typeof window !== 'undefined') {
     window.handleCheckOut = handleCheckOut;
     window.handlePrintFolio = handlePrintFolio;
     window.handlePrintMasterFolio = handlePrintMasterFolio;
+    window.printMasterInvoice = printMasterInvoice;
 
     // Operations Module
     window.fetchHousekeepingRooms = fetchHousekeepingRooms;
