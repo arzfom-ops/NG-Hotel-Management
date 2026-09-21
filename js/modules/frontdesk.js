@@ -129,7 +129,8 @@ export async function fetchFrontdeskDashboard() {
                 room_types (name),
                 rooms (room_number)
             `)
-            .in('status', ['Reserved', 'Checkin']);
+            .neq('status', 'Cancelled')
+            .neq('status', 'Checkout');
 
         if (resErr) throw resErr;
 
@@ -143,9 +144,9 @@ export async function fetchFrontdeskDashboard() {
             return !isNsg && !isPmRoom;
         });
 
-        dashboardData.arrival = validResList.filter(r => r.check_in_date === selectedDateISO && r.status === 'Reserved');
-        dashboardData.inHouse = validResList.filter(r => r.status === 'Checkin');
-        dashboardData.departure = validResList.filter(r => r.check_out_date === selectedDateISO && r.status === 'Checkin');
+        dashboardData.arrival = validResList.filter(r => r.check_in_date === selectedDateISO && (r.status === 'Reserved' || r.status === 'GUARANTEED' || r.status === '6PM_HOLD' || r.status === 'ORAL_CONFIRM' || r.status === 'TENTATIVE'));
+        dashboardData.inHouse = validResList.filter(r => r.status === 'Checkin' || r.status === 'CHECKED_IN' || r.status === 'Checked In');
+        dashboardData.departure = validResList.filter(r => r.check_out_date === selectedDateISO && (r.status === 'Checkin' || r.status === 'CHECKED_IN' || r.status === 'Checked In'));
 
         // 2. Fetch Group Bookings with Fallback Query
         let gbData = null;
@@ -636,7 +637,8 @@ export async function renderTapeChart() {
                 guest_profiles (full_name)
             `)
             .not('room_id', 'is', null)
-            .in('status', ['Reserved', 'Checkin'])
+            .neq('status', 'Cancelled')
+            .neq('status', 'Checkout')
             .lt('check_in_date', addDaysISO(maxDateStr, 1))
             .gte('check_out_date', minDateStr);
 
@@ -904,7 +906,8 @@ export async function handleQuickSearch(event) {
         let queryBuilder = supabaseClient
             .from('reservations')
             .select('id, check_in_date, reservation_number, room_type_id')
-            .in('status', ['Reserved', 'Checkin']);
+            .neq('status', 'Cancelled')
+            .neq('status', 'Checkout');
 
         if (guestIds.length > 0) {
             queryBuilder = queryBuilder.or(`reservation_number.ilike.%${query}%,guest_profile_id.in.(${guestIds.join(',')})`);
@@ -1030,11 +1033,12 @@ export async function renderRoomForecast() {
             .gte('end_date', minDateStr);
         if (blocksErr) console.error('Error fetching room_blocks for forecast:', blocksErr);
 
-        // 3. Fetch active reservations overlapping 14 days (Reserved, Checkin) excluding non-staying / virtual PM room reservations
+        // 3. Fetch active reservations overlapping 14 days excluding non-staying / virtual PM room reservations
         const { data: resData, error: resErr } = await supabaseClient
             .from('reservations')
             .select('id, check_in_date, check_out_date, qty, reservation_source, segment_id, status, guest_type, room_id, rooms (room_number, is_virtual)')
-            .in('status', ['Reserved', 'Checkin'])
+            .neq('status', 'Cancelled')
+            .neq('status', 'Checkout')
             .lt('check_in_date', addDaysISO(maxDateStr, 1))
             .gte('check_out_date', minDateStr);
         if (resErr) throw resErr;
@@ -1049,6 +1053,10 @@ export async function renderRoomForecast() {
                     if (roomObj.room_number && String(roomObj.room_number).toLowerCase().startsWith('pm-')) return false;
                 }
             }
+            // Explicitly ignore TENTATIVE from stock deduction
+            const statusUpper = (r.status || '').toUpperCase();
+            if (statusUpper === 'TENTATIVE') return false;
+
             return true;
         });
 
