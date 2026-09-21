@@ -234,6 +234,31 @@ import {
 } from './services/guestService.js';
 
 import {
+    renderGuestProfilesTable,
+    setGcfTab,
+    handleGcfTableSearch,
+    openGcfEditorModal,
+    closeGcfEditorModal,
+    handleGcfCardTypeChange,
+    switchGcfModalTab,
+    renderGcfContactsTable,
+    addGcfContactRow,
+    removeGcfContactRow,
+    updateGcfContactField,
+    renderGcfContractRatesTable,
+    addGcfContractRateRow,
+    removeGcfContractRateRow,
+    updateGcfContractRateField,
+    saveGcfProfile,
+    deleteGcfProfile,
+    viewGcfHistory,
+    closeGcfHistoryModal,
+    openMergeProfilesModal,
+    closeMergeProfilesModal,
+    executeMergeProfiles
+} from './modules/guestProfiles.js';
+
+import {
     switchSettingsTab,
     fetchBedTypes,
     openBedTypeModal,
@@ -366,6 +391,7 @@ export async function switchView(viewName) {
     const roomForecastView = document.getElementById('room-forecast-view');
     const housekeepingView = document.getElementById('housekeeping-view');
     const corporateView = document.getElementById('corporate-view');
+    const guestProfilesView = document.getElementById('view-guest-profiles');
     const cancelListView = document.getElementById('cancel-list-view');
     const drrView = document.getElementById('report-drr-view') || document.getElementById('drr-view');
     const adminSettingsView = document.getElementById('admin-settings-view');
@@ -375,6 +401,7 @@ export async function switchView(viewName) {
     const navNsg = document.getElementById('nav-nsg');
     const navHousekeeping = document.getElementById('nav-housekeeping');
     const navCorporate = document.getElementById('nav-corporate');
+    const navGuestProfiles = document.getElementById('nav-guest-profiles');
     const navCancelList = document.getElementById('nav-cancel-list');
     const navDrr = document.getElementById('nav-report-drr') || document.getElementById('nav-drr');
     const navSettings = document.getElementById('nav-settings');
@@ -387,7 +414,7 @@ export async function switchView(viewName) {
         if (btn) btn.className = inactiveNavClass;
     });
 
-    const allMainNavBtns = [navHousekeeping, navCorporate, navCancelList, navDrr, navSettings];
+    const allMainNavBtns = [navHousekeeping, navCorporate, navGuestProfiles, navCancelList, navDrr, navSettings];
     allMainNavBtns.forEach(btn => {
         if (btn) btn.className = inactiveNavClass;
     });
@@ -399,6 +426,7 @@ export async function switchView(viewName) {
         if (roomForecastView) roomForecastView.classList.add('hidden');
         if (housekeepingView) housekeepingView.classList.add('hidden');
         if (corporateView) corporateView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.add('hidden');
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.remove('hidden');
@@ -414,6 +442,7 @@ export async function switchView(viewName) {
         if (roomForecastView) roomForecastView.classList.add('hidden');
         if (housekeepingView) housekeepingView.classList.add('hidden');
         if (corporateView) corporateView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (drrView) drrView.classList.remove('hidden');
@@ -431,6 +460,7 @@ export async function switchView(viewName) {
         if (roomForecastView) roomForecastView.classList.add('hidden');
         if (housekeepingView) housekeepingView.classList.add('hidden');
         if (corporateView) corporateView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.add('hidden');
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
@@ -449,6 +479,7 @@ export async function switchView(viewName) {
         if (nsgView) nsgView.classList.add('hidden');
         if (housekeepingView) housekeepingView.classList.add('hidden');
         if (corporateView) corporateView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.add('hidden');
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
@@ -466,6 +497,7 @@ export async function switchView(viewName) {
         if (nsgView) nsgView.classList.add('hidden');
         if (roomForecastView) roomForecastView.classList.add('hidden');
         if (housekeepingView) housekeepingView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.add('hidden');
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
@@ -474,6 +506,24 @@ export async function switchView(viewName) {
         if (navCorporate) navCorporate.className = activeNavClass;
 
         fetchCorporateProfiles();
+    } else if (viewName === 'guest-profiles' || viewName === 'gcf' || viewName === 'guest-profile') {
+        if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+        const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+        if (topbarHeader) topbarHeader.textContent = "Master Data / Guest Card File (GCF)";
+
+        if (frontdeskView) frontdeskView.classList.add('hidden');
+        if (nsgView) nsgView.classList.add('hidden');
+        if (roomForecastView) roomForecastView.classList.add('hidden');
+        if (housekeepingView) housekeepingView.classList.add('hidden');
+        if (corporateView) corporateView.classList.add('hidden');
+        if (cancelListView) cancelListView.classList.add('hidden');
+        if (drrView) drrView.classList.add('hidden');
+        if (adminSettingsView) adminSettingsView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.remove('hidden');
+
+        if (navGuestProfiles) navGuestProfiles.className = activeNavClass;
+
+        renderGuestProfilesTable();
     } else if (viewName === 'cancel-list') {
         if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
@@ -484,6 +534,7 @@ export async function switchView(viewName) {
         if (roomForecastView) roomForecastView.classList.add('hidden');
         if (housekeepingView) housekeepingView.classList.add('hidden');
         if (corporateView) corporateView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.add('hidden');
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.remove('hidden');
@@ -500,6 +551,7 @@ export async function switchView(viewName) {
         if (nsgView) nsgView.classList.add('hidden');
         if (roomForecastView) roomForecastView.classList.add('hidden');
         if (corporateView) corporateView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.add('hidden');
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
@@ -519,6 +571,7 @@ export async function switchView(viewName) {
         if (roomForecastView) roomForecastView.classList.add('hidden');
         if (housekeepingView) housekeepingView.classList.add('hidden');
         if (corporateView) corporateView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.add('hidden');
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.add('hidden');
@@ -771,6 +824,30 @@ if (typeof window !== 'undefined') {
     window.getGuestCardById = getGuestCardById;
     window.saveGuestCard = saveGuestCard;
     window.applyGuestCardToReservation = applyGuestCardToReservation;
+
+    // Guest Profiles (GCF Master Module)
+    window.renderGuestProfilesTable = renderGuestProfilesTable;
+    window.setGcfTab = setGcfTab;
+    window.handleGcfTableSearch = handleGcfTableSearch;
+    window.openGcfEditorModal = openGcfEditorModal;
+    window.closeGcfEditorModal = closeGcfEditorModal;
+    window.handleGcfCardTypeChange = handleGcfCardTypeChange;
+    window.switchGcfModalTab = switchGcfModalTab;
+    window.renderGcfContactsTable = renderGcfContactsTable;
+    window.addGcfContactRow = addGcfContactRow;
+    window.removeGcfContactRow = removeGcfContactRow;
+    window.updateGcfContactField = updateGcfContactField;
+    window.renderGcfContractRatesTable = renderGcfContractRatesTable;
+    window.addGcfContractRateRow = addGcfContractRateRow;
+    window.removeGcfContractRateRow = removeGcfContractRateRow;
+    window.updateGcfContractRateField = updateGcfContractRateField;
+    window.saveGcfProfile = saveGcfProfile;
+    window.deleteGcfProfile = deleteGcfProfile;
+    window.viewGcfHistory = viewGcfHistory;
+    window.closeGcfHistoryModal = closeGcfHistoryModal;
+    window.openMergeProfilesModal = openMergeProfilesModal;
+    window.closeMergeProfilesModal = closeMergeProfilesModal;
+    window.executeMergeProfiles = executeMergeProfiles;
 
     // Settings Module
     window.switchSettingsTab = switchSettingsTab;
