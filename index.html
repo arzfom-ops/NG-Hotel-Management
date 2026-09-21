@@ -1788,9 +1788,20 @@
                             <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                                 <i class="ph ph-credit-card text-primary text-lg"></i> D. Deposit History & Status
                             </h4>
+                            <div class="flex items-center gap-3">
+                                <div>
+                                    <label class="sr-only">Status Reservasi</label>
+                                    <select id="res-status" class="bg-white/80 border border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-800 outline-none shadow-2xs">
+                                        <option value="GUARANTEED">GUARANTEED (Dijamin)</option>
+                                        <option value="6PM_HOLD">6PM_HOLD (Tahan s/d 6 Sore)</option>
+                                        <option value="ORAL_CONFIRM">ORAL_CONFIRM (Konfirmasi Lisan)</option>
+                                        <option value="TENTATIVE">TENTATIVE (Waiting List)</option>
+                                    </select>
+                                </div>
                                 <div id="res-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs">
                                     <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
-                                    <span id="res-status-text">Status: Reserved</span>
+                                    <span id="res-status-text">Status: GUARANTEED</span>
+                                </div>
                             </div>
                         </div>
 

@@ -121,11 +121,16 @@ export async function openModal() {
     if (titleText) titleText.textContent = 'New Reservation';
     if (subTitle) subTitle.textContent = 'Buat reservasi kamar baru dengan informasi tamu dan rincian menginap.';
 
-    // Status Badge (New Mode)
+    // Status Dropdown & Badge (New Mode)
+    const statusSelect = document.getElementById('res-status');
+    if (statusSelect) {
+        statusSelect.value = 'GUARANTEED';
+    }
+
     const statusBadge = document.getElementById('res-status-badge');
     if (statusBadge) {
         statusBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs';
-        statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> <span id="res-status-text">Status: Reserved</span>';
+        statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span> <span id="res-status-text">Status: GUARANTEED</span>';
     }
 
     // Footer buttons toggle
@@ -881,22 +886,45 @@ export async function openEditReservation(id) {
 
         fetchAndRenderReservationDepositHistory(res.id);
 
-        const currentStatus = res.status || 'Reserved';
+        const currentStatus = res.status || 'GUARANTEED';
+        const statusSelect = document.getElementById('res-status');
+        if (statusSelect) {
+            // Check if option exists, otherwise set option dynamically if needed
+            const hasOption = Array.from(statusSelect.options).some(opt => opt.value === currentStatus);
+            if (!hasOption) {
+                const opt = document.createElement('option');
+                opt.value = currentStatus;
+                opt.textContent = currentStatus;
+                statusSelect.appendChild(opt);
+            }
+            statusSelect.value = currentStatus;
+        }
+
         const statusBadge = document.getElementById('res-status-badge');
 
         let badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs';
         let dotColor = 'bg-purple-500';
 
-        if (currentStatus === 'Reserved') {
+        const upperStatus = currentStatus.toUpperCase();
+        if (upperStatus === 'GUARANTEED' || upperStatus === 'RESERVED') {
             badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs';
             dotColor = 'bg-purple-500';
-        } else if (currentStatus === 'Checkin' || currentStatus === 'Checked In') {
+        } else if (upperStatus === '6PM_HOLD') {
+            badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 border border-amber-500/30 backdrop-blur-md shadow-2xs';
+            dotColor = 'bg-amber-500';
+        } else if (upperStatus === 'ORAL_CONFIRM') {
+            badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/15 text-indigo-700 border border-indigo-500/30 backdrop-blur-md shadow-2xs';
+            dotColor = 'bg-indigo-500';
+        } else if (upperStatus === 'TENTATIVE') {
+            badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-600/15 text-amber-800 border border-amber-600/30 backdrop-blur-md shadow-2xs';
+            dotColor = 'bg-amber-600';
+        } else if (upperStatus === 'CHECKIN' || upperStatus === 'CHECKED IN' || upperStatus === 'CHECKED_IN') {
             badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-700 border border-blue-500/30 backdrop-blur-md shadow-2xs';
             dotColor = 'bg-blue-500';
-        } else if (currentStatus === 'Cancelled') {
+        } else if (upperStatus === 'CANCELLED') {
             badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 border border-rose-500/30 backdrop-blur-md shadow-2xs';
             dotColor = 'bg-rose-500';
-        } else if (currentStatus === 'Checkout' || currentStatus === 'Checked Out') {
+        } else if (upperStatus === 'CHECKOUT' || upperStatus === 'CHECKED OUT' || upperStatus === 'CHECKED_OUT') {
             badgeClass = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/15 text-slate-700 border border-slate-500/30 backdrop-blur-md shadow-2xs';
             dotColor = 'bg-slate-500';
         }
@@ -1492,6 +1520,8 @@ export async function handleSaveReservation(event) {
 
         const comment = document.getElementById('res-comment').value.trim() || null;
 
+        const selectedStatus = document.getElementById('res-status') ? document.getElementById('res-status').value : 'GUARANTEED';
+
         const reservationPayload = {
             guest_profile_id: guestProfileId,
             booker_name: bookerNameVal || null,
@@ -1514,7 +1544,8 @@ export async function handleSaveReservation(event) {
             reservation_source: reservationSource,
             voucher_number: voucherNumber,
             corporate_id: corporateId,
-            comment: comment
+            comment: comment,
+            status: selectedStatus
         };
 
         let resNumber = editId ? (document.getElementById('edit-reservation-number').value || '') : '';
@@ -1522,7 +1553,6 @@ export async function handleSaveReservation(event) {
             const randomNum = Math.floor(1000 + Math.random() * 9000);
             resNumber = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
             reservationPayload.reservation_number = resNumber;
-            reservationPayload.status = 'Reserved';
         }
 
         const docPreview = document.getElementById('res-doc-preview');
@@ -1586,7 +1616,12 @@ export async function handleSaveReservation(event) {
 
         if (editId) {
             if (isReactivateMode) {
-                reservationPayload.status = 'Reserved';
+                reservationPayload.status = 'GUARANTEED';
+            }
+
+            const selectedStatusEdit = document.getElementById('res-status') ? document.getElementById('res-status').value : null;
+            if (selectedStatusEdit && !isReactivateMode) {
+                reservationPayload.status = selectedStatusEdit;
             }
 
             const { error: updateResErr } = await supabaseClient
@@ -1638,7 +1673,7 @@ export async function handleSaveReservation(event) {
                     reservation_number: parentResNumber,
                     parent_reservation_id: null,
                     booking_reference: baseResRef,
-                    status: 'Reserved'
+                    status: selectedStatus
                 };
 
                 const { data: parentData, error: parentErr } = await supabaseClient
@@ -1698,7 +1733,7 @@ export async function handleSaveReservation(event) {
                         reservation_number: childResNumber,
                         parent_reservation_id: savedReservationId,
                         booking_reference: baseResRef,
-                        status: 'Reserved'
+                        status: selectedStatus
                     };
 
                     const { data: childData, error: childErr } = await supabaseClient
@@ -1730,7 +1765,7 @@ export async function handleSaveReservation(event) {
                 const singleResNumber = `RES-${Date.now().toString().slice(-6)}-${randomNum}`;
                 reservationPayload.reservation_number = singleResNumber;
                 reservationPayload.qty = 1;
-                reservationPayload.status = 'Reserved';
+                reservationPayload.status = selectedStatus;
 
                 const { data: newResData, error: insertResErr } = await supabaseClient
                     .from('reservations')
