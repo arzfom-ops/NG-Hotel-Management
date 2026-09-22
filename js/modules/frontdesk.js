@@ -286,14 +286,20 @@ export function renderDashboardTable() {
             const roomTypeDisplay = roomTypesArr.length > 0 ? roomTypesArr.join(', ') : '-';
 
             const isCancelled = g.status === 'Cancelled';
+            const isSplit = g.status === 'SPLIT' || g.status === 'ASSIGNED';
             let statusBadge = getStatusBadgeHTML(isCancelled ? 'Cancelled' : 'VC');
-            if (!isCancelled) {
-                statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Active Group</span>`;
-            } else {
+            if (isCancelled) {
                 statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 border border-rose-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>Cancelled Group</span>`;
+            } else if (isSplit) {
+                statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/15 text-indigo-700 border border-indigo-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>Split / Assigned</span>`;
+            } else {
+                statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Active Group</span>`;
             }
 
             let actionBtn = `
+                <button onclick="openSplitReservationModal('${g.id}')" class="px-3 py-1.5 bg-indigo-50/80 hover:bg-indigo-100 backdrop-blur-md border border-indigo-200/80 text-indigo-700 rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
+                    <i class="ph ph-scissors text-sm"></i> Split Rooms
+                </button>
                 <button onclick="openEditGroupBookingModal('${g.id}')" class="px-3 py-1.5 bg-white/60 hover:bg-white/90 backdrop-blur-md border border-white/80 text-slate-700 hover:text-slate-900 rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
                     <i class="ph ph-pencil-simple text-sm"></i> Edit
                 </button>
