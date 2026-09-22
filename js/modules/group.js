@@ -1,5 +1,5 @@
 import { supabaseClient } from '../config/supabase.js';
-import { formatDateISO, formatStayDatesCompact } from '../utils/formatters.js';
+import { formatDateISO, formatStayDatesCompact, showToast } from '../utils/formatters.js';
 
 // Module State & Variables
 export let activeGroupSplitData = null;
@@ -229,7 +229,7 @@ export let editingGroupId = null;
                                 <td class="py-2.5 px-3 text-center font-bold text-slate-500">${idx + 1}</td>
                                 <td class="py-2.5 px-3 font-semibold text-slate-800">${item.room_type_name}</td>
                                 <td class="py-2.5 px-3">
-                                    <select class="rooming-room-id w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs font-medium focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600">
+                                    <select onchange="updateRoomingListDropdowns()" class="rooming-room-id w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs font-medium focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600">
                                         ${roomOptions}
                                     </select>
                                 </td>
@@ -242,6 +242,8 @@ export let editingGroupId = null;
                             </tr>
                         `;
                     }).join('');
+
+                    updateRoomingListDropdowns();
                 }
 
                 const modal = document.getElementById('roomingListModal');
@@ -251,6 +253,33 @@ export let editingGroupId = null;
                 console.error('Error opening split reservation modal:', err);
                 alert('Terjadi kesalahan: ' + err.message);
             }
+        }
+
+        export function updateRoomingListDropdowns() {
+            const selects = document.querySelectorAll('#rooming-list-rows select.rooming-room-id');
+            if (!selects || selects.length === 0) return;
+
+            const selectedRoomIds = new Set();
+            selects.forEach(sel => {
+                if (sel.value) {
+                    selectedRoomIds.add(sel.value);
+                }
+            });
+
+            selects.forEach(sel => {
+                const currentVal = sel.value;
+                Array.from(sel.options).forEach(opt => {
+                    if (!opt.value) {
+                        opt.disabled = false;
+                    } else if (opt.value === currentVal) {
+                        opt.disabled = false;
+                    } else if (selectedRoomIds.has(opt.value)) {
+                        opt.disabled = true;
+                    } else {
+                        opt.disabled = false;
+                    }
+                });
+            });
         }
 
         export function closeRoomingListModal() {
@@ -369,6 +398,37 @@ export let editingGroupId = null;
             }
 
             // Handle Group Booking Split
+            // Validasi Anti-Duplikasi Kamar Fisik sebelum simpan
+            const selectedRoomIds = [];
+            const roomMap = {};
+
+            rowElements.forEach(tr => {
+                const roomSelect = tr.querySelector('.rooming-room-id');
+                if (roomSelect && roomSelect.value) {
+                    const roomId = roomSelect.value;
+                    const optText = roomSelect.options[roomSelect.selectedIndex]?.text || '';
+                    const roomNum = optText.replace(/^Kamar\s*/i, '').trim() || roomId;
+                    selectedRoomIds.push(roomId);
+                    roomMap[roomId] = roomNum;
+                }
+            });
+
+            const seenRooms = new Set();
+            let duplicateRoomNum = null;
+            for (const rId of selectedRoomIds) {
+                if (seenRooms.has(rId)) {
+                    duplicateRoomNum = roomMap[rId] || rId;
+                    break;
+                }
+                seenRooms.add(rId);
+            }
+
+            if (duplicateRoomNum) {
+                const warnMsg = `Kamar ${duplicateRoomNum} dipilih lebih dari satu kali. Setiap baris harus menggunakan kamar yang berbeda.`;
+                showToast(warnMsg, 'error');
+                return;
+            }
+
             // Calculate stay nights
             const checkIn = new Date(activeGroupSplitData.checkInDate);
             const checkOut = new Date(activeGroupSplitData.checkOutDate);
@@ -413,7 +473,8 @@ export let editingGroupId = null;
                         guest_profile_id: guestProfileId,
                         booker_name: activeGroupSplitData.group.group_name,
                         group_id: activeGroupSplitData.group.id,
-                        parent_reservation_id: activeGroupSplitData.group.id,
+                        group_booking_id: activeGroupSplitData.group.id,
+                        parent_reservation_id: null,
                         corporate_id: activeGroupSplitData.group.corporate_id || null,
                         reservation_source: 'Walk-in',
                         guest_type: 'Staying Guest'
