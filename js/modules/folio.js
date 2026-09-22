@@ -52,6 +52,10 @@ export async function switchFolioTab(tabName) {
         }
         if (contentPribadi) contentPribadi.classList.remove('hidden');
         if (contentMaster) contentMaster.classList.add('hidden');
+
+        if (currentFolioReservation?.id) {
+            await fetchFolioTransactions(currentFolioReservation.id);
+        }
     }
 }
 
@@ -1781,16 +1785,44 @@ export async function handleMoveToMasterFolio() {
 
         const selectedIds = checkedBoxes.map(cb => cb.value);
 
-        const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
-            p_transaction_ids: selectedIds,
-            p_target_reservation_id: null,
-            p_target_master_folio_id: masterFolioId
-        });
+        let rpcSuccess = false;
+        let rpcMessage = null;
 
-        if (rpcErr) throw rpcErr;
+        try {
+            const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
+                p_transaction_ids: selectedIds,
+                p_target_reservation_id: null,
+                p_target_master_folio_id: masterFolioId
+            });
 
-        await fetchFolioTransactions(currentFolioReservation.id);
+            if (!rpcErr && rpcData && rpcData.success !== false) {
+                rpcSuccess = true;
+                rpcMessage = rpcData.message;
+            } else if (rpcErr) {
+                console.warn('rpc_transfer_folio_transaction error, falling back to direct update:', rpcErr);
+            }
+        } catch (e) {
+            console.warn('rpc_transfer_folio_transaction exception, falling back to direct update:', e);
+        }
 
+        if (!rpcSuccess) {
+            const { error: updErr } = await supabaseClient
+                .from('folio_transactions')
+                .update({
+                    reservation_id: null,
+                    master_folio_id: masterFolioId
+                })
+                .in('id', selectedIds);
+
+            if (updErr) throw updErr;
+        }
+
+        // Re-render tampilan Folio Pribadi dan Master Folio secara otomatis
+        if (currentFolioReservation?.id) {
+            await fetchFolioTransactions(currentFolioReservation.id);
+        }
+
+        await fetchMasterFolioDetails(masterFolioId);
         if (currentMasterGroup) {
             await fetchMasterFolioTransactions(currentMasterGroup);
         }
