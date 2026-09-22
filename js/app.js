@@ -105,6 +105,7 @@ import {
     openFitSplitReservationModal,
     closeRoomingListModal,
     handleSaveRoomingList,
+    updateRoomingListDropdowns,
     activeGroupSplitData,
     activeFitSplitData,
     editingGroupId
@@ -709,6 +710,7 @@ if (typeof window !== 'undefined') {
     window.openFitSplitReservationModal = openFitSplitReservationModal;
     window.closeRoomingListModal = closeRoomingListModal;
     window.handleSaveRoomingList = handleSaveRoomingList;
+    window.updateRoomingListDropdowns = updateRoomingListDropdowns;
     window.activeGroupSplitData = activeGroupSplitData;
     window.activeFitSplitData = activeFitSplitData;
     window.editingGroupId = editingGroupId;
