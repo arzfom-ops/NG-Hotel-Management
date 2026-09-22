@@ -137,11 +137,53 @@ export let editingGroupId = null;
                     return;
                 }
 
+                // Fetch physical rooms & check availability for stay dates
+                let roomsData = window.roomsCache || [];
+                if (!roomsData || roomsData.length === 0) {
+                    const { data: fetchR } = await supabaseClient
+                        .from('rooms')
+                        .select('id, room_number, status, room_type_id, is_virtual');
+                    roomsData = fetchR || [];
+                }
+
+                // Query overlapping active reservations
+                const { data: activeRes } = await supabaseClient
+                    .from('reservations')
+                    .select('room_id')
+                    .not('room_id', 'is', null)
+                    .neq('status', 'Cancelled')
+                    .neq('status', 'Checkout')
+                    .neq('status', 'CHECKED_OUT')
+                    .lt('check_in_date', checkOutDate)
+                    .gt('check_out_date', checkInDate);
+
+                const occupiedRoomIds = new Set((activeRes || []).map(r => r.room_id));
+
+                // Query overlapping room blocks
+                const { data: activeBlocks } = await supabaseClient
+                    .from('room_blocks')
+                    .select('room_id')
+                    .lte('start_date', checkOutDate)
+                    .gte('end_date', checkInDate);
+
+                const blockedRoomIds = new Set((activeBlocks || []).map(b => b.room_id));
+
+                // Physical rooms filtering out virtual / PM- rooms, occupied, or blocked
+                const physicalRooms = roomsData.filter(r => {
+                    if (r.is_virtual) return false;
+                    if (r.room_number && String(r.room_number).toUpperCase().startsWith('PM-')) return false;
+                    const statusUpper = (r.status || '').toUpperCase();
+                    if (statusUpper === 'OOO' || statusUpper === 'OUT OF ORDER') return false;
+                    if (occupiedRoomIds.has(r.id) || blockedRoomIds.has(r.id)) return false;
+                    return true;
+                });
+
                 activeGroupSplitData = {
                     group: gbData,
                     checkInDate: checkInDate,
                     checkOutDate: checkOutDate,
-                    items: items
+                    items: items,
+                    availableRooms: physicalRooms
                 };
                 activeFitSplitData = null;
 
@@ -174,15 +216,28 @@ export let editingGroupId = null;
                 const rowsTbody = document.getElementById('rooming-list-rows');
                 if (rowsTbody) {
                     rowsTbody.innerHTML = items.map((item, idx) => {
-                        const defaultTbaName = `TBA - ${gbData.group_name} ${idx + 1}`;
-                        const rateFmt = Number(item.agreed_rate || 0).toLocaleString('id-ID');
+                        const defaultTbaName = `${gbData.group_name} - Guest ${idx + 1}`;
+                        const matchingRooms = physicalRooms.filter(r => r.room_type_id === item.room_type_id);
+
+                        let roomOptions = `<option value="">Belum Dialokasikan</option>`;
+                        matchingRooms.forEach(r => {
+                            roomOptions += `<option value="${r.id}">Kamar ${r.room_number}</option>`;
+                        });
+
                         return `
-                            <tr class="rooming-row" data-rt-id="${item.room_type_id}" data-rate="${item.agreed_rate}">
+                            <tr class="rooming-row" data-rt-id="${item.room_type_id}">
                                 <td class="py-2.5 px-3 text-center font-bold text-slate-500">${idx + 1}</td>
                                 <td class="py-2.5 px-3 font-semibold text-slate-800">${item.room_type_name}</td>
-                                <td class="py-2.5 px-3 font-mono text-slate-700">Rp ${rateFmt}</td>
+                                <td class="py-2.5 px-3">
+                                    <select class="rooming-room-id w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-xs font-medium focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600">
+                                        ${roomOptions}
+                                    </select>
+                                </td>
                                 <td class="py-2.5 px-3">
                                     <input type="text" required class="rooming-guest-name w-full px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600" value="${defaultTbaName}">
+                                </td>
+                                <td class="py-2.5 px-3">
+                                    <input type="number" min="0" step="1000" required class="rooming-rate w-full px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium font-mono focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600" value="${item.agreed_rate}">
                                 </td>
                             </tr>
                         `;
@@ -323,10 +378,14 @@ export let editingGroupId = null;
             try {
                 for (let i = 0; i < rowElements.length; i++) {
                     const tr = rowElements[i];
+                    const roomSelect = tr.querySelector('.rooming-room-id');
                     const nameInput = tr.querySelector('.rooming-guest-name');
-                    const guestName = nameInput ? nameInput.value.trim() : `TBA - ${activeGroupSplitData.group.group_name} ${i + 1}`;
+                    const rateInput = tr.querySelector('.rooming-rate');
+
+                    const roomId = roomSelect && roomSelect.value ? roomSelect.value : null;
+                    const guestName = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `${activeGroupSplitData.group.group_name} - Guest ${i + 1}`;
+                    const roomRate = rateInput && parseFloat(rateInput.value) >= 0 ? parseFloat(rateInput.value) : 0;
                     const rtId = tr.getAttribute('data-rt-id');
-                    const agreedRate = parseFloat(tr.getAttribute('data-rate')) || 0;
 
                     // a) Insert new guest profile in guest_profiles
                     const { data: gData, error: gErr } = await supabaseClient
@@ -339,7 +398,7 @@ export let editingGroupId = null;
 
                     const guestProfileId = gData[0].id;
 
-                    // b) Insert new reservation in reservations
+                    // b) Insert new reservation in reservations with parent_reservation_id and status GUARANTEED
                     const resNo = 'RES-' + Date.now().toString().slice(-6) + Math.floor(100 + Math.random() * 900);
                     const resPayload = {
                         reservation_number: resNo,
@@ -347,14 +406,17 @@ export let editingGroupId = null;
                         check_out_date: activeGroupSplitData.checkOutDate,
                         nights: nights,
                         room_type_id: rtId,
-                        room_id: null,
-                        room_rate: agreedRate,
-                        status: 'Reserved',
+                        room_id: roomId,
+                        room_rate: roomRate,
+                        qty: 1,
+                        status: 'GUARANTEED',
                         guest_profile_id: guestProfileId,
                         booker_name: activeGroupSplitData.group.group_name,
                         group_id: activeGroupSplitData.group.id,
+                        parent_reservation_id: activeGroupSplitData.group.id,
                         corporate_id: activeGroupSplitData.group.corporate_id || null,
-                        reservation_source: 'Walk-in'
+                        reservation_source: 'Walk-in',
+                        guest_type: 'Staying Guest'
                     };
 
                     const { error: rErr } = await supabaseClient
@@ -364,10 +426,36 @@ export let editingGroupId = null;
                     if (rErr) throw rErr;
                 }
 
-                alert(`Berhasil memecah kuota grup "${activeGroupSplitData.group.group_name}" menjadi ${rowElements.length} reservasi perorangan!`);
+                // c) Mark group_bookings status as 'SPLIT' / 'ASSIGNED'
+                let cpObj = {};
+                try {
+                    if (activeGroupSplitData.group.contact_person && activeGroupSplitData.group.contact_person.startsWith('{')) {
+                        cpObj = JSON.parse(activeGroupSplitData.group.contact_person);
+                    }
+                } catch (e) {}
+                cpObj.status = 'SPLIT';
+                const updatedContactPerson = JSON.stringify(cpObj);
+
+                const { error: splitGbErr } = await supabaseClient
+                    .from('group_bookings')
+                    .update({
+                        status: 'SPLIT',
+                        contact_person: updatedContactPerson
+                    })
+                    .eq('id', activeGroupSplitData.group.id);
+
+                if (splitGbErr) {
+                    await supabaseClient
+                        .from('group_bookings')
+                        .update({ contact_person: updatedContactPerson })
+                        .eq('id', activeGroupSplitData.group.id);
+                }
+
+                alert(`Berhasil memecah kuota grup "${activeGroupSplitData.group.group_name}" menjadi ${rowElements.length} reservasi kamar!`);
                 closeRoomingListModal();
                 await fetchFrontdeskDashboard();
-                switchDashboardTab('arrival');
+                if (typeof renderTapeChart === 'function') await renderTapeChart();
+                if (typeof renderRoomForecast === 'function') await renderRoomForecast();
 
             } catch (err) {
                 console.error('Error saving rooming list reservations:', err);
