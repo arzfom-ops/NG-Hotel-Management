@@ -2033,7 +2033,7 @@ export async function handleProcessCheckout() {
         if (!rpcSuccess) {
             const { error } = await supabaseClient
                 .from('reservations')
-                .update({ status: 'Checkout' })
+                .update({ status: 'CHECKED_OUT' })
                 .eq('id', currentFolioReservation.id);
 
             if (error) throw error;
@@ -2074,7 +2074,7 @@ export async function handleCheckOut(reservationId, roomId) {
     try {
         const { error } = await supabaseClient
             .from('reservations')
-            .update({ status: 'Checkout' })
+            .update({ status: 'CHECKED_OUT' })
             .eq('id', targetResId);
 
         if (error) throw error;
