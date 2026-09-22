@@ -208,6 +208,13 @@ import {
 } from './modules/reports.js';
 
 import {
+    getCurrentBusinessDate,
+    executeNightAudit,
+    handleNightAudit,
+    runNightAudit
+} from './modules/night_audit.js';
+
+import {
     getActiveShift,
     updateShiftUI,
     openStartShiftModal,
@@ -800,6 +807,12 @@ if (typeof window !== 'undefined') {
     window.loadDailyRevenueReport = loadDailyRevenueReport;
     window.handleDRRDateChange = handleDRRDateChange;
     window.handlePrintDRR = handlePrintDRR;
+
+    // Night Audit Module
+    window.getCurrentBusinessDate = getCurrentBusinessDate;
+    window.executeNightAudit = executeNightAudit;
+    window.handleNightAudit = handleNightAudit;
+    window.runNightAudit = runNightAudit;
 
     // Shift & Settlement Module
     window.getActiveShift = getActiveShift;
