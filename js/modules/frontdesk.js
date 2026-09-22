@@ -130,7 +130,8 @@ export async function fetchFrontdeskDashboard() {
                 rooms (room_number)
             `)
             .neq('status', 'Cancelled')
-            .neq('status', 'Checkout');
+            .neq('status', 'Checkout')
+            .neq('status', 'CHECKED_OUT');
 
         if (resErr) throw resErr;
 
@@ -639,6 +640,7 @@ export async function renderTapeChart() {
             .not('room_id', 'is', null)
             .neq('status', 'Cancelled')
             .neq('status', 'Checkout')
+            .neq('status', 'CHECKED_OUT')
             .lt('check_in_date', addDaysISO(maxDateStr, 1))
             .gte('check_out_date', minDateStr);
 
@@ -907,7 +909,8 @@ export async function handleQuickSearch(event) {
             .from('reservations')
             .select('id, check_in_date, reservation_number, room_type_id')
             .neq('status', 'Cancelled')
-            .neq('status', 'Checkout');
+            .neq('status', 'Checkout')
+            .neq('status', 'CHECKED_OUT');
 
         if (guestIds.length > 0) {
             queryBuilder = queryBuilder.or(`reservation_number.ilike.%${query}%,guest_profile_id.in.(${guestIds.join(',')})`);
@@ -1039,6 +1042,7 @@ export async function renderRoomForecast() {
             .select('id, check_in_date, check_out_date, qty, reservation_source, segment_id, status, guest_type, room_id, rooms (room_number, is_virtual)')
             .neq('status', 'Cancelled')
             .neq('status', 'Checkout')
+            .neq('status', 'CHECKED_OUT')
             .lt('check_in_date', addDaysISO(maxDateStr, 1))
             .gte('check_out_date', minDateStr);
         if (resErr) throw resErr;

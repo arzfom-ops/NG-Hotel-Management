@@ -626,7 +626,7 @@ export async function deleteGcfProfile(guestId) {
             .or(`guest_profile_id.eq.${guestId},guest_card_id.eq.${guestId}`);
 
         if (!resErr && resData && resData.length > 0) {
-            const activeRes = resData.filter(r => r.status !== 'Cancelled' && r.status !== 'Checkout');
+            const activeRes = resData.filter(r => r.status !== 'Cancelled' && r.status !== 'Checkout' && r.status !== 'CHECKED_OUT');
             if (activeRes.length > 0) {
                 alert(`Profil GCF tidak dapat dihapus karena terikat pada ${resData.length} transaksi/reservasi.`);
                 return;
