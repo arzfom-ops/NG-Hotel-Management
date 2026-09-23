@@ -189,6 +189,8 @@ export async function openModal() {
     if (modal) {
         modal.classList.remove('hidden');
     }
+
+    handleRoomTypeChange();
 }
 
 export async function openViewReservationModal(id) {
@@ -501,6 +503,7 @@ export function handleStayDatesChange(triggerSource) {
 
     renderDailyBreakdownGrid();
     updateTotalPreview();
+    handleRoomTypeChange();
 }
 
 export function renderDailyBreakdownGrid(existingDailyRates = null) {
@@ -627,35 +630,105 @@ export function handleGuestTypeChange() {
     handleRoomTypeChange();
 }
 
-export function handleRoomTypeChange() {
-    const selectedRoomTypeId = document.getElementById('res-room-type').value;
+export async function getAvailablePhysicalRoomsFallback(roomTypeId, checkIn, checkOut, currentResId) {
+    const roomsCache = (typeof window !== 'undefined' && window.roomsCache) ? window.roomsCache : [];
+    let filteredRooms = roomTypeId ? roomsCache.filter(r => r.room_type_id === roomTypeId) : [...roomsCache];
+
+    if (!checkIn || !checkOut) {
+        return filteredRooms;
+    }
+
+    try {
+        let query = supabaseClient
+            .from('reservations')
+            .select('room_id')
+            .not('room_id', 'is', null)
+            .lt('check_in_date', checkOut)
+            .gt('check_out_date', checkIn)
+            .not('status', 'in', '("CANCELLED","CHECKED_OUT","CHECKOUT","TENTATIVE","Cancelled","Checkout")');
+
+        if (currentResId) {
+            query = query.neq('id', currentResId);
+        }
+
+        const { data: overlappingRes, error } = await query;
+        if (!error && overlappingRes) {
+            const bookedRoomIds = new Set(overlappingRes.map(r => r.room_id));
+            filteredRooms = filteredRooms.filter(r => !bookedRoomIds.has(r.id));
+        }
+    } catch (e) {
+        console.error('Error in getAvailablePhysicalRoomsFallback:', e);
+    }
+
+    return filteredRooms;
+}
+
+export async function handleRoomTypeChange(assignedRoomId = null) {
+    const selectedRoomTypeId = document.getElementById('res-room-type')?.value || null;
+    const checkInVal = document.getElementById('res-check-in')?.value || null;
+    const checkOutVal = document.getElementById('res-check-out')?.value || null;
+    const currentResId = document.getElementById('edit-reservation-id')?.value || null;
     const guestTypeVal = document.getElementById('res-guest-type') ? document.getElementById('res-guest-type').value : 'Staying Guest';
     const roomNumberSelect = document.getElementById('res-room-number');
 
-    const roomsCache = (typeof window !== 'undefined' && window.roomsCache) ? window.roomsCache : [];
+    if (!roomNumberSelect) {
+        lookupAndSetRoomRate();
+        return;
+    }
 
-    if (roomNumberSelect) {
-        const currentVal = roomNumberSelect.value;
-        let filteredRooms = selectedRoomTypeId ? roomsCache.filter(r => r.room_type_id === selectedRoomTypeId) : roomsCache;
+    const currentVal = assignedRoomId || roomNumberSelect.value;
+    let availableRooms = [];
+    let rpcSuccess = false;
 
-        if (guestTypeVal === 'Non-Staying Guest') {
-            // Filter only rooms starting with "PM-" (Paymaster)
-            filteredRooms = filteredRooms.filter(r => (r.room_number || '').toUpperCase().startsWith('PM-'));
-        }
-
-        let optionsHTML = `<option value="">Belum Dialokasikan</option>`;
-        filteredRooms.forEach(r => {
-            const upperStatus = (r.status || '').toUpperCase();
-            const isOOO = upperStatus === 'OOO' || upperStatus === 'OUT OF ORDER';
-            optionsHTML += `<option value="${r.id}" ${isOOO ? 'disabled' : ''}>Kamar ${r.room_number}${isOOO ? ' (OOO)' : ''}</option>`;
+    try {
+        const { data, error } = await supabaseClient.rpc('rpc_get_available_physical_rooms', {
+            p_room_type_id: selectedRoomTypeId || null,
+            p_check_in: checkInVal || null,
+            p_check_out: checkOutVal || null,
+            p_current_res_id: currentResId || null
         });
-        roomNumberSelect.innerHTML = optionsHTML;
 
-        if (currentVal && filteredRooms.some(r => r.id === currentVal)) {
-            roomNumberSelect.value = currentVal;
+        if (!error && Array.isArray(data)) {
+            availableRooms = data;
+            rpcSuccess = true;
         } else {
-            roomNumberSelect.value = '';
+            console.warn('rpc_get_available_physical_rooms warning/error:', error);
         }
+    } catch (err) {
+        console.warn('Exception calling rpc_get_available_physical_rooms:', err);
+    }
+
+    if (!rpcSuccess) {
+        availableRooms = await getAvailablePhysicalRoomsFallback(selectedRoomTypeId, checkInVal, checkOutVal, currentResId);
+    }
+
+    if (guestTypeVal === 'Non-Staying Guest') {
+        availableRooms = availableRooms.filter(r => (r.room_number || '').toUpperCase().startsWith('PM-'));
+    }
+
+    // Ensure currently assigned room for active editing reservation is preserved in list
+    if (currentResId && currentVal) {
+        const alreadyInList = availableRooms.some(r => r.id === currentVal);
+        if (!alreadyInList) {
+            const cachedRoom = (window.roomsCache || []).find(r => r.id === currentVal);
+            if (cachedRoom) {
+                availableRooms.push(cachedRoom);
+            }
+        }
+    }
+
+    let optionsHTML = `<option value="">Belum Dialokasikan</option>`;
+    availableRooms.forEach(r => {
+        const upperStatus = (r.status || '').toUpperCase();
+        const isOOO = upperStatus === 'OOO' || upperStatus === 'OUT OF ORDER';
+        optionsHTML += `<option value="${r.id}" ${isOOO ? 'disabled' : ''}>Kamar ${r.room_number}${isOOO ? ' (OOO)' : ''}</option>`;
+    });
+    roomNumberSelect.innerHTML = optionsHTML;
+
+    if (currentVal && availableRooms.some(r => r.id === currentVal)) {
+        roomNumberSelect.value = currentVal;
+    } else {
+        roomNumberSelect.value = '';
     }
 
     lookupAndSetRoomRate();
@@ -965,8 +1038,8 @@ export async function openEditReservation(id) {
         document.getElementById('res-child').value = res.child || 0;
 
         document.getElementById('res-room-type').value = res.room_type_id || '';
-        handleRoomTypeChange();
         document.getElementById('res-room-number').value = res.room_id || '';
+        await handleRoomTypeChange(res.room_id || null);
         document.getElementById('res-rate-code').value = res.rate_plan_id || '';
         document.getElementById('res-room-rate').value = res.room_rate || 0;
         document.getElementById('res-meal-plan').value = res.meal_plan_id || '';
@@ -1259,6 +1332,44 @@ export function closeModal() {
     closeWebcamModal();
 }
 
+export async function checkRoomConflict(roomId, checkInDate, checkOutDate, currentResId = null) {
+    if (!roomId || !checkInDate || !checkOutDate) return null;
+
+    try {
+        let query = supabaseClient
+            .from('reservations')
+            .select('id, reservation_number, check_in_date, check_out_date, room_id, rooms(room_number)')
+            .eq('room_id', roomId)
+            .lt('check_in_date', checkOutDate)
+            .gt('check_out_date', checkInDate)
+            .not('status', 'in', '("CANCELLED","CHECKED_OUT","CHECKOUT","TENTATIVE","Cancelled","Checkout")');
+
+        if (currentResId) {
+            query = query.neq('id', currentResId);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            console.error('Error checking room conflict:', error);
+            return null;
+        }
+
+        if (data && data.length > 0) {
+            const conflictRes = data[0];
+            const roomObj = conflictRes.rooms ? (Array.isArray(conflictRes.rooms) ? conflictRes.rooms[0] : conflictRes.rooms) : null;
+            let roomNo = roomObj ? roomObj.room_number : null;
+            if (!roomNo) {
+                const cached = (typeof window !== 'undefined' && window.roomsCache || []).find(r => r.id === roomId);
+                if (cached) roomNo = cached.room_number;
+            }
+            return roomNo || 'tersebut';
+        }
+    } catch (e) {
+        console.error('Exception checking room conflict:', e);
+    }
+    return null;
+}
+
 export async function handleCheckInReservation() {
     const resId = document.getElementById('edit-reservation-id').value;
     if (!resId) return;
@@ -1272,7 +1383,7 @@ export async function handleCheckInReservation() {
     try {
         const { data: res, error: resErr } = await supabaseClient
             .from('reservations')
-            .select('room_id')
+            .select('room_id, check_in_date, check_out_date')
             .eq('id', resId)
             .single();
 
@@ -1280,6 +1391,16 @@ export async function handleCheckInReservation() {
 
         const roomId = res ? res.room_id : null;
         if (!roomId) throw new Error('Kamar belum dipilih untuk reservasi ini.');
+
+        const conflictRoomNo = await checkRoomConflict(roomId, res.check_in_date, res.check_out_date, resId);
+        if (conflictRoomNo) {
+            showToast(`Kamar ${conflictRoomNo} sudah terisi oleh reservasi lain pada periode ini.`, 'error');
+            if (checkInBtn) {
+                checkInBtn.disabled = false;
+                checkInBtn.innerHTML = `<i class="ph ph-check-circle text-lg"></i> Check-In`;
+            }
+            return;
+        }
 
         const { data: roomData, error: roomErr } = await supabaseClient
             .from('rooms')
@@ -1491,19 +1612,30 @@ export async function handleCheckIn(reservationId, roomId) {
     if (!reservationId) return;
     try {
         let targetRoomId = roomId;
+        let checkInDt = null;
+        let checkOutDt = null;
 
-        if (!targetRoomId) {
-            const { data: res, error: resErr } = await supabaseClient
-                .from('reservations')
-                .select('room_id')
-                .eq('id', reservationId)
-                .single();
+        const { data: res, error: resErr } = await supabaseClient
+            .from('reservations')
+            .select('room_id, check_in_date, check_out_date')
+            .eq('id', reservationId)
+            .single();
 
-            if (resErr) throw resErr;
-            targetRoomId = res?.room_id;
+        if (!resErr && res) {
+            if (!targetRoomId) targetRoomId = res.room_id;
+            checkInDt = res.check_in_date;
+            checkOutDt = res.check_out_date;
         }
 
         if (!targetRoomId) throw new Error('Kamar belum dipilih untuk reservasi ini.');
+
+        if (checkInDt && checkOutDt) {
+            const conflictRoomNo = await checkRoomConflict(targetRoomId, checkInDt, checkOutDt, reservationId);
+            if (conflictRoomNo) {
+                showToast(`Kamar ${conflictRoomNo} sudah terisi oleh reservasi lain pada periode ini.`, 'error');
+                return;
+            }
+        }
 
         const { data: roomData, error: roomErr } = await supabaseClient
             .from('rooms')
@@ -1576,6 +1708,22 @@ export async function handleSaveReservation(event) {
             return;
         }
 
+        const checkInDate = document.getElementById('res-check-in').value;
+        const checkOutDate = document.getElementById('res-check-out').value;
+        const roomId = document.getElementById('res-room-number').value || null;
+
+        if (roomId) {
+            const conflictRoomNo = await checkRoomConflict(roomId, checkInDate, checkOutDate, editId || null);
+            if (conflictRoomNo) {
+                showToast(`Kamar ${conflictRoomNo} sudah terisi oleh reservasi lain pada periode ini.`, 'error');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> ${editId ? 'Update Data' : 'Save Reservation'}`;
+                }
+                return;
+            }
+        }
+
         if (!guestProfileId) {
             const { data: newGuest, error: guestErr } = await supabaseClient
                 .from('guest_profiles')
@@ -1639,8 +1787,6 @@ export async function handleSaveReservation(event) {
             }
         }
 
-        const checkInDate = document.getElementById('res-check-in').value;
-        const checkOutDate = document.getElementById('res-check-out').value;
         const nights = parseInt(document.getElementById('res-nights').value) || 1;
         const eta = document.getElementById('res-eta').value || '14:00';
         const etd = document.getElementById('res-etd').value || '12:00';
@@ -1649,7 +1795,6 @@ export async function handleSaveReservation(event) {
 
         const guestType = document.getElementById('res-guest-type') ? document.getElementById('res-guest-type').value : 'Staying Guest';
         const roomTypeId = document.getElementById('res-room-type').value || null;
-        const roomId = document.getElementById('res-room-number').value || null;
         const ratePlanId = document.getElementById('res-rate-code').value || null;
         const roomRate = parseFloat(document.getElementById('res-room-rate').value) || 0;
         const mealPlanId = document.getElementById('res-meal-plan').value || null;
