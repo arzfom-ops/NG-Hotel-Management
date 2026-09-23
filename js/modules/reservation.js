@@ -445,12 +445,19 @@ export async function selectGuestFromLookup(guestId) {
     const nationalityInput = document.getElementById('res-nationality');
 
     if (bookerInput) bookerInput.value = nameVal;
-    if (guestNameInput) guestNameInput.value = nameVal;
+    if (guestNameInput) {
+        guestNameInput.value = nameVal;
+        guestNameInput.dataset.originalName = nameVal;
+    }
     if (phoneInput) phoneInput.value = guest.phone || guest.mobile_no || guest.phone_number || '';
     if (emailInput) emailInput.value = guest.email || '';
     if (idCardInput) idCardInput.value = guest.id_card_no || guest.id_card || '';
     if (discountInput) discountInput.value = guest.discount_pct || guest.special_discount || 0;
-    if (cardIdInput) cardIdInput.value = guest.id || guestId;
+    if (cardIdInput) {
+        cardIdInput.value = guest.id || guestId;
+        cardIdInput.dataset.originalGcfId = guest.id || guestId;
+        cardIdInput.dataset.originalGcfName = nameVal;
+    }
     if (profileIdInput && !profileIdInput.value) profileIdInput.value = guest.id || guestId;
     if (addressInput) addressInput.value = guest.address || '';
     if (cityInput) cityInput.value = guest.city || '';
@@ -1015,6 +1022,16 @@ export async function openEditReservation(id) {
         const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
         const guestProfileId = res.guest_profile_id || (guestProfile ? guestProfile.id : '');
         const guestName = guestProfile ? (guestProfile.full_name || '') : '';
+
+        const guestNameInputEl = document.getElementById('res-guest-name');
+        if (guestNameInputEl) {
+            guestNameInputEl.dataset.originalName = guestName;
+        }
+
+        const cardIdEl = document.getElementById('res-guest-card-id');
+        if (cardIdEl) {
+            cardIdEl.dataset.originalGcfName = guestName;
+        }
 
         document.getElementById('res-guest-profile-id').value = guestProfileId;
         document.getElementById('res-booker-name').value = res.booker_name || '';
@@ -1724,6 +1741,10 @@ export async function handleSaveReservation(event) {
             }
         }
 
+        const originalGuestName = document.getElementById('res-guest-name')?.dataset?.originalName || '';
+        const originalGcfName = document.getElementById('res-guest-card-id')?.dataset?.originalGcfName || originalGuestName;
+        const isNameChanged = (originalGuestName && guestNameVal !== originalGuestName) || (originalGcfName && guestNameVal !== originalGcfName);
+
         if (!guestProfileId) {
             const { data: newGuest, error: guestErr } = await supabaseClient
                 .from('guest_profiles')
@@ -1742,6 +1763,49 @@ export async function handleSaveReservation(event) {
 
             if (guestErr) throw guestErr;
             guestProfileId = newGuest.id;
+        } else if (editId && isNameChanged) {
+            // Check if guest_profile_id is shared by other reservations (e.g. child rooms in a group)
+            const { data: sharedRes } = await supabaseClient
+                .from('reservations')
+                .select('id')
+                .eq('guest_profile_id', guestProfileId)
+                .neq('id', editId);
+
+            if (sharedRes && sharedRes.length > 0) {
+                // Shared profile: Create a NEW guest profile row so updating guest name is isolated ONLY to current reservation
+                const { data: newGuest, error: guestErr } = await supabaseClient
+                    .from('guest_profiles')
+                    .insert([{
+                        full_name: guestNameVal,
+                        id_card_no: idCardVal || null,
+                        phone_number: phoneVal || null,
+                        email: emailVal || null,
+                        birth_date: birthDateVal,
+                        address: addressVal || null,
+                        city: cityVal || null,
+                        nationality: nationalityVal || 'Indonesia'
+                    }])
+                    .select()
+                    .single();
+
+                if (guestErr) throw guestErr;
+                guestProfileId = newGuest.id;
+            } else {
+                // Not shared by other reservations: Safe to update existing profile directly
+                await supabaseClient
+                    .from('guest_profiles')
+                    .update({
+                        full_name: guestNameVal,
+                        id_card_no: idCardVal || null,
+                        phone_number: phoneVal || null,
+                        email: emailVal || null,
+                        birth_date: birthDateVal,
+                        address: addressVal || null,
+                        city: cityVal || null,
+                        nationality: nationalityVal || 'Indonesia'
+                    })
+                    .eq('id', guestProfileId);
+            }
         } else {
             await supabaseClient
                 .from('guest_profiles')
@@ -1758,15 +1822,27 @@ export async function handleSaveReservation(event) {
                 .eq('id', guestProfileId);
         }
 
-        // Save to GCF if checkbox is checked
+        // Save to GCF if checkbox is checked & handle GCF profile decoupling upon name change
         const saveToGcfChecked = document.getElementById('res-save-to-gcf')?.checked;
         let guestCardId = document.getElementById('res-guest-card-id')?.value || null;
         const discountPctVal = parseFloat(document.getElementById('res-discount-pct')?.value) || 0;
 
+        // Logika Penanganan Profil GCF saat Edit Nama:
+        // Jika nama tamu diubah dan nama baru tersebut berbeda dari nama di profil GCF yang sedang terikat:
+        // - Lepaskan relasi: Set guest_card_id = NULL pada reservasi tersebut agar tidak lagi merujuk ke profil pemesan utama grup.
+        // - JANGAN memperbarui tabel master guest_card_files secara langsung menggunakan guest_card_id induk.
+        if (isNameChanged) {
+            guestCardId = null;
+            const cardIdEl = document.getElementById('res-guest-card-id');
+            if (cardIdEl) cardIdEl.value = '';
+        }
+
         if (saveToGcfChecked) {
             try {
+                // Jika saveToGcfChecked dicentang dan nama diubah, id dikirim undefined agar membuat record GCF baru
+                const targetGcfId = isNameChanged ? undefined : (guestCardId || undefined);
                 const gcfData = await saveGuestCard({
-                    id: guestCardId || undefined,
+                    id: targetGcfId,
                     full_name: bookerNameVal || guestNameVal,
                     name: bookerNameVal || guestNameVal,
                     phone: phoneVal,
@@ -1780,7 +1856,10 @@ export async function handleSaveReservation(event) {
                 if (gcfData && gcfData.id) {
                     guestCardId = gcfData.id;
                     const cardIdEl = document.getElementById('res-guest-card-id');
-                    if (cardIdEl) cardIdEl.value = guestCardId;
+                    if (cardIdEl) {
+                        cardIdEl.value = guestCardId;
+                        cardIdEl.dataset.originalGcfName = bookerNameVal || guestNameVal;
+                    }
                 }
             } catch (gcfErr) {
                 console.warn('Error saving/updating GCF profile:', gcfErr);
