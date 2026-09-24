@@ -87,7 +87,14 @@ import {
     openGuestLookupModal,
     closeGuestLookupModal,
     handleGcfSearchInput,
-    selectGuestFromLookup
+    selectGuestFromLookup,
+    handleQtyChange,
+    splitGroupReservation,
+    handleGroupSplitAdminFromEdit,
+    openGroupRoomingListModal,
+    updateRoomingListPhysicalRoomDropdowns,
+    openGcfSearchForRoomingRow,
+    handleSaveGroupRoomingList
 } from './modules/reservation.js';
 
 import {
@@ -689,6 +696,13 @@ if (typeof window !== 'undefined') {
     window.closeGuestLookupModal = closeGuestLookupModal;
     window.handleGcfSearchInput = handleGcfSearchInput;
     window.selectGuestFromLookup = selectGuestFromLookup;
+    window.handleQtyChange = handleQtyChange;
+    window.splitGroupReservation = splitGroupReservation;
+    window.handleGroupSplitAdminFromEdit = handleGroupSplitAdminFromEdit;
+    window.openGroupRoomingListModal = openGroupRoomingListModal;
+    window.updateRoomingListPhysicalRoomDropdowns = updateRoomingListPhysicalRoomDropdowns;
+    window.openGcfSearchForRoomingRow = openGcfSearchForRoomingRow;
+    window.handleSaveGroupRoomingList = handleSaveGroupRoomingList;
     window.mealPlansCache = mealPlansCache;
     window.roomTypesCache = roomTypesCache;
     window.ratePlansCache = ratePlansCache;

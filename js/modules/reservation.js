@@ -85,8 +85,31 @@ export async function populateReservationFormDropdowns() {
     }
 }
 
+let activeRoomingListRowIndex = null;
+
+export function handleQtyChange() {
+    const qtyEl = document.getElementById('res-qty');
+    const groupContainer = document.getElementById('res-group-name-container');
+    const groupInput = document.getElementById('res-group-name');
+    if (!qtyEl || !groupContainer) return;
+
+    const qty = parseInt(qtyEl.value) || 1;
+    if (qty > 1) {
+        groupContainer.classList.remove('hidden');
+        if (groupInput) groupInput.required = true;
+    } else {
+        groupContainer.classList.add('hidden');
+        if (groupInput) {
+            groupInput.required = false;
+            groupInput.value = '';
+        }
+    }
+    updateTotalPreview();
+}
+
 export async function openModal() {
     await populateReservationFormDropdowns();
+    handleQtyChange();
     switchReservationTab('details');
 
     // Reset IDs, pending deposits, and document preview
@@ -432,6 +455,23 @@ export async function selectGuestFromLookup(guestId) {
     }
 
     const nameVal = guest.full_name || guest.name || '';
+
+    // If GCF lookup was opened for a specific Rooming List row
+    if (activeRoomingListRowIndex !== null) {
+        const rowInput = document.querySelector(`.rooming-guest-name[data-row-index="${activeRoomingListRowIndex}"]`);
+        const rowTr = document.querySelector(`tr[data-row-index="${activeRoomingListRowIndex}"]`);
+        if (rowInput) {
+            rowInput.value = nameVal;
+        }
+        if (rowTr) {
+            rowTr.dataset.gcfId = guest.id || guestId;
+        }
+        activeRoomingListRowIndex = null;
+        closeGuestLookupModal();
+        showToast(`Profil ${nameVal} dipilih untuk kamar ini`, 'success');
+        return;
+    }
+
     const bookerInput = document.getElementById('res-booker-name');
     const guestNameInput = document.getElementById('res-guest-name');
     const phoneInput = document.getElementById('res-phone');
@@ -1070,6 +1110,36 @@ export async function openEditReservation(id) {
         document.getElementById('res-qty').value = res.qty || 1;
         document.getElementById('res-extrabed').value = res.extrabed_qty || 0;
 
+        // Group name and Qty container handling
+        handleQtyChange();
+        const groupNameInput = document.getElementById('res-group-name');
+        if (groupNameInput) {
+            if (res.group_booking_id || res.group_id) {
+                const { data: gbData } = await supabaseClient
+                    .from('group_bookings')
+                    .select('group_name')
+                    .eq('id', res.group_booking_id || res.group_id)
+                    .maybeSingle();
+                if (gbData && gbData.group_name) {
+                    groupNameInput.value = gbData.group_name;
+                } else {
+                    groupNameInput.value = res.booker_name || '';
+                }
+            } else {
+                groupNameInput.value = res.booker_name || '';
+            }
+        }
+
+        // Split button visibility in edit footer
+        const groupSplitBtn = document.getElementById('resGroupSplitBtn');
+        if (groupSplitBtn) {
+            if ((res.qty && parseInt(res.qty) > 1) || res.group_booking_id || res.group_id) {
+                groupSplitBtn.classList.remove('hidden');
+            } else {
+                groupSplitBtn.classList.add('hidden');
+            }
+        }
+
         document.getElementById('res-comment').value = res.comment || '';
 
         let dailyRates = null;
@@ -1465,6 +1535,421 @@ export async function handleCheckInReservation() {
             checkInBtn.innerHTML = `<i class="ph ph-check-circle text-lg"></i> Check-in`;
         }
     }
+}
+
+// ==========================================
+// TAHAP 2: GROUP AUTO-SPLIT & ROOMING LIST
+// ==========================================
+
+export async function splitGroupReservation(reservationId) {
+    if (!reservationId) return;
+
+    try {
+        // 1. Attempt RPC call rpc_split_group_reservation
+        const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_split_group_reservation', {
+            p_reservation_id: reservationId
+        });
+
+        if (!rpcErr) {
+            showToast('Berhasil memecah reservasi grup via RPC!', 'success');
+            refreshAllViews();
+            return;
+        }
+
+        console.warn('rpc_split_group_reservation call failed or not found, running JS fallback split:', rpcErr);
+
+        // 2. Client-side fallback split execution
+        const { data: res, error: fetchErr } = await supabaseClient
+            .from('reservations')
+            .select('*, guest_profiles(*), room_types(*)')
+            .eq('id', reservationId)
+            .single();
+
+        if (fetchErr || !res) {
+            showToast('Gagal mengambil data reservasi untuk split.', 'error');
+            return;
+        }
+
+        const qty = parseInt(res.qty || 1, 10);
+        if (qty <= 1) {
+            showToast('Reservasi ini hanya memiliki 1 kamar atau sudah di-split.', 'warning');
+            return;
+        }
+
+        // Ensure header group_bookings record exists
+        let groupBookingId = res.group_booking_id || res.group_id;
+        if (!groupBookingId) {
+            const groupName = res.booker_name || res.guest_name || 'Group Reservation';
+            const cpPayload = JSON.stringify({ check_in_date: res.check_in_date, check_out_date: res.check_out_date, status: 'SPLIT' });
+            const { data: newGb, error: newGbErr } = await supabaseClient
+                .from('group_bookings')
+                .insert([{
+                    group_name: groupName,
+                    corporate_id: res.corporate_id || null,
+                    contact_person: cpPayload,
+                    status: 'SPLIT'
+                }])
+                .select()
+                .single();
+
+            if (!newGbErr && newGb) {
+                groupBookingId = newGb.id;
+            }
+        }
+
+        // Update parent reservation: set qty = 1, bind group_booking_id and group_id, parent_reservation_id = null
+        await supabaseClient
+            .from('reservations')
+            .update({
+                qty: 1,
+                group_booking_id: groupBookingId || null,
+                group_id: groupBookingId || null,
+                parent_reservation_id: null
+            })
+            .eq('id', reservationId);
+
+        const baseRef = res.booking_reference || res.reservation_number || `RES-${Date.now().toString().slice(-6)}`;
+        const baseGuestName = res.booker_name || res.guest_name || 'Tamu Group';
+
+        // Create N - 1 child room records in reservations table
+        for (let i = 2; i <= qty; i++) {
+            const childGuestName = `${baseGuestName} - Kamar ${i}`;
+
+            // Create isolated guest profile for child room
+            let childProfileId = null;
+            const { data: newProfile } = await supabaseClient
+                .from('guest_profiles')
+                .insert([{ full_name: childGuestName, nationality: 'Indonesia' }])
+                .select()
+                .single();
+            if (newProfile) childProfileId = newProfile.id;
+
+            const childResNumber = `${baseRef}-${i}`;
+            const childPayload = {
+                reservation_number: childResNumber,
+                booking_reference: baseRef,
+                group_booking_id: groupBookingId || null,
+                group_id: groupBookingId || null,
+                parent_reservation_id: null, // CRITICAL: null to avoid FK constraint errors!
+                guest_profile_id: childProfileId,
+                booker_name: baseGuestName,
+                room_type_id: res.room_type_id,
+                room_id: null,
+                room_rate: res.room_rate,
+                qty: 1,
+                status: res.status || 'GUARANTEED',
+                check_in_date: res.check_in_date,
+                check_out_date: res.check_out_date,
+                nights: res.nights,
+                guest_type: 'Staying Guest',
+                reservation_source: res.reservation_source || 'Direct',
+                corporate_id: res.corporate_id || null
+            };
+
+            const { data: childResData, error: childInsertErr } = await supabaseClient
+                .from('reservations')
+                .insert([childPayload])
+                .select()
+                .single();
+
+            if (!childInsertErr && childResData) {
+                // Copy daily breakdown rates to child reservation
+                const { data: dailyRates } = await supabaseClient
+                    .from('reservation_daily_rates')
+                    .select('*')
+                    .eq('reservation_id', reservationId);
+
+                if (dailyRates && dailyRates.length > 0) {
+                    const childDailyPayloads = dailyRates.map(d => ({
+                        reservation_id: childResData.id,
+                        stay_date: d.stay_date,
+                        room_rate: d.room_rate,
+                        meal_plan_id: d.meal_plan_id
+                    }));
+                    await supabaseClient.from('reservation_daily_rates').insert(childDailyPayloads);
+                }
+            }
+        }
+
+        showToast(`Berhasil auto-split reservasi grup menjadi ${qty} kamar!`, 'success');
+        refreshAllViews();
+
+    } catch (err) {
+        console.error('Error executing group split:', err);
+        showToast('Terjadi kesalahan saat melakukan split reservasi: ' + err.message, 'error');
+    }
+}
+
+export function handleGroupSplitAdminFromEdit() {
+    const editId = document.getElementById('edit-reservation-id')?.value;
+    if (!editId) return;
+    closeModal();
+    openGroupRoomingListModal(editId);
+}
+
+export async function openGroupRoomingListModal(reservationId) {
+    if (!reservationId) return;
+
+    try {
+        const { data: res, error } = await supabaseClient
+            .from('reservations')
+            .select('*, room_types(name)')
+            .eq('id', reservationId)
+            .single();
+
+        if (error || !res) {
+            showToast('Gagal mengambil data reservasi.', 'error');
+            return;
+        }
+
+        const groupBookingId = res.group_booking_id || res.group_id;
+        const bookingRef = res.booking_reference;
+
+        let childReservations = [];
+        if (groupBookingId) {
+            const { data: childs } = await supabaseClient
+                .from('reservations')
+                .select('*, guest_profiles(full_name), room_types(name), rooms(room_number)')
+                .or(`group_booking_id.eq.${groupBookingId},group_id.eq.${groupBookingId}`)
+                .neq('status', 'Cancelled');
+            childReservations = childs || [];
+        } else if (bookingRef) {
+            const { data: childs } = await supabaseClient
+                .from('reservations')
+                .select('*, guest_profiles(full_name), room_types(name), rooms(room_number)')
+                .eq('booking_reference', bookingRef)
+                .neq('status', 'Cancelled');
+            childReservations = childs || [];
+        }
+
+        if (childReservations.length === 0) {
+            childReservations = [res];
+        }
+
+        // Fetch physical available rooms via rpc_get_available_physical_rooms or fallback
+        let physicalRooms = [];
+        try {
+            const { data: pRooms, error: pErr } = await supabaseClient.rpc('rpc_get_available_physical_rooms', {
+                p_room_type_id: res.room_type_id || null,
+                p_check_in: res.check_in_date,
+                p_check_out: res.check_out_date,
+                p_current_res_id: null
+            });
+            if (!pErr && pRooms) {
+                physicalRooms = pRooms;
+            } else {
+                physicalRooms = await getAvailablePhysicalRoomsFallback(res.room_type_id, res.check_in_date, res.check_out_date, null);
+            }
+        } catch (e) {
+            physicalRooms = await getAvailablePhysicalRoomsFallback(res.room_type_id, res.check_in_date, res.check_out_date, null);
+        }
+
+        // Render Header Info Card
+        const infoCard = document.getElementById('roomingListInfoCard');
+        if (infoCard) {
+            const stayFmt = formatStayDatesCompact(res.check_in_date, res.check_out_date);
+            infoCard.innerHTML = `
+                <div>
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Grup / Booker</span>
+                    <span class="text-sm font-bold text-slate-800">${res.booker_name || res.guest_name || 'Group'}</span>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">No. Referensi</span>
+                    <span class="text-sm font-semibold text-slate-700 font-mono">${res.booking_reference || res.reservation_number || '-'}</span>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Tanggal Inap</span>
+                    <span class="text-sm font-semibold text-slate-700">${stayFmt}</span>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Kamar</span>
+                    <span class="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 rounded font-bold text-xs">${childReservations.length} Kamar</span>
+                </div>
+            `;
+        }
+
+        // Render Table Rows
+        const tbody = document.getElementById('rooming-list-rows');
+        if (tbody) {
+            tbody.innerHTML = childReservations.map((cRes, idx) => {
+                const rtName = cRes.room_types ? (Array.isArray(cRes.room_types) ? cRes.room_types[0]?.name : cRes.room_types.name) : 'Kamar';
+                const guestName = cRes.guest_name || (cRes.guest_profiles ? (Array.isArray(cRes.guest_profiles) ? cRes.guest_profiles[0]?.full_name : cRes.guest_profiles.full_name) : '') || '';
+
+                let roomOptions = `<option value="">Belum Dialokasikan</option>`;
+
+                // Include assigned room if currently set on this reservation
+                const currentRoomId = cRes.room_id || null;
+                const currentRoomNo = cRes.rooms ? (Array.isArray(cRes.rooms) ? cRes.rooms[0]?.room_number : cRes.rooms.room_number) : null;
+
+                if (currentRoomId && currentRoomNo && !physicalRooms.some(r => r.id === currentRoomId)) {
+                    physicalRooms.push({ id: currentRoomId, room_number: currentRoomNo });
+                }
+
+                physicalRooms.forEach(r => {
+                    const selected = (currentRoomId === r.id) ? 'selected' : '';
+                    roomOptions += `<option value="${r.id}" ${selected}>Kamar ${r.room_number}</option>`;
+                });
+
+                return `
+                    <tr class="rooming-row hover:bg-slate-50 transition-colors" data-res-id="${cRes.id}" data-row-index="${idx}">
+                        <td class="py-2.5 px-3 text-center font-bold text-slate-500">${idx + 1}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-800">${rtName}</td>
+                        <td class="py-2.5 px-3">
+                            <select onchange="updateRoomingListPhysicalRoomDropdowns()" class="rooming-room-id w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-white">
+                                ${roomOptions}
+                            </select>
+                        </td>
+                        <td class="py-2.5 px-3">
+                            <div class="flex items-center gap-1.5">
+                                <input type="text" data-row-index="${idx}" required class="rooming-guest-name w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600" value="${guestName.replace(/"/g, '&quot;')}">
+                                <button type="button" onclick="openGcfSearchForRoomingRow(${idx})" class="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer" title="Cari / Link Profil GCF">
+                                    <i class="ph ph-magnifying-glass text-sm"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-3 font-mono font-semibold text-slate-700">
+                            Rp ${Number(cRes.room_rate || 0).toLocaleString('id-ID')}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            updateRoomingListPhysicalRoomDropdowns();
+        }
+
+        const modal = document.getElementById('roomingListModal');
+        if (modal) modal.classList.remove('hidden');
+
+    } catch (err) {
+        console.error('Error opening rooming list modal:', err);
+        showToast('Terjadi kesalahan saat membuka Rooming List: ' + err.message, 'error');
+    }
+}
+
+export function updateRoomingListPhysicalRoomDropdowns() {
+    const selects = document.querySelectorAll('.rooming-room-id');
+    if (!selects || selects.length === 0) return;
+
+    const selectedValues = new Set();
+    selects.forEach(s => {
+        if (s.value) selectedValues.add(s.value);
+    });
+
+    selects.forEach(selectEl => {
+        const currentVal = selectEl.value;
+        Array.from(selectEl.options).forEach(opt => {
+            if (!opt.value) return;
+            if (selectedValues.has(opt.value) && opt.value !== currentVal) {
+                opt.disabled = true;
+                if (!opt.dataset.origText) opt.dataset.origText = opt.textContent;
+                opt.textContent = opt.dataset.origText + ' (Sudah dipilih)';
+            } else {
+                opt.disabled = false;
+                if (opt.dataset.origText) opt.textContent = opt.dataset.origText;
+            }
+        });
+    });
+}
+
+export function openGcfSearchForRoomingRow(index) {
+    activeRoomingListRowIndex = index;
+    openGuestLookupModal();
+}
+
+export async function handleSaveGroupRoomingList(event) {
+    event.preventDefault();
+
+    const rows = document.querySelectorAll('#rooming-list-rows tr.rooming-row');
+    if (!rows || rows.length === 0) return;
+
+    // Check physical room conflict among rows
+    const chosenRooms = [];
+    let conflictFound = false;
+
+    rows.forEach(row => {
+        const roomSelect = row.querySelector('.rooming-room-id');
+        if (roomSelect && roomSelect.value) {
+            if (chosenRooms.includes(roomSelect.value)) {
+                conflictFound = true;
+            } else {
+                chosenRooms.push(roomSelect.value);
+            }
+        }
+    });
+
+    if (conflictFound) {
+        showToast('Kamar fisik yang sama tidak boleh dipilih lebih dari satu kali!', 'error');
+        return;
+    }
+
+    try {
+        for (let row of rows) {
+            const resId = row.dataset.resId;
+            const guestNameInput = row.querySelector('.rooming-guest-name');
+            const roomSelect = row.querySelector('.rooming-room-id');
+            const gcfId = row.dataset.gcfId || null;
+
+            if (!resId) continue;
+            const newGuestName = guestNameInput ? guestNameInput.value.trim() : '';
+            const newRoomId = roomSelect ? (roomSelect.value || null) : null;
+
+            // Ensure isolated guest profile for child reservation
+            const { data: currentRes } = await supabaseClient
+                .from('reservations')
+                .select('guest_profile_id')
+                .eq('id', resId)
+                .single();
+
+            let profileId = currentRes ? currentRes.guest_profile_id : null;
+
+            if (profileId) {
+                await supabaseClient
+                    .from('guest_profiles')
+                    .update({ full_name: newGuestName })
+                    .eq('id', profileId);
+            } else if (newGuestName) {
+                const { data: newProfile } = await supabaseClient
+                    .from('guest_profiles')
+                    .insert([{ full_name: newGuestName }])
+                    .select()
+                    .single();
+
+                if (newProfile) profileId = newProfile.id;
+            }
+
+            const updatePayload = {
+                room_id: newRoomId,
+                guest_card_id: gcfId
+            };
+            if (profileId) updatePayload.guest_profile_id = profileId;
+
+            await supabaseClient
+                .from('reservations')
+                .update(updatePayload)
+                .eq('id', resId);
+        }
+
+        showToast('Rooming List berhasil disimpan!', 'success');
+        closeRoomingListModal();
+        refreshAllViews();
+
+    } catch (err) {
+        console.error('Error saving rooming list:', err);
+        showToast('Gagal menyimpan Rooming List: ' + err.message, 'error');
+    }
+}
+
+export function closeRoomingListModal() {
+    const modal = document.getElementById('roomingListModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function refreshAllViews() {
+    if (typeof window.fetchRooms === 'function') window.fetchRooms();
+    if (typeof window.fetchFrontdeskDashboard === 'function') window.fetchFrontdeskDashboard();
+    if (typeof window.renderTapeChart === 'function') window.renderTapeChart();
+    if (typeof window.renderRoomForecast === 'function') window.renderRoomForecast();
+    if (typeof window.fetchCancelList === 'function') window.fetchCancelList();
 }
 
 export async function handlePrintRegistrationCard() {
@@ -2032,7 +2517,43 @@ export async function handleSaveReservation(event) {
         } else {
             // New Reservation Mode
             if (qty > 1) {
-                // Multi-Room Reservation
+                // Multi-Room / Group Reservation
+                const groupNameVal = document.getElementById('res-group-name')?.value?.trim() || bookerNameVal || guestNameVal || 'Group Reservation';
+                if (!groupNameVal) {
+                    showToast('Group Name wajib diisi untuk reservasi grup (Qty > 1).', 'error');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> Save Reservation`;
+                    }
+                    return;
+                }
+
+                // Insert header record into group_bookings
+                let groupBookingId = null;
+                try {
+                    const contactPersonPayload = JSON.stringify({
+                        check_in_date: checkInDate,
+                        check_out_date: checkOutDate,
+                        status: 'Active'
+                    });
+                    const { data: gbData, error: gbErr } = await supabaseClient
+                        .from('group_bookings')
+                        .insert([{
+                            group_name: groupNameVal,
+                            corporate_id: corporateId || null,
+                            contact_person: contactPersonPayload,
+                            status: 'Active'
+                        }])
+                        .select()
+                        .single();
+
+                    if (!gbErr && gbData) {
+                        groupBookingId = gbData.id;
+                    }
+                } catch (gbException) {
+                    console.warn('Error creating group_bookings row:', gbException);
+                }
+
                 const baseNum = Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
                 const baseResRef = `RES-${baseNum}`;
 
@@ -2043,6 +2564,9 @@ export async function handleSaveReservation(event) {
                     qty: 1,
                     reservation_number: parentResNumber,
                     parent_reservation_id: null,
+                    group_booking_id: groupBookingId,
+                    group_id: groupBookingId,
+                    booker_name: groupNameVal,
                     booking_reference: baseResRef,
                     status: selectedStatus
                 };
@@ -2102,7 +2626,10 @@ export async function handleSaveReservation(event) {
                         qty: 1,
                         room_id: null, // Unallocated room for child by default
                         reservation_number: childResNumber,
-                        parent_reservation_id: savedReservationId,
+                        parent_reservation_id: null, // BUKAN parent_reservation_id agar tidak memicu foreign key error
+                        group_booking_id: groupBookingId,
+                        group_id: groupBookingId,
+                        booker_name: groupNameVal,
                         booking_reference: baseResRef,
                         status: selectedStatus
                     };
