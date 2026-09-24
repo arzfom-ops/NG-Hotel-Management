@@ -434,8 +434,9 @@ export function renderFolioTransactions() {
             const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
             const amount = Number(tx.amount || 0);
             const isVoided = tx.is_voided === true;
+            const isTransferredToMaster = !!(tx.master_folio_id);
 
-            if (!isVoided) {
+            if (!isVoided && !isTransferredToMaster) {
                 if (txType === 'CHARGE') {
                     totalCharge += amount;
                 } else if (txType === 'PAYMENT') {
@@ -448,29 +449,40 @@ export function renderFolioTransactions() {
             const chargeDisplay = txType === 'CHARGE' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
             const paymentDisplay = txType === 'PAYMENT' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
 
-            let rowClass = isVoided ? 'bg-red-50/50 text-slate-400 line-through' : 'hover:bg-slate-50 text-slate-700';
+            let rowClass = isVoided ? 'bg-red-50/50 text-slate-400 line-through' : (isTransferredToMaster ? 'bg-amber-50/40 text-slate-600' : 'hover:bg-slate-50 text-slate-700');
             let desc = tx.description || '-';
-            if (isVoided) desc += ` (VOID: ${tx.void_reason || 'Batal'})`;
+            if (isVoided) {
+                desc += ` (VOID: ${tx.void_reason || 'Batal'})`;
+            } else if (isTransferredToMaster) {
+                desc += ` <span class="ml-1.5 px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-100 text-amber-800 border border-amber-300 inline-flex items-center gap-1 shadow-2xs"><i class="ph ph-arrows-out-line-horizontal"></i> Transferred to Master Folio</span>`;
+            }
 
-            const transferMasterBtn = (isMasterConnected && !isVoided && txType === 'CHARGE') ? `
+            const transferMasterBtn = (isMasterConnected && !isVoided && !isTransferredToMaster && txType === 'CHARGE') ? `
                 <button type="button" onclick="handleTransferToMaster('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition-colors flex items-center gap-1" title="Transfer to Master Folio">
                     <i class="ph ph-arrows-out-line-horizontal"></i> Transfer ke Master
                 </button>
             ` : '';
 
-            const actionBtn = isVoided ? `<span class="text-xs font-semibold text-red-400">Voided</span>` : `
-                <div class="flex items-center justify-center gap-1">
-                    ${transferMasterBtn}
-                    <button type="button" onclick="handleVoidTransaction('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded transition-colors" title="Void Transaksi">
-                        <i class="ph ph-prohibit"></i> Void
-                    </button>
-                </div>
-            `;
+            let actionBtn = '';
+            if (isVoided) {
+                actionBtn = `<span class="text-xs font-semibold text-red-400">Voided</span>`;
+            } else if (isTransferredToMaster) {
+                actionBtn = `<span class="px-2 py-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded flex items-center justify-center gap-1"><i class="ph ph-check-circle"></i> Transferred</span>`;
+            } else {
+                actionBtn = `
+                    <div class="flex items-center justify-center gap-1">
+                        ${transferMasterBtn}
+                        <button type="button" onclick="handleVoidTransaction('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded transition-colors" title="Void Transaksi">
+                            <i class="ph ph-prohibit"></i> Void
+                        </button>
+                    </div>
+                `;
+            }
 
             return `
                 <tr class="${rowClass} border-b border-slate-100 transition-colors text-xs">
                     <td class="p-3 text-center">
-                        <input type="checkbox" value="${tx.id}" class="folio-tx-cb folio-tx-checkbox rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer" onchange="updateTransferButtonsState()" ${isVoided ? 'disabled' : ''}>
+                        <input type="checkbox" value="${tx.id}" class="folio-tx-cb folio-tx-checkbox rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer" onchange="updateTransferButtonsState()" ${isVoided || isTransferredToMaster ? 'disabled' : ''}>
                     </td>
                     <td class="p-3 font-medium whitespace-nowrap text-slate-500">${dateStr}</td>
                     <td class="p-3 font-semibold text-slate-800">${desc}</td>
@@ -709,7 +721,7 @@ export function renderMasterFolioTab(data) {
 
             const returnBtn = (!isVoided && txType === 'CHARGE') ? `
                 <button type="button" onclick="handleReturnFromMaster('${tx.id}', '${originalFolioId || ''}')" class="px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded transition-colors shadow-2xs flex items-center gap-1" title="Kembalikan transaksi ke folio kamar asal">
-                    <i class="ph ph-arrow-u-up-left text-sm"></i> Kembalikan / Return
+                    <i class="ph ph-arrow-u-up-left text-sm"></i> Return to Personal Folio
                 </button>
             ` : '';
 
@@ -810,13 +822,36 @@ export async function handleReturnFromMaster(transactionId, originalFolioId) {
             return;
         }
 
-        const { data: rpcData, error } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
-            p_transaction_ids: [transactionId],
-            p_target_reservation_id: targetResId,
-            p_target_master_folio_id: null
-        });
+        let rpcSuccess = false;
+        try {
+            const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
+                p_transaction_ids: [transactionId],
+                p_target_reservation_id: targetResId,
+                p_target_master_folio_id: null
+            });
 
-        if (error) throw error;
+            if (!rpcErr && rpcData && rpcData.success !== false) {
+                await supabaseClient
+                    .from('folio_transactions')
+                    .update({ master_folio_id: null, reservation_id: targetResId })
+                    .eq('id', transactionId);
+                rpcSuccess = true;
+            }
+        } catch (e) {
+            console.warn('rpc_transfer_folio_transaction exception, falling back to direct update:', e);
+        }
+
+        if (!rpcSuccess) {
+            const { error: updErr } = await supabaseClient
+                .from('folio_transactions')
+                .update({
+                    reservation_id: targetResId,
+                    master_folio_id: null
+                })
+                .eq('id', transactionId);
+
+            if (updErr) throw updErr;
+        }
 
         if (currentMasterGroup?.master_folio_id) {
             await fetchMasterFolioDetails(currentMasterGroup.master_folio_id);
@@ -979,8 +1014,8 @@ export function renderMasterFolioTransactions() {
 
             const actionBtns = `
                 <div class="flex items-center justify-center gap-1">
-                    <button onclick="handleMoveBackToPersonalFolio('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded transition-colors" title="Kembalikan ke Personal Folio">
-                        <i class="ph ph-arrow-u-up-left"></i> Move Back
+                    <button onclick="handleMoveBackToPersonalFolio('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded transition-colors flex items-center gap-1" title="Kembalikan ke Personal Folio">
+                        <i class="ph ph-arrow-u-up-left text-sm"></i> Return to Personal Folio
                     </button>
                     ${isVoided ? '<span class="text-xs font-semibold text-red-400">Voided</span>' :
                     `<button onclick="handleVoidMasterTransaction('${tx.id}')" class="px-2 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded transition-colors" title="Void Transaksi"><i class="ph ph-prohibit"></i> Void</button>`}
@@ -1789,27 +1824,37 @@ export async function handleMoveToMasterFolio() {
         let rpcMessage = null;
 
         try {
-            const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
+            const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_transfer_folio_transactions', {
                 p_transaction_ids: selectedIds,
-                p_target_reservation_id: null,
+                p_target_personal_folio_id: null,
                 p_target_master_folio_id: masterFolioId
             });
 
             if (!rpcErr && rpcData && rpcData.success !== false) {
                 rpcSuccess = true;
                 rpcMessage = rpcData.message;
-            } else if (rpcErr) {
-                console.warn('rpc_transfer_folio_transaction error, falling back to direct update:', rpcErr);
+            } else {
+                const { data: rpcData2, error: rpcErr2 } = await supabaseClient.rpc('rpc_transfer_folio_transaction', {
+                    p_transaction_ids: selectedIds,
+                    p_target_reservation_id: null,
+                    p_target_master_folio_id: masterFolioId
+                });
+
+                if (!rpcErr2 && rpcData2 && rpcData2.success !== false) {
+                    rpcSuccess = true;
+                    rpcMessage = rpcData2.message;
+                } else if (rpcErr2) {
+                    console.warn('rpc_transfer_folio_transaction error, falling back to direct update:', rpcErr2);
+                }
             }
         } catch (e) {
-            console.warn('rpc_transfer_folio_transaction exception, falling back to direct update:', e);
+            console.warn('RPC exception, falling back to direct update:', e);
         }
 
         if (!rpcSuccess) {
             const { error: updErr } = await supabaseClient
                 .from('folio_transactions')
                 .update({
-                    reservation_id: null,
                     master_folio_id: masterFolioId
                 })
                 .in('id', selectedIds);
@@ -1829,7 +1874,7 @@ export async function handleMoveToMasterFolio() {
 
         await checkAndUpdateMasterFolioHeader(currentFolioReservation);
 
-        const msg = (rpcData && rpcData.message) ? rpcData.message : `${selectedIds.length} transaksi berhasil dipindahkan ke Master Folio.`;
+        const msg = rpcMessage ? rpcMessage : `${selectedIds.length} transaksi berhasil dipindahkan ke Master Folio.`;
         alert(msg);
 
     } catch (err) {

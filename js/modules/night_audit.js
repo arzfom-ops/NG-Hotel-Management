@@ -17,6 +17,8 @@ export function getCurrentBusinessDate() {
 
 /**
  * Executes the Night Audit by calling rpc_run_night_audit with the currentBusinessDate.
+ * Pastikan semua pemostingan Room Charge selalu masuk ke Folio Pribadi (folio_id / reservation_id)
+ * dengan default routing_type = 'NONE' (tidak otomatis masuk ke Master Folio).
  * Shows a Toast notification displaying the number of posted rooms (posted_count).
  * @param {string} [auditDateStr] - Optional audit date string in YYYY-MM-DD format
  * @returns {Promise<object>} Result object from RPC call

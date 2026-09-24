@@ -2401,6 +2401,7 @@ export async function handleSaveReservation(event) {
             voucher_number: voucherNumber,
             corporate_id: corporateId,
             comment: comment,
+            routing_type: 'NONE',
             status: selectedStatus
         };
 
