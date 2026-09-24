@@ -1021,7 +1021,8 @@ export async function openEditReservation(id) {
 
         const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
         const guestProfileId = res.guest_profile_id || (guestProfile ? guestProfile.id : '');
-        const guestName = guestProfile ? (guestProfile.full_name || '') : '';
+        const guestCardIdVal = res.guest_card_id || '';
+        const guestName = res.guest_name || (guestProfile ? guestProfile.full_name : '') || res.booker_name || '';
 
         const guestNameInputEl = document.getElementById('res-guest-name');
         if (guestNameInputEl) {
@@ -1030,7 +1031,9 @@ export async function openEditReservation(id) {
 
         const cardIdEl = document.getElementById('res-guest-card-id');
         if (cardIdEl) {
+            cardIdEl.value = guestCardIdVal;
             cardIdEl.dataset.originalGcfName = guestName;
+            cardIdEl.dataset.originalGcfId = guestCardIdVal;
         }
 
         document.getElementById('res-guest-profile-id').value = guestProfileId;
@@ -1890,6 +1893,8 @@ export async function handleSaveReservation(event) {
 
         const reservationPayload = {
             guest_profile_id: guestProfileId,
+            guest_card_id: guestCardId || null,
+            guest_name: guestNameVal || null,
             booker_name: bookerNameVal || null,
             guest_type: guestType,
             check_in_date: checkInDate,
