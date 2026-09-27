@@ -140,12 +140,16 @@ export async function saveGuestCard(guestData) {
     const payload = {
         name: nameVal,
         card_type: guestData.card_type || 'Individual',
+        title: guestData.title || null,
         email: guestData.email || null,
         phone: guestData.phone || guestData.phone_number || guestData.mobile_no || null,
         mobile_no: guestData.mobile_no || guestData.phone || guestData.phone_number || null,
-        id_card_no: guestData.id_card_no || guestData.id_card || null,
+        id_card_type: guestData.id_card_type || guestData.identity_type || 'KTP',
+        id_card_no: guestData.id_card_no || guestData.id_card || guestData.identity_no || null,
+        nationality: guestData.nationality || 'Indonesia',
         address: guestData.address || null,
         city: guestData.city || null,
+        birthdate: guestData.birthdate || guestData.birth_date || null,
         discount_pct: parseFloat(guestData.discount_pct || guestData.special_discount || guestData.discount || 0),
         comments: guestData.notes || guestData.comments || guestData.comment || null
     };
@@ -196,6 +200,9 @@ export async function applyGuestCardToReservation(guestId) {
         const idCardInput = document.getElementById('res-id-card');
         const profileIdInput = document.getElementById('res-guest-profile-id');
         const cardIdInput = document.getElementById('res-guest-card-id');
+        const cardTypeSelect = document.getElementById('res-card-type');
+        const titleSelect = document.getElementById('res-title');
+        const identityTypeSelect = document.getElementById('res-identity-type');
         const addressInput = document.getElementById('res-address');
         const cityInput = document.getElementById('res-city');
         const nationalityInput = document.getElementById('res-nationality');
@@ -207,6 +214,9 @@ export async function applyGuestCardToReservation(guestId) {
 
         if (cardIdInput) cardIdInput.value = guest.id || guestId;
         if (profileIdInput && !profileIdInput.value) profileIdInput.value = guest.id || guestId;
+        if (cardTypeSelect) cardTypeSelect.value = guest.card_type || 'Individual';
+        if (titleSelect) titleSelect.value = guest.title || 'Mr.';
+        if (identityTypeSelect) identityTypeSelect.value = guest.id_card_type || guest.identity_type || 'KTP';
         if (nameInput) nameInput.value = fullName;
         if (bookerInput) bookerInput.value = fullName;
         if (emailInput) emailInput.value = guest.email || '';
@@ -215,7 +225,7 @@ export async function applyGuestCardToReservation(guestId) {
         if (addressInput) addressInput.value = guest.address || '';
         if (cityInput) cityInput.value = guest.city || '';
         if (nationalityInput) nationalityInput.value = guest.nationality || guest.nationality_code || 'Indonesia';
-        if (birthDateInput && guest.birthdate) birthDateInput.value = guest.birthdate;
+        if (birthDateInput && (guest.birthdate || guest.birth_date)) birthDateInput.value = guest.birthdate || guest.birth_date;
 
         const discountVal = guest.discount_pct || guest.special_discount || guest.discount || 0;
         if (discountInput) discountInput.value = discountVal;

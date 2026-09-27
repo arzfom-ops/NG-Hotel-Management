@@ -340,16 +340,19 @@ export async function handleGuestSearchInput(query) {
     }, 250);
 }
 
-export function selectGuestProfile(id, name, idCard, phone, email, birthDate, address, city, nationality) {
-    document.getElementById('res-guest-profile-id').value = id;
-    document.getElementById('res-guest-name').value = name;
-    document.getElementById('res-id-card').value = idCard || '';
-    document.getElementById('res-phone').value = phone || '';
-    document.getElementById('res-email').value = email || '';
-    document.getElementById('res-birth-date').value = birthDate || '';
-    document.getElementById('res-address').value = address || '';
-    document.getElementById('res-city').value = city || '';
-    document.getElementById('res-nationality').value = nationality || 'Indonesia';
+export function selectGuestProfile(id, name, idCard, phone, email, birthDate, address, city, nationality, cardType, title, identityType) {
+    if (document.getElementById('res-guest-profile-id')) document.getElementById('res-guest-profile-id').value = id;
+    if (document.getElementById('res-guest-name')) document.getElementById('res-guest-name').value = name;
+    if (document.getElementById('res-id-card')) document.getElementById('res-id-card').value = idCard || '';
+    if (document.getElementById('res-phone')) document.getElementById('res-phone').value = phone || '';
+    if (document.getElementById('res-email')) document.getElementById('res-email').value = email || '';
+    if (document.getElementById('res-birth-date')) document.getElementById('res-birth-date').value = birthDate || '';
+    if (document.getElementById('res-address')) document.getElementById('res-address').value = address || '';
+    if (document.getElementById('res-city')) document.getElementById('res-city').value = city || '';
+    if (document.getElementById('res-nationality')) document.getElementById('res-nationality').value = nationality || 'Indonesia';
+    if (document.getElementById('res-card-type')) document.getElementById('res-card-type').value = cardType || 'Individual';
+    if (document.getElementById('res-title')) document.getElementById('res-title').value = title || 'Mr.';
+    if (document.getElementById('res-identity-type')) document.getElementById('res-identity-type').value = identityType || 'KTP';
 
     const suggestionsDiv = document.getElementById('res-guest-suggestions');
     if (suggestionsDiv) suggestionsDiv.classList.add('hidden');
@@ -360,7 +363,11 @@ export function selectGuestProfile(id, name, idCard, phone, email, birthDate, ad
 export function clearSelectedGuest() {
     if (document.getElementById('res-guest-profile-id')) document.getElementById('res-guest-profile-id').value = '';
     if (document.getElementById('res-guest-card-id')) document.getElementById('res-guest-card-id').value = '';
+    if (document.getElementById('res-card-type')) document.getElementById('res-card-type').value = 'Individual';
+    if (document.getElementById('res-title')) document.getElementById('res-title').value = 'Mr.';
+    if (document.getElementById('res-booker-name')) document.getElementById('res-booker-name').value = '';
     if (document.getElementById('res-guest-name')) document.getElementById('res-guest-name').value = '';
+    if (document.getElementById('res-identity-type')) document.getElementById('res-identity-type').value = 'KTP';
     if (document.getElementById('res-id-card')) document.getElementById('res-id-card').value = '';
     if (document.getElementById('res-phone')) document.getElementById('res-phone').value = '';
     if (document.getElementById('res-email')) document.getElementById('res-email').value = '';
@@ -480,15 +487,22 @@ export async function selectGuestFromLookup(guestId) {
     const discountInput = document.getElementById('res-discount-pct');
     const cardIdInput = document.getElementById('res-guest-card-id');
     const profileIdInput = document.getElementById('res-guest-profile-id');
+    const cardTypeSelect = document.getElementById('res-card-type');
+    const titleSelect = document.getElementById('res-title');
+    const identityTypeSelect = document.getElementById('res-identity-type');
     const addressInput = document.getElementById('res-address');
     const cityInput = document.getElementById('res-city');
     const nationalityInput = document.getElementById('res-nationality');
+    const birthDateInput = document.getElementById('res-birth-date');
 
     if (bookerInput) bookerInput.value = nameVal;
     if (guestNameInput) {
         guestNameInput.value = nameVal;
         guestNameInput.dataset.originalName = nameVal;
     }
+    if (cardTypeSelect) cardTypeSelect.value = guest.card_type || 'Individual';
+    if (titleSelect) titleSelect.value = guest.title || 'Mr.';
+    if (identityTypeSelect) identityTypeSelect.value = guest.id_card_type || guest.identity_type || 'KTP';
     if (phoneInput) phoneInput.value = guest.phone || guest.mobile_no || guest.phone_number || '';
     if (emailInput) emailInput.value = guest.email || '';
     if (idCardInput) idCardInput.value = guest.id_card_no || guest.id_card || '';
@@ -502,6 +516,7 @@ export async function selectGuestFromLookup(guestId) {
     if (addressInput) addressInput.value = guest.address || '';
     if (cityInput) cityInput.value = guest.city || '';
     if (nationalityInput) nationalityInput.value = guest.nationality || guest.nationality_code || 'Indonesia';
+    if (birthDateInput && (guest.birthdate || guest.birth_date)) birthDateInput.value = guest.birthdate || guest.birth_date;
 
     closeGuestLookupModal();
     showToast(`Profil ${nameVal} berhasil dimuat`, 'success');
@@ -1064,6 +1079,13 @@ export async function openEditReservation(id) {
         const guestCardIdVal = res.guest_card_id || '';
         const guestName = res.guest_name || (guestProfile ? guestProfile.full_name : '') || res.booker_name || '';
 
+        let gcfObj = null;
+        if (guestCardIdVal) {
+            try {
+                gcfObj = await getGuestCardById(guestCardIdVal);
+            } catch (_) {}
+        }
+
         const guestNameInputEl = document.getElementById('res-guest-name');
         if (guestNameInputEl) {
             guestNameInputEl.dataset.originalName = guestName;
@@ -1077,15 +1099,24 @@ export async function openEditReservation(id) {
         }
 
         document.getElementById('res-guest-profile-id').value = guestProfileId;
+        if (document.getElementById('res-card-type')) {
+            document.getElementById('res-card-type').value = gcfObj?.card_type || guestProfile?.card_type || 'Individual';
+        }
+        if (document.getElementById('res-title')) {
+            document.getElementById('res-title').value = gcfObj?.title || guestProfile?.title || 'Mr.';
+        }
         document.getElementById('res-booker-name').value = res.booker_name || '';
         document.getElementById('res-guest-name').value = guestName;
-        document.getElementById('res-id-card').value = guestProfile ? (guestProfile.id_card_no || '') : '';
-        document.getElementById('res-phone').value = guestProfile ? (guestProfile.phone_number || '') : '';
-        document.getElementById('res-email').value = guestProfile ? (guestProfile.email || '') : '';
-        document.getElementById('res-birth-date').value = guestProfile ? (guestProfile.birth_date || '') : '';
-        document.getElementById('res-address').value = guestProfile ? (guestProfile.address || '') : '';
-        document.getElementById('res-city').value = guestProfile ? (guestProfile.city || '') : '';
-        document.getElementById('res-nationality').value = guestProfile ? (guestProfile.nationality || 'Indonesia') : 'Indonesia';
+        if (document.getElementById('res-identity-type')) {
+            document.getElementById('res-identity-type').value = guestProfile?.id_card_type || gcfObj?.id_card_type || gcfObj?.identity_type || 'KTP';
+        }
+        document.getElementById('res-id-card').value = (guestProfile ? guestProfile.id_card_no : '') || (gcfObj ? gcfObj.id_card_no : '') || '';
+        document.getElementById('res-phone').value = (guestProfile ? guestProfile.phone_number : '') || (gcfObj ? (gcfObj.phone || gcfObj.mobile_no) : '') || '';
+        document.getElementById('res-email').value = (guestProfile ? guestProfile.email : '') || (gcfObj ? gcfObj.email : '') || '';
+        document.getElementById('res-birth-date').value = (guestProfile ? guestProfile.birth_date : '') || (gcfObj ? (gcfObj.birthdate || gcfObj.birth_date) : '') || '';
+        document.getElementById('res-address').value = (guestProfile ? guestProfile.address : '') || (gcfObj ? gcfObj.address : '') || '';
+        document.getElementById('res-city').value = (guestProfile ? guestProfile.city : '') || (gcfObj ? gcfObj.city : '') || '';
+        document.getElementById('res-nationality').value = (guestProfile ? guestProfile.nationality : '') || (gcfObj ? gcfObj.nationality : '') || 'Indonesia';
 
         const checkInInput = document.getElementById('res-check-in');
         checkInInput.removeAttribute('min');
@@ -2194,15 +2225,18 @@ export async function handleSaveReservation(event) {
 
     try {
         let guestProfileId = document.getElementById('res-guest-profile-id').value;
+        const cardTypeVal = document.getElementById('res-card-type')?.value || 'Individual';
+        const titleVal = document.getElementById('res-title')?.value || 'Mr.';
         const bookerNameVal = document.getElementById('res-booker-name').value.trim();
         const guestNameVal = document.getElementById('res-guest-name').value.trim();
+        const identityTypeVal = document.getElementById('res-identity-type')?.value || 'KTP';
         const idCardVal = document.getElementById('res-id-card').value.trim();
         const phoneVal = document.getElementById('res-phone').value.trim();
         const emailVal = document.getElementById('res-email').value.trim();
         const birthDateVal = document.getElementById('res-birth-date').value || null;
         const addressVal = document.getElementById('res-address').value.trim();
         const cityVal = document.getElementById('res-city').value.trim();
-        const nationalityVal = document.getElementById('res-nationality').value.trim();
+        const nationalityVal = document.getElementById('res-nationality').value.trim() || 'Indonesia';
 
         if (!guestNameVal) {
             alert('Harap isi nama tamu.');
@@ -2331,13 +2365,20 @@ export async function handleSaveReservation(event) {
                 const targetGcfId = isNameChanged ? undefined : (guestCardId || undefined);
                 const gcfData = await saveGuestCard({
                     id: targetGcfId,
+                    card_type: cardTypeVal,
+                    title: titleVal,
                     full_name: bookerNameVal || guestNameVal,
                     name: bookerNameVal || guestNameVal,
+                    guest_name: guestNameVal,
                     phone: phoneVal,
                     email: emailVal,
+                    id_card_type: identityTypeVal,
+                    identity_type: identityTypeVal,
                     id_card_no: idCardVal,
+                    nationality: nationalityVal,
                     address: addressVal,
                     city: cityVal,
+                    birthdate: birthDateVal,
                     discount_pct: discountPctVal,
                     comments: document.getElementById('res-comment')?.value || null
                 });
@@ -2347,6 +2388,7 @@ export async function handleSaveReservation(event) {
                     if (cardIdEl) {
                         cardIdEl.value = guestCardId;
                         cardIdEl.dataset.originalGcfName = bookerNameVal || guestNameVal;
+                        cardIdEl.dataset.originalGcfId = guestCardId;
                     }
                 }
             } catch (gcfErr) {
