@@ -125,7 +125,7 @@ export async function fetchFrontdeskDashboard() {
                 room_type_id,
                 qty,
                 guest_type,
-                guest_profiles (full_name),
+                guest_card_files (full_name),
                 room_types (name),
                 rooms (room_number)
             `)
@@ -343,7 +343,8 @@ export function renderDashboardTable() {
         filteredList = filteredList.filter(r => {
             const resNo = (r.reservation_number || r.id || '').toLowerCase();
             const bookingRef = (r.booking_reference || '').toLowerCase();
-            const guestName = ((r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0]?.full_name : r.guest_profiles.full_name) : null) || r.booker_name || '').toLowerCase();
+            const gProfile = r.guest_card_files || r.guest_profiles;
+            const guestName = ((gProfile ? (Array.isArray(gProfile) ? gProfile[0]?.full_name : gProfile.full_name) : null) || r.booker_name || '').toLowerCase();
             const roomNo = (r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '') || '';
             const roomNoStr = String(roomNo).toLowerCase();
 
@@ -373,7 +374,8 @@ export function renderDashboardTable() {
 
     tbody.innerHTML = filteredList.map(r => {
         const resNo = r.reservation_number || r.id.slice(0, 8);
-        const guestName = (r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0]?.full_name : r.guest_profiles.full_name) : null) || r.booker_name || '-';
+        const gProfile = r.guest_card_files || r.guest_profiles;
+        const guestName = (gProfile ? (Array.isArray(gProfile) ? gProfile[0]?.full_name : gProfile.full_name) : null) || r.booker_name || '-';
         const stayDatesDisplay = formatStayDatesCompact(r.check_in_date, r.check_out_date);
         const roomTypeName = r.room_types ? (Array.isArray(r.room_types) ? r.room_types[0]?.name : r.room_types.name) : '-';
         const roomRateDisplay = r.room_rate !== null && r.room_rate !== undefined ? `Rp ${Number(r.room_rate).toLocaleString('id-ID')}` : 'Rp 0';
@@ -641,7 +643,7 @@ export async function renderTapeChart() {
                 status,
                 booker_name,
                 reservation_source,
-                guest_profiles (full_name)
+                guest_card_files (full_name)
             `)
             .not('room_id', 'is', null)
             .neq('status', 'Cancelled')
@@ -767,7 +769,8 @@ export async function renderTapeChart() {
                     if (widthPx > 0) {
                         const status = (res.status || 'Reserved').toLowerCase();
                         const source = res.reservation_source || 'Direct';
-                        const displayName = (res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0]?.full_name : res.guest_profiles.full_name) : null) || res.booker_name || 'Guest';
+                        const gProfile = res.guest_card_files || res.guest_profiles;
+                        const displayName = (gProfile ? (Array.isArray(gProfile) ? gProfile[0]?.full_name : gProfile.full_name) : null) || res.booker_name || 'Guest';
 
                         let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300 hover:bg-sky-300'; // Reserved
                         if (status === 'checkin') {
@@ -901,16 +904,16 @@ export async function handleQuickSearch(event) {
     if (!query) return;
 
     try {
-        // 1. Query guest_profiles matching full_name
+        // 1. Query guest_card_files matching full_name
         const { data: matchedGuests, error: guestErr } = await supabaseClient
-            .from('guest_profiles')
+            .from('guest_card_files')
             .select('id')
             .ilike('full_name', `%${query}%`);
         if (guestErr) throw guestErr;
 
         const guestIds = (matchedGuests || []).map(g => g.id);
 
-        // 2. Query reservations by reservation_number ILIKE or guest_profile_id IN matchedGuests
+        // 2. Query reservations by reservation_number ILIKE or guest_card_id / guest_profile_id IN matchedGuests
         let queryBuilder = supabaseClient
             .from('reservations')
             .select('id, check_in_date, reservation_number, room_type_id')
@@ -919,7 +922,7 @@ export async function handleQuickSearch(event) {
             .neq('status', 'CHECKED_OUT');
 
         if (guestIds.length > 0) {
-            queryBuilder = queryBuilder.or(`reservation_number.ilike.%${query}%,guest_profile_id.in.(${guestIds.join(',')})`);
+            queryBuilder = queryBuilder.or(`reservation_number.ilike.%${query}%,guest_card_id.in.(${guestIds.join(',')}),guest_profile_id.in.(${guestIds.join(',')})`);
         } else {
             queryBuilder = queryBuilder.ilike('reservation_number', `%${query}%`);
         }
