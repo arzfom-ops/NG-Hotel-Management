@@ -125,7 +125,7 @@ export async function fetchFrontdeskDashboard() {
                 room_type_id,
                 qty,
                 guest_type,
-                guest_card_files (full_name),
+                guest_card_files!guest_card_id (full_name),
                 room_types (name),
                 rooms (room_number)
             `)
@@ -643,7 +643,7 @@ export async function renderTapeChart() {
                 status,
                 booker_name,
                 reservation_source,
-                guest_card_files (full_name)
+                guest_card_files!guest_card_id (full_name)
             `)
             .not('room_id', 'is', null)
             .neq('status', 'Cancelled')
