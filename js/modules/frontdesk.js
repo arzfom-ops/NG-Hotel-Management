@@ -117,6 +117,7 @@ export async function fetchFrontdeskDashboard() {
                 reservation_number,
                 booking_reference,
                 booker_name,
+                guest_name,
                 check_in_date,
                 check_out_date,
                 room_rate,
@@ -125,7 +126,7 @@ export async function fetchFrontdeskDashboard() {
                 room_type_id,
                 qty,
                 guest_type,
-                guest_card_files!fk_reservations_guest_card (full_name),
+                guest_card_files!fk_reservations_guest_card (full_name, first_name, last_name),
                 room_types (name),
                 rooms (room_number)
             `)
@@ -343,8 +344,12 @@ export function renderDashboardTable() {
         filteredList = filteredList.filter(r => {
             const resNo = (r.reservation_number || r.id || '').toLowerCase();
             const bookingRef = (r.booking_reference || '').toLowerCase();
-            const gProfile = r.guest_card_files || r.guest_profiles;
-            const guestName = ((gProfile ? (Array.isArray(gProfile) ? gProfile[0]?.full_name : gProfile.full_name) : null) || r.booker_name || '').toLowerCase();
+            const gCard = Array.isArray(r.guest_card_files) ? r.guest_card_files[0] : (r.guest_card_files || r.guest_profiles);
+            const guestName = (r.guest_name ||
+                              gCard?.full_name ||
+                              `${gCard?.first_name || ''} ${gCard?.last_name || ''}`.trim() ||
+                              r.booker_name ||
+                              'Guest').toLowerCase();
             const roomNo = (r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '') || '';
             const roomNoStr = String(roomNo).toLowerCase();
 
@@ -374,8 +379,12 @@ export function renderDashboardTable() {
 
     tbody.innerHTML = filteredList.map(r => {
         const resNo = r.reservation_number || r.id.slice(0, 8);
-        const gProfile = r.guest_card_files || r.guest_profiles;
-        const guestName = (gProfile ? (Array.isArray(gProfile) ? gProfile[0]?.full_name : gProfile.full_name) : null) || r.booker_name || '-';
+        const gCard = Array.isArray(r.guest_card_files) ? r.guest_card_files[0] : (r.guest_card_files || r.guest_profiles);
+        const guestName = r.guest_name ||
+                          gCard?.full_name ||
+                          `${gCard?.first_name || ''} ${gCard?.last_name || ''}`.trim() ||
+                          r.booker_name ||
+                          'Guest';
         const stayDatesDisplay = formatStayDatesCompact(r.check_in_date, r.check_out_date);
         const roomTypeName = r.room_types ? (Array.isArray(r.room_types) ? r.room_types[0]?.name : r.room_types.name) : '-';
         const roomRateDisplay = r.room_rate !== null && r.room_rate !== undefined ? `Rp ${Number(r.room_rate).toLocaleString('id-ID')}` : 'Rp 0';
@@ -642,8 +651,9 @@ export async function renderTapeChart() {
                 check_out_date,
                 status,
                 booker_name,
+                guest_name,
                 reservation_source,
-                guest_card_files!fk_reservations_guest_card (full_name)
+                guest_card_files!fk_reservations_guest_card (full_name, first_name, last_name)
             `)
             .not('room_id', 'is', null)
             .neq('status', 'Cancelled')
@@ -769,8 +779,12 @@ export async function renderTapeChart() {
                     if (widthPx > 0) {
                         const status = (res.status || 'Reserved').toLowerCase();
                         const source = res.reservation_source || 'Direct';
-                        const gProfile = res.guest_card_files || res.guest_profiles;
-                        const displayName = (gProfile ? (Array.isArray(gProfile) ? gProfile[0]?.full_name : gProfile.full_name) : null) || res.booker_name || 'Guest';
+                        const gCard = Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : (res.guest_card_files || res.guest_profiles);
+                        const displayName = res.guest_name ||
+                                            gCard?.full_name ||
+                                            `${gCard?.first_name || ''} ${gCard?.last_name || ''}`.trim() ||
+                                            res.booker_name ||
+                                            'Guest';
 
                         let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300 hover:bg-sky-300'; // Reserved
                         if (status === 'checkin') {
