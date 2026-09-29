@@ -1055,7 +1055,7 @@ export async function openEditReservation(id) {
     try {
         const { data: res, error } = await supabaseClient
             .from('reservations')
-            .select('*, guest_profiles(*)')
+            .select('*, guest_card_files!fk_reservations_guest_card(*)')
             .eq('id', id)
             .single();
 
@@ -1086,10 +1086,11 @@ export async function openEditReservation(id) {
             updateBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> Update Data`;
         }
 
+        const guestCard = res.guest_card_files ? (Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files) : null;
         const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
         const guestProfileId = res.guest_profile_id || (guestProfile ? guestProfile.id : '');
-        const guestCardIdVal = res.guest_card_id || '';
-        const guestName = res.guest_name || (guestProfile ? guestProfile.full_name : '') || res.booker_name || '';
+        const guestCardIdVal = res.guest_card_id || (guestCard ? guestCard.id : '');
+        const guestName = res.guest_name || (guestCard ? (guestCard.full_name || guestCard.name) : '') || (guestProfile ? guestProfile.full_name : '') || res.booker_name || '';
 
         let gcfObj = null;
         if (guestCardIdVal) {
@@ -1112,23 +1113,23 @@ export async function openEditReservation(id) {
 
         document.getElementById('res-guest-profile-id').value = guestProfileId;
         if (document.getElementById('res-card-type')) {
-            document.getElementById('res-card-type').value = gcfObj?.card_type || guestProfile?.card_type || 'Individual';
+            document.getElementById('res-card-type').value = gcfObj?.card_type || guestCard?.card_type || guestProfile?.card_type || 'Individual';
         }
         if (document.getElementById('res-title')) {
-            document.getElementById('res-title').value = gcfObj?.title || guestProfile?.title || 'Mr.';
+            document.getElementById('res-title').value = gcfObj?.title || guestCard?.title || guestProfile?.title || 'Mr.';
         }
         document.getElementById('res-booker-name').value = res.booker_name || '';
         document.getElementById('res-guest-name').value = guestName;
         if (document.getElementById('res-identity-type')) {
-            document.getElementById('res-identity-type').value = guestProfile?.id_card_type || gcfObj?.id_card_type || gcfObj?.identity_type || 'KTP';
+            document.getElementById('res-identity-type').value = guestCard?.id_card_type || guestProfile?.id_card_type || gcfObj?.id_card_type || gcfObj?.identity_type || 'KTP';
         }
-        document.getElementById('res-id-card').value = (guestProfile ? guestProfile.id_card_no : '') || (gcfObj ? gcfObj.id_card_no : '') || '';
-        document.getElementById('res-phone').value = (guestProfile ? guestProfile.phone_number : '') || (gcfObj ? (gcfObj.phone || gcfObj.mobile_no) : '') || '';
-        document.getElementById('res-email').value = (guestProfile ? guestProfile.email : '') || (gcfObj ? gcfObj.email : '') || '';
-        document.getElementById('res-birth-date').value = (guestProfile ? guestProfile.birth_date : '') || (gcfObj ? (gcfObj.birthdate || gcfObj.birth_date) : '') || '';
-        document.getElementById('res-address').value = (guestProfile ? guestProfile.address : '') || (gcfObj ? gcfObj.address : '') || '';
-        document.getElementById('res-city').value = (guestProfile ? guestProfile.city : '') || (gcfObj ? gcfObj.city : '') || '';
-        document.getElementById('res-nationality').value = (guestProfile ? guestProfile.nationality : '') || (gcfObj ? gcfObj.nationality : '') || 'Indonesia';
+        document.getElementById('res-id-card').value = (guestCard ? guestCard.id_card_no : '') || (guestProfile ? guestProfile.id_card_no : '') || (gcfObj ? gcfObj.id_card_no : '') || '';
+        document.getElementById('res-phone').value = (guestCard ? (guestCard.phone || guestCard.mobile_no) : '') || (guestProfile ? guestProfile.phone_number : '') || (gcfObj ? (gcfObj.phone || gcfObj.mobile_no) : '') || '';
+        document.getElementById('res-email').value = (guestCard ? guestCard.email : '') || (guestProfile ? guestProfile.email : '') || (gcfObj ? gcfObj.email : '') || '';
+        document.getElementById('res-birth-date').value = (guestCard ? (guestCard.birthdate || guestCard.birth_date) : '') || (guestProfile ? guestProfile.birth_date : '') || (gcfObj ? (gcfObj.birthdate || gcfObj.birth_date) : '') || '';
+        document.getElementById('res-address').value = (guestCard ? guestCard.address : '') || (guestProfile ? guestProfile.address : '') || (gcfObj ? gcfObj.address : '') || '';
+        document.getElementById('res-city').value = (guestCard ? guestCard.city : '') || (guestProfile ? guestProfile.city : '') || (gcfObj ? gcfObj.city : '') || '';
+        document.getElementById('res-nationality').value = (guestCard ? guestCard.nationality : '') || (guestProfile ? guestProfile.nationality : '') || (gcfObj ? gcfObj.nationality : '') || 'Indonesia';
 
         const checkInInput = document.getElementById('res-check-in');
         checkInInput.removeAttribute('min');
@@ -1604,7 +1605,7 @@ export async function splitGroupReservation(reservationId) {
         // 2. Client-side fallback split execution
         const { data: res, error: fetchErr } = await supabaseClient
             .from('reservations')
-            .select('*, guest_profiles(*), room_types(*)')
+            .select('*, guest_card_files!fk_reservations_guest_card(*), room_types(*)')
             .eq('id', reservationId)
             .single();
 
@@ -1752,14 +1753,14 @@ export async function openGroupRoomingListModal(reservationId) {
         if (groupBookingId) {
             const { data: childs } = await supabaseClient
                 .from('reservations')
-                .select('*, guest_profiles(full_name), room_types(name), rooms(room_number)')
+                .select('*, guest_card_files!fk_reservations_guest_card(full_name, name), room_types(name), rooms(room_number)')
                 .or(`group_booking_id.eq.${groupBookingId},group_id.eq.${groupBookingId}`)
                 .neq('status', 'Cancelled');
             childReservations = childs || [];
         } else if (bookingRef) {
             const { data: childs } = await supabaseClient
                 .from('reservations')
-                .select('*, guest_profiles(full_name), room_types(name), rooms(room_number)')
+                .select('*, guest_card_files!fk_reservations_guest_card(full_name, name), room_types(name), rooms(room_number)')
                 .eq('booking_reference', bookingRef)
                 .neq('status', 'Cancelled');
             childReservations = childs || [];
@@ -1816,7 +1817,8 @@ export async function openGroupRoomingListModal(reservationId) {
         if (tbody) {
             tbody.innerHTML = childReservations.map((cRes, idx) => {
                 const rtName = cRes.room_types ? (Array.isArray(cRes.room_types) ? cRes.room_types[0]?.name : cRes.room_types.name) : 'Kamar';
-                const guestName = cRes.guest_name || (cRes.guest_profiles ? (Array.isArray(cRes.guest_profiles) ? cRes.guest_profiles[0]?.full_name : cRes.guest_profiles.full_name) : '') || '';
+                const gCard = cRes.guest_card_files ? (Array.isArray(cRes.guest_card_files) ? cRes.guest_card_files[0] : cRes.guest_card_files) : null;
+                const guestName = cRes.guest_name || (gCard ? (gCard.full_name || gCard.name) : '') || (cRes.guest_profiles ? (Array.isArray(cRes.guest_profiles) ? cRes.guest_profiles[0]?.full_name : cRes.guest_profiles.full_name) : '') || '';
 
                 let roomOptions = `<option value="">Belum Dialokasikan</option>`;
 
@@ -2005,7 +2007,7 @@ export async function handlePrintRegistrationCard() {
     try {
         const { data: res, error: resErr } = await supabaseClient
             .from('reservations')
-            .select('*, guest_profiles(*), room_types(name), rooms(room_number)')
+            .select('*, guest_card_files!fk_reservations_guest_card(*), room_types(name), rooms(room_number)')
             .eq('id', editResId)
             .single();
 
@@ -2026,14 +2028,15 @@ export async function handlePrintRegistrationCard() {
             console.error('Error fetching rc_terms from invoice_settings:', tErr);
         }
 
+        const guestCard = res.guest_card_files ? (Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files) : null;
         const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
-        const guestName = guestProfile ? (guestProfile.full_name || '-') : (res.booker_name || '-');
-        const phone = guestProfile ? (guestProfile.phone_number || '-') : '-';
-        const email = guestProfile ? (guestProfile.email || '-') : '-';
-        const idCard = guestProfile ? (guestProfile.id_card_no || '-') : '-';
-        const address = guestProfile ? (guestProfile.address || '-') : '-';
-        const city = guestProfile ? (guestProfile.city || '-') : '-';
-        const nationality = guestProfile ? (guestProfile.nationality || 'Indonesia') : 'Indonesia';
+        const guestName = res.guest_name || (guestCard ? (guestCard.full_name || guestCard.name) : '') || (guestProfile ? guestProfile.full_name : '') || res.booker_name || '-';
+        const phone = (guestCard ? (guestCard.phone || guestCard.mobile_no) : '') || (guestProfile ? guestProfile.phone_number : '') || '-';
+        const email = (guestCard ? guestCard.email : '') || (guestProfile ? guestProfile.email : '') || '-';
+        const idCard = (guestCard ? guestCard.id_card_no : '') || (guestProfile ? guestProfile.id_card_no : '') || '-';
+        const address = (guestCard ? guestCard.address : '') || (guestProfile ? guestProfile.address : '') || '-';
+        const city = (guestCard ? guestCard.city : '') || (guestProfile ? guestProfile.city : '') || '-';
+        const nationality = (guestCard ? guestCard.nationality : '') || (guestProfile ? guestProfile.nationality : '') || 'Indonesia';
 
         const roomTypeName = res.room_types ? (Array.isArray(res.room_types) ? res.room_types[0]?.name : res.room_types.name) : '-';
         const roomNumber = res.rooms ? (Array.isArray(res.rooms) ? res.rooms[0]?.room_number : res.rooms.room_number) : '-';
