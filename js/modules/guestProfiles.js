@@ -14,10 +14,96 @@ export let editingGcfId = null;
 export let activeGcfModalTab = 'basic'; // 'basic', 'contacts', 'rates'
 export let gcfContactsState = [];
 export let gcfContractRatesState = [];
+export let masterCitiesCache = [];
 
 // Merge state
 export let mergeSourceId = null;
 export let mergeTargetId = null;
+
+/**
+ * Fetch and cache master cities from Supabase
+ */
+export async function fetchMasterCities() {
+    if (masterCitiesCache.length > 0) return masterCitiesCache;
+    try {
+        const { data, error } = await supabaseClient
+            .from('master_cities')
+            .select('name')
+            .order('name', { ascending: true });
+        if (!error && data) {
+            masterCitiesCache = data.map(c => c.name);
+        }
+    } catch (err) {
+        console.error('Error fetching master cities:', err);
+    }
+    return masterCitiesCache;
+}
+
+/**
+ * Populate GCF City Dropdown Options from masterCitiesCache
+ */
+export async function populateGcfCityDropdown(selectedCity = '') {
+    const citySelect = document.getElementById('gcf-city-select');
+    if (!citySelect) return;
+
+    const cities = await fetchMasterCities();
+    let optionsHtml = '<option value="">-- Pilih Kota --</option>';
+    let found = false;
+
+    cities.forEach(cityName => {
+        const isSelected = selectedCity && selectedCity.toLowerCase() === cityName.toLowerCase();
+        if (isSelected) found = true;
+        optionsHtml += `<option value="${cityName}" ${isSelected ? 'selected' : ''}>${cityName}</option>`;
+    });
+
+    optionsHtml += `<option value="Lainnya..." ${selectedCity && !found && selectedCity !== 'Lainnya...' ? 'selected' : ''}>Lainnya...</option>`;
+    citySelect.innerHTML = optionsHtml;
+}
+
+/**
+ * Event handler for GCF Country Change
+ */
+export function handleGcfCountryChange() {
+    const countrySelect = document.getElementById('gcf-country');
+    const citySelectContainer = document.getElementById('gcf-city-select-container');
+    const cityManualInput = document.getElementById('gcf-city-manual');
+    const citySelect = document.getElementById('gcf-city-select');
+
+    if (!countrySelect) return;
+
+    const selectedCountry = countrySelect.value || 'Indonesia';
+
+    if (selectedCountry === 'Indonesia') {
+        if (citySelectContainer) citySelectContainer.classList.remove('hidden');
+        if (cityManualInput) {
+            cityManualInput.classList.add('hidden');
+            cityManualInput.value = '';
+        }
+        populateGcfCityDropdown(citySelect ? citySelect.value : '');
+    } else {
+        // Luar Negeri: Input Text biasa (Free Text)
+        if (citySelectContainer) citySelectContainer.classList.add('hidden');
+        if (cityManualInput) cityManualInput.classList.remove('hidden');
+    }
+}
+
+/**
+ * Event handler for GCF City Select Change ("Lainnya..." option toggle)
+ */
+export function handleGcfCitySelectChange() {
+    const citySelect = document.getElementById('gcf-city-select');
+    const cityManualInput = document.getElementById('gcf-city-manual');
+
+    if (!citySelect || !cityManualInput) return;
+
+    if (citySelect.value === 'Lainnya...') {
+        cityManualInput.classList.remove('hidden');
+        cityManualInput.focus();
+    } else {
+        cityManualInput.classList.add('hidden');
+        cityManualInput.value = '';
+    }
+}
 
 /**
  * Helper to show toast notification
@@ -218,7 +304,12 @@ export async function openGcfEditorModal(guestId = null) {
         titleEl.textContent = editingGcfId ? 'Edit Guest Card Profile (GCF)' : 'Add New Guest Card Profile (GCF)';
     }
 
-    if (editingGcfId) {
+    if (!editingGcfId) {
+        const country = document.getElementById('gcf-country');
+        if (country) country.value = 'Indonesia';
+        await populateGcfCityDropdown('');
+        handleGcfCountryChange();
+    } else {
         try {
             const profile = await getGuestCardById(editingGcfId);
             if (profile) {
@@ -239,7 +330,9 @@ export async function openGcfEditorModal(guestId = null) {
                 const sex = document.getElementById('gcf-sex');
                 const occupation = document.getElementById('gcf-occupation');
                 const address = document.getElementById('gcf-address');
-                const city = document.getElementById('gcf-city');
+                const country = document.getElementById('gcf-country');
+                const citySelect = document.getElementById('gcf-city-select');
+                const cityManual = document.getElementById('gcf-city-manual');
                 const phone = document.getElementById('gcf-phone');
                 const mobile = document.getElementById('gcf-mobile');
                 const email = document.getElementById('gcf-email');
@@ -263,7 +356,28 @@ export async function openGcfEditorModal(guestId = null) {
                 if (sex) sex.value = profile.sex || '';
                 if (occupation) occupation.value = profile.occupation || '';
                 if (address) address.value = profile.address || '';
-                if (city) city.value = profile.city || '';
+
+                const profCountry = profile.country || profile.country_code || 'Indonesia';
+                if (country) country.value = profCountry;
+
+                await populateGcfCityDropdown(profile.city || '');
+                handleGcfCountryChange();
+
+                if (profCountry === 'Indonesia') {
+                    const cities = await fetchMasterCities();
+                    if (profile.city && !cities.map(c => c.toLowerCase()).includes(profile.city.toLowerCase())) {
+                        if (citySelect) citySelect.value = 'Lainnya...';
+                        if (cityManual) {
+                            cityManual.classList.remove('hidden');
+                            cityManual.value = profile.city;
+                        }
+                    } else if (citySelect) {
+                        citySelect.value = profile.city || '';
+                    }
+                } else {
+                    if (cityManual) cityManual.value = profile.city || '';
+                }
+
                 if (phone) phone.value = profile.phone || '';
                 if (mobile) mobile.value = profile.mobile_no || profile.phone || '';
                 if (email) email.value = profile.email || '';
@@ -538,7 +652,23 @@ export async function saveGcfProfile(event) {
         payload.occupation = document.getElementById('gcf-occupation')?.value || null;
         addressVal = document.getElementById('gcf-address')?.value || null;
         payload.address = addressVal;
-        payload.city = document.getElementById('gcf-city')?.value || null;
+
+        const countryVal = document.getElementById('gcf-country')?.value || 'Indonesia';
+        payload.country = countryVal;
+
+        let cityVal = null;
+        if (countryVal === 'Indonesia') {
+            const selectVal = document.getElementById('gcf-city-select')?.value;
+            if (selectVal === 'Lainnya...') {
+                cityVal = document.getElementById('gcf-city-manual')?.value.trim() || null;
+            } else {
+                cityVal = selectVal || null;
+            }
+        } else {
+            cityVal = document.getElementById('gcf-city-manual')?.value.trim() || null;
+        }
+        payload.city = cityVal;
+
         phoneVal = document.getElementById('gcf-mobile')?.value || document.getElementById('gcf-phone')?.value || null;
         payload.phone = phoneVal;
         payload.mobile_no = phoneVal;
@@ -855,6 +985,10 @@ export async function executeMergeProfiles(event) {
 
 // Attach functions to window object
 if (typeof window !== 'undefined') {
+    window.fetchMasterCities = fetchMasterCities;
+    window.populateGcfCityDropdown = populateGcfCityDropdown;
+    window.handleGcfCountryChange = handleGcfCountryChange;
+    window.handleGcfCitySelectChange = handleGcfCitySelectChange;
     window.renderGuestProfilesTable = renderGuestProfilesTable;
     window.setGcfTab = setGcfTab;
     window.handleGcfTableSearch = handleGcfTableSearch;

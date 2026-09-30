@@ -147,6 +147,7 @@ export async function saveGuestCard(guestData) {
         id_card_type: guestData.id_card_type || guestData.identity_type || 'KTP',
         id_card_no: guestData.id_card_no || guestData.id_card || guestData.identity_no || null,
         nationality: guestData.nationality || 'Indonesia',
+        country: guestData.country || 'Indonesia',
         address: guestData.address || null,
         city: guestData.city || null,
         birthdate: guestData.birthdate || guestData.birth_date || null,
@@ -204,7 +205,9 @@ export async function applyGuestCardToReservation(guestId) {
         const titleSelect = document.getElementById('res-title');
         const identityTypeSelect = document.getElementById('res-identity-type');
         const addressInput = document.getElementById('res-address');
-        const cityInput = document.getElementById('res-city');
+        const countrySelect = document.getElementById('res-country');
+        const citySelect = document.getElementById('res-city-select');
+        const cityManual = document.getElementById('res-city-manual');
         const nationalityInput = document.getElementById('res-nationality');
         const birthDateInput = document.getElementById('res-birth-date');
         const commentInput = document.getElementById('res-comment');
@@ -223,7 +226,32 @@ export async function applyGuestCardToReservation(guestId) {
         if (phoneInput) phoneInput.value = guest.phone || guest.mobile_no || guest.phone_number || '';
         if (idCardInput) idCardInput.value = guest.id_card_no || guest.id_card || '';
         if (addressInput) addressInput.value = guest.address || '';
-        if (cityInput) cityInput.value = guest.city || '';
+
+        const guestCountry = guest.country || guest.country_code || 'Indonesia';
+        if (countrySelect) countrySelect.value = guestCountry;
+
+        if (typeof window.populateResCityDropdown === 'function') {
+            await window.populateResCityDropdown(guest.city || '');
+        }
+        if (typeof window.handleResCountryChange === 'function') {
+            window.handleResCountryChange();
+        }
+
+        if (guestCountry === 'Indonesia') {
+            const cities = (window.masterCitiesCache || []);
+            if (guest.city && !cities.map(c => c.toLowerCase()).includes(guest.city.toLowerCase())) {
+                if (citySelect) citySelect.value = 'Lainnya...';
+                if (cityManual) {
+                    cityManual.classList.remove('hidden');
+                    cityManual.value = guest.city;
+                }
+            } else if (citySelect) {
+                citySelect.value = guest.city || '';
+            }
+        } else {
+            if (cityManual) cityManual.value = guest.city || '';
+        }
+
         if (nationalityInput) nationalityInput.value = guest.nationality || guest.nationality_code || 'Indonesia';
         if (birthDateInput && (guest.birthdate || guest.birth_date)) birthDateInput.value = guest.birthdate || guest.birth_date;
 
