@@ -1062,10 +1062,7 @@ export async function renderRoomForecast() {
         // 3. Fetch active reservations overlapping 14 days excluding non-staying / virtual PM room reservations
         const { data: resData, error: resErr } = await supabaseClient
             .from('reservations')
-            .select('id, check_in_date, check_out_date, qty, reservation_source, segment_id, status, guest_type, room_id, rooms (room_number, is_virtual)')
-            .neq('status', 'Cancelled')
-            .neq('status', 'Checkout')
-            .neq('status', 'CHECKED_OUT')
+            .select('id, check_in_date, check_out_date, qty, room_rate, reservation_source, segment_id, status, guest_type, room_id, rooms (room_number, is_virtual)')
             .lt('check_in_date', addDaysISO(maxDateStr, 1))
             .gte('check_out_date', minDateStr);
         if (resErr) throw resErr;
@@ -1080,11 +1077,14 @@ export async function renderRoomForecast() {
                     if (roomObj.room_number && String(roomObj.room_number).toLowerCase().startsWith('pm-')) return false;
                 }
             }
-            // Explicitly ignore TENTATIVE from stock deduction
-            const statusUpper = (r.status || '').toUpperCase();
-            if (statusUpper === 'TENTATIVE') return false;
-
-            return true;
+            // Filter: ONLY GUARANTEED and CHECKED_IN (In-House)
+            // Exclude TENTATIVE, CANCELLED, NO_SHOW, CHECKED_OUT, etc.
+            const statusUpper = (r.status || '').toUpperCase().trim();
+            const isValidStatus = statusUpper === 'GUARANTEED' ||
+                                  statusUpper === 'CHECKED_IN' ||
+                                  statusUpper === 'CHECKIN' ||
+                                  statusUpper === 'CHECKED IN';
+            return isValidStatus;
         });
 
         // Daily metrics calculation for each of the 14 days
@@ -1094,6 +1094,7 @@ export async function renderRoomForecast() {
             available: [],
             occupied: [],
             sold: [],
+            compliment: [],
             occupancyPct: []
         };
 
@@ -1112,28 +1113,27 @@ export async function renderRoomForecast() {
                 return dateISO >= s && dateISO <= e;
             }).length;
 
-            // Room Occupied = reservations active on dateISO (check_in_date <= dateISO < check_out_date)
+            // Room Occupied & Room Sold
             let occupiedCount = 0;
-            let complimentCount = 0;
+            let soldCount = 0;
 
             activeReservations.forEach(r => {
                 if (r.check_in_date <= dateISO && dateISO < r.check_out_date) {
                     const qty = r.qty || 1;
                     occupiedCount += qty;
 
-                    const sourceStr = (r.reservation_source || '').toLowerCase();
-                    const segmentStr = (r.segment_id || '').toLowerCase();
-                    if (sourceStr.includes('compliment') || sourceStr.includes('house use') || segmentStr.includes('compliment')) {
-                        complimentCount += qty;
+                    const rate = Number(r.room_rate || 0);
+                    if (rate > 0) {
+                        soldCount += qty;
                     }
                 }
             });
 
-            // Room Available (Sisa Kamar untuk Dijual) = Room Total - Out of Order - Room Occupied
-            const availableVal = Math.max(0, roomTotalVal - oooCount - occupiedCount);
+            // Compliment / House Use = Room Occupied - Room Sold
+            const complimentCount = Math.max(0, occupiedCount - soldCount);
 
-            // Room Sold = Occupied - Compliment
-            const soldVal = Math.max(0, occupiedCount - complimentCount);
+            // Room Available (Sisa Kamar) = Room Total - Out of Order - Room Occupied
+            const availableVal = Math.max(0, roomTotalVal - oooCount - occupiedCount);
 
             // % Occupancy = (Room Occupied / (Room Total - Out of Order)) * 100
             const totalMinusOoo = roomTotalVal - oooCount;
@@ -1146,7 +1146,8 @@ export async function renderRoomForecast() {
             metrics.ooo.push(oooCount);
             metrics.available.push(availableVal);
             metrics.occupied.push(occupiedCount);
-            metrics.sold.push(soldVal);
+            metrics.sold.push(soldCount);
+            metrics.compliment.push(complimentCount);
             metrics.occupancyPct.push(occPct);
         });
 
@@ -1186,6 +1187,7 @@ export async function renderRoomForecast() {
             { label: 'Room Available', key: 'available', class: 'font-bold text-slate-800 bg-white' },
             { label: 'Room Occupied', key: 'occupied', class: 'font-medium text-blue-700 bg-slate-50/50' },
             { label: 'Room Sold', key: 'sold', class: 'font-medium text-slate-700 bg-white' },
+            { label: 'Compliment / House Use', key: 'compliment', class: 'font-medium text-slate-600 bg-slate-50/50' },
             { label: '% Occupancy', key: 'occupancyPct', isPercentage: true, class: 'font-bold text-slate-900 bg-slate-50/70' }
         ];
 
