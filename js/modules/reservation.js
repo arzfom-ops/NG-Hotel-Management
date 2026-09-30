@@ -1,6 +1,73 @@
 import { supabaseClient } from '../config/supabase.js';
 import { formatDateISO, addDays, formatStayDatesCompact, showToast } from '../utils/formatters.js';
 import { searchGuestCards, getGuestCardById, saveGuestCard, applyGuestCardToReservation } from '../services/guestService.js';
+import { fetchMasterCities } from './guestProfiles.js';
+
+/**
+ * Populate Reservation City Dropdown Options
+ */
+export async function populateResCityDropdown(selectedCity = '') {
+    const citySelect = document.getElementById('res-city-select');
+    if (!citySelect) return;
+
+    const cities = await fetchMasterCities();
+    let optionsHtml = '<option value="">-- Pilih Kota --</option>';
+    let found = false;
+
+    cities.forEach(cityName => {
+        const isSelected = selectedCity && selectedCity.toLowerCase() === cityName.toLowerCase();
+        if (isSelected) found = true;
+        optionsHtml += `<option value="${cityName}" ${isSelected ? 'selected' : ''}>${cityName}</option>`;
+    });
+
+    optionsHtml += `<option value="Lainnya..." ${selectedCity && !found && selectedCity !== 'Lainnya...' ? 'selected' : ''}>Lainnya...</option>`;
+    citySelect.innerHTML = optionsHtml;
+}
+
+/**
+ * Event handler for Reservation Country Change
+ */
+export function handleResCountryChange() {
+    const countrySelect = document.getElementById('res-country');
+    const citySelectContainer = document.getElementById('res-city-select-container');
+    const cityManualInput = document.getElementById('res-city-manual');
+    const citySelect = document.getElementById('res-city-select');
+
+    if (!countrySelect) return;
+
+    const selectedCountry = countrySelect.value || 'Indonesia';
+
+    if (selectedCountry === 'Indonesia') {
+        if (citySelectContainer) citySelectContainer.classList.remove('hidden');
+        if (cityManualInput) {
+            cityManualInput.classList.add('hidden');
+            cityManualInput.value = '';
+        }
+        populateResCityDropdown(citySelect ? citySelect.value : '');
+    } else {
+        // Luar Negeri: Input Text biasa (Free Text)
+        if (citySelectContainer) citySelectContainer.classList.add('hidden');
+        if (cityManualInput) cityManualInput.classList.remove('hidden');
+    }
+}
+
+/**
+ * Event handler for Reservation City Select Change ("Lainnya..." option toggle)
+ */
+export function handleResCitySelectChange() {
+    const citySelect = document.getElementById('res-city-select');
+    const cityManualInput = document.getElementById('res-city-manual');
+
+    if (!citySelect || !cityManualInput) return;
+
+    if (citySelect.value === 'Lainnya...') {
+        cityManualInput.classList.remove('hidden');
+        cityManualInput.focus();
+    } else {
+        cityManualInput.classList.add('hidden');
+        cityManualInput.value = '';
+    }
+}
 
 // Global/Module Caches & State
 export let guestSearchDebounceTimer = null;
@@ -342,7 +409,7 @@ export async function handleGuestSearchInput(query) {
     }, 250);
 }
 
-export function selectGuestProfile(id, name, idCard, phone, email, birthDate, address, city, nationality, cardType, title, identityType) {
+export async function selectGuestProfile(id, name, idCard, phone, email, birthDate, address, city, nationality, cardType, title, identityType, country) {
     if (document.getElementById('res-guest-profile-id')) document.getElementById('res-guest-profile-id').value = id;
     if (document.getElementById('res-guest-name')) document.getElementById('res-guest-name').value = name;
     if (document.getElementById('res-id-card')) document.getElementById('res-id-card').value = idCard || '';
@@ -350,7 +417,32 @@ export function selectGuestProfile(id, name, idCard, phone, email, birthDate, ad
     if (document.getElementById('res-email')) document.getElementById('res-email').value = email || '';
     if (document.getElementById('res-birth-date')) document.getElementById('res-birth-date').value = birthDate || '';
     if (document.getElementById('res-address')) document.getElementById('res-address').value = address || '';
-    if (document.getElementById('res-city')) document.getElementById('res-city').value = city || '';
+
+    const countrySelect = document.getElementById('res-country');
+    const citySelect = document.getElementById('res-city-select');
+    const cityManual = document.getElementById('res-city-manual');
+
+    const countryVal = country || 'Indonesia';
+    if (countrySelect) countrySelect.value = countryVal;
+
+    await populateResCityDropdown(city || '');
+    handleResCountryChange();
+
+    if (countryVal === 'Indonesia') {
+        const cities = await fetchMasterCities();
+        if (city && !cities.map(c => c.toLowerCase()).includes(city.toLowerCase())) {
+            if (citySelect) citySelect.value = 'Lainnya...';
+            if (cityManual) {
+                cityManual.classList.remove('hidden');
+                cityManual.value = city;
+            }
+        } else if (citySelect) {
+            citySelect.value = city || '';
+        }
+    } else {
+        if (cityManual) cityManual.value = city || '';
+    }
+
     if (document.getElementById('res-nationality')) document.getElementById('res-nationality').value = nationality || 'Indonesia';
     if (document.getElementById('res-card-type')) document.getElementById('res-card-type').value = cardType || 'Individual';
     if (document.getElementById('res-title')) document.getElementById('res-title').value = title || 'Mr.';
@@ -375,7 +467,9 @@ export function clearSelectedGuest() {
     if (document.getElementById('res-email')) document.getElementById('res-email').value = '';
     if (document.getElementById('res-birth-date')) document.getElementById('res-birth-date').value = '';
     if (document.getElementById('res-address')) document.getElementById('res-address').value = '';
-    if (document.getElementById('res-city')) document.getElementById('res-city').value = '';
+    if (document.getElementById('res-country')) document.getElementById('res-country').value = 'Indonesia';
+    populateResCityDropdown('');
+    handleResCountryChange();
     if (document.getElementById('res-nationality')) document.getElementById('res-nationality').value = 'Indonesia';
     if (document.getElementById('res-discount-pct')) document.getElementById('res-discount-pct').value = '0';
     if (document.getElementById('res-save-to-gcf')) document.getElementById('res-save-to-gcf').checked = false;
@@ -1151,7 +1245,34 @@ export async function openEditReservation(id) {
         document.getElementById('res-email').value = gcfObj?.email || guestCard?.email || '';
         document.getElementById('res-birth-date').value = gcfObj?.birthdate || gcfObj?.birth_date || guestCard?.birthdate || guestCard?.birth_date || '';
         document.getElementById('res-address').value = gcfObj?.address || guestCard?.address || '';
-        document.getElementById('res-city').value = gcfObj?.city || guestCard?.city || '';
+
+        const resCountry = gcfObj?.country || guestCard?.country || guestCard?.country_code || res?.country || 'Indonesia';
+        const resCity = gcfObj?.city || guestCard?.city || '';
+
+        const countrySelect = document.getElementById('res-country');
+        const citySelect = document.getElementById('res-city-select');
+        const cityManual = document.getElementById('res-city-manual');
+
+        if (countrySelect) countrySelect.value = resCountry;
+
+        await populateResCityDropdown(resCity);
+        handleResCountryChange();
+
+        if (resCountry === 'Indonesia') {
+            const cities = await fetchMasterCities();
+            if (resCity && !cities.map(c => c.toLowerCase()).includes(resCity.toLowerCase())) {
+                if (citySelect) citySelect.value = 'Lainnya...';
+                if (cityManual) {
+                    cityManual.classList.remove('hidden');
+                    cityManual.value = resCity;
+                }
+            } else if (citySelect) {
+                citySelect.value = resCity;
+            }
+        } else {
+            if (cityManual) cityManual.value = resCity;
+        }
+
         document.getElementById('res-nationality').value = gcfObj?.nationality || guestCard?.nationality || 'Indonesia';
 
         const checkInInput = document.getElementById('res-check-in');
@@ -2277,7 +2398,20 @@ export async function handleSaveReservation(event) {
         const emailVal = document.getElementById('res-email').value.trim();
         const birthDateVal = document.getElementById('res-birth-date').value || null;
         const addressVal = document.getElementById('res-address').value.trim();
-        const cityVal = document.getElementById('res-city').value.trim();
+        const countryVal = document.getElementById('res-country')?.value || 'Indonesia';
+
+        let cityVal = null;
+        if (countryVal === 'Indonesia') {
+            const selectVal = document.getElementById('res-city-select')?.value;
+            if (selectVal === 'Lainnya...') {
+                cityVal = document.getElementById('res-city-manual')?.value.trim() || null;
+            } else {
+                cityVal = selectVal || null;
+            }
+        } else {
+            cityVal = document.getElementById('res-city-manual')?.value.trim() || null;
+        }
+
         const nationalityVal = document.getElementById('res-nationality').value.trim() || 'Indonesia';
 
         if (!guestNameVal) {
@@ -2328,6 +2462,7 @@ export async function handleSaveReservation(event) {
                         email: emailVal || null,
                         birthdate: birthDateVal,
                         address: addressVal || null,
+                        country: countryVal || 'Indonesia',
                         city: cityVal || null,
                         nationality: nationalityVal || 'Indonesia'
                     })
@@ -2359,6 +2494,7 @@ export async function handleSaveReservation(event) {
                     id_card_no: idCardVal,
                     nationality: nationalityVal,
                     address: addressVal,
+                    country: countryVal,
                     city: cityVal,
                     birthdate: birthDateVal,
                     discount_pct: discountPctVal,
@@ -2406,6 +2542,7 @@ export async function handleSaveReservation(event) {
             guest_name: guestNameVal || null,
             booker_name: bookerNameVal || null,
             guest_type: guestType,
+            country: countryVal || 'Indonesia',
             check_in_date: checkInDate,
             check_out_date: checkOutDate,
             nights: nights,

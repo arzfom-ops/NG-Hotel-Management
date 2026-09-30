@@ -1606,17 +1606,39 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <!-- Address -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Address</label>
                                 <input type="text" id="res-address" placeholder="Alamat Lengkap Tamu" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                             </div>
 
+                            <!-- Country -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Country</label>
+                                <select id="res-country" onchange="window.handleResCountryChange()" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 transition-all duration-200 outline-none shadow-2xs">
+                                    <option value="Indonesia">Indonesia</option>
+                                    <option value="Malaysia">Malaysia</option>
+                                    <option value="Singapore">Singapore</option>
+                                    <option value="Australia">Australia</option>
+                                    <option value="Japan">Japan</option>
+                                    <option value="China">China</option>
+                                    <option value="United States">United States</option>
+                                    <option value="United Kingdom">United Kingdom</option>
+                                    <option value="Germany">Germany</option>
+                                    <option value="Other Country">Other Country</option>
+                                </select>
+                            </div>
+
                             <!-- City -->
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">City</label>
-                                <input type="text" id="res-city" placeholder="Kota" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
+                                <div id="res-city-select-container">
+                                    <select id="res-city-select" onchange="window.handleResCitySelectChange()" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 transition-all duration-200 outline-none shadow-2xs">
+                                        <option value="">-- Pilih Kota --</option>
+                                    </select>
+                                </div>
+                                <input type="text" id="res-city-manual" placeholder="Ketik Nama Kota" class="hidden w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs mt-1">
                             </div>
                         </div>
 
@@ -3616,12 +3638,32 @@
                                 <input type="text" id="gcf-occupation" placeholder="Swasta/PNS/DLL" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-600 mb-1">Kota</label>
-                                <input type="text" id="gcf-city" placeholder="Jakarta" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Negara (Country)</label>
+                                <select id="gcf-country" onchange="window.handleGcfCountryChange()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                                    <option value="Indonesia">Indonesia</option>
+                                    <option value="Malaysia">Malaysia</option>
+                                    <option value="Singapore">Singapore</option>
+                                    <option value="Australia">Australia</option>
+                                    <option value="Japan">Japan</option>
+                                    <option value="China">China</option>
+                                    <option value="United States">United States</option>
+                                    <option value="United Kingdom">United Kingdom</option>
+                                    <option value="Germany">Germany</option>
+                                    <option value="Other Country">Other Country</option>
+                                </select>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Kota (City)</label>
+                                <div id="gcf-city-select-container">
+                                    <select id="gcf-city-select" onchange="window.handleGcfCitySelectChange()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                                        <option value="">-- Pilih Kota --</option>
+                                    </select>
+                                </div>
+                                <input type="text" id="gcf-city-manual" placeholder="Ketik Nama Kota" class="hidden w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none mt-1">
+                            </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-600 mb-1">No HP / Whatsapp</label>
                                 <input type="text" id="gcf-mobile" placeholder="0812xxxxxxxx" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none">
