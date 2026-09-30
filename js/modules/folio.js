@@ -160,7 +160,7 @@ export async function openFolioModal(reservationId) {
     try {
         const { data: res, error } = await supabaseClient
             .from('reservations')
-            .select('*, guest_profiles(*), room_types(*), rooms(*)')
+            .select('*, guest_card_files!fk_reservations_guest_card(*), room_types(*), rooms(*)')
             .eq('id', reservationId)
             .single();
 
@@ -170,7 +170,8 @@ export async function openFolioModal(reservationId) {
         renderFolioModal(res);
 
         // Render Guest & Room Info
-        const guestName = res.guest_profiles ? res.guest_profiles.full_name : (res.booker_name || 'Guest');
+        const guestCard = res.guest_card_files ? (Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files) : null;
+        const guestName = res.guest_name || guestCard?.full_name || res.booker_name || 'Guest';
         const roomNo = res.rooms ? res.rooms.room_number : '-';
         const resNo = res.reservation_number || res.id.slice(0, 8);
         const folioNo = res.folio_number || (`FOL-${resNo}`);
@@ -193,13 +194,13 @@ export async function openFolioModal(reservationId) {
 
             const { data: parentRes } = await supabaseClient
                 .from('reservations')
-                .select('reservation_number, booker_name, guest_profiles(full_name)')
+                .select('reservation_number, guest_name, booker_name, guest_card_files!fk_reservations_guest_card(full_name)')
                 .eq('id', res.parent_reservation_id)
                 .maybeSingle();
 
             if (parentRes) {
-                const parentProfile = parentRes.guest_profiles ? (Array.isArray(parentRes.guest_profiles) ? parentRes.guest_profiles[0] : parentRes.guest_profiles) : null;
-                parentGuestName = parentProfile?.full_name || parentRes.booker_name || 'Parent Guest';
+                const parentCard = parentRes.guest_card_files ? (Array.isArray(parentRes.guest_card_files) ? parentRes.guest_card_files[0] : parentRes.guest_card_files) : null;
+                parentGuestName = parentRes.guest_name || parentCard?.full_name || parentRes.booker_name || 'Parent Guest';
                 parentResNo = parentRes.reservation_number || parentResNo;
             }
 
@@ -569,14 +570,15 @@ export async function fetchMasterFolioDetails(masterFolioId) {
         if (queryOr.length > 0) {
             const { data: connectedResList } = await supabaseClient
                 .from('reservations')
-                .select('id, reservation_number, parent_reservation_id, booker_name, guest_profiles(full_name), rooms(room_number)')
+                .select('id, reservation_number, parent_reservation_id, guest_name, booker_name, guest_card_files!fk_reservations_guest_card(full_name), rooms(room_number)')
                 .or(queryOr.join(','));
 
             if (connectedResList && connectedResList.length > 0) {
                 const parentRes = connectedResList.find(r => !r.parent_reservation_id || r.parent_reservation_id === r.id) || connectedResList[0];
                 if (parentRes) {
-                    const guestName = parentRes.guest_profiles ? (Array.isArray(parentRes.guest_profiles) ? parentRes.guest_profiles[0]?.full_name : parentRes.guest_profiles.full_name) : null;
-                    responsibleName = guestName || parentRes.booker_name || 'Penanggung Jawab';
+                    const gCard = parentRes.guest_card_files ? (Array.isArray(parentRes.guest_card_files) ? parentRes.guest_card_files[0] : parentRes.guest_card_files) : null;
+                    const guestName = parentRes.guest_name || gCard?.full_name || parentRes.booker_name || 'Penanggung Jawab';
+                    responsibleName = guestName;
                 }
 
                 connectedResList.forEach(r => {
@@ -1580,7 +1582,7 @@ export async function openTransferBillModal() {
 
         const { data, error } = await supabaseClient
             .from('reservations')
-            .select('id, reservation_number, booker_name, guest_type, status, guest_profiles(full_name), rooms(room_number)')
+            .select('id, reservation_number, guest_name, booker_name, guest_type, status, guest_card_files!fk_reservations_guest_card(full_name), rooms(room_number)')
             .or('status.eq.Checkin,guest_type.eq.Non-Staying Guest')
             .neq('status', 'Cancelled');
 
@@ -1615,8 +1617,8 @@ export function renderTransferTargetOptions(list) {
     if (inHouse.length > 0) {
         html += '<optgroup label="Tamu In-House (Staying Guest)">';
         inHouse.forEach(r => {
-            const guestProfile = r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0] : r.guest_profiles) : null;
-            const guestName = (guestProfile ? guestProfile.full_name : null) || r.booker_name || 'Guest';
+            const gCard = r.guest_card_files ? (Array.isArray(r.guest_card_files) ? r.guest_card_files[0] : r.guest_card_files) : null;
+            const guestName = r.guest_name || gCard?.full_name || r.booker_name || 'Guest';
             const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '-';
             const resNo = r.reservation_number || r.id.slice(0, 8);
             html += `<option value="${r.id}">[Kamar ${roomNo}] ${guestName} (${resNo})</option>`;
@@ -1637,8 +1639,8 @@ export function renderTransferTargetOptions(list) {
     if (others.length > 0) {
         html += '<optgroup label="Reservasi Lainnya">';
         others.forEach(r => {
-            const guestProfile = r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0] : r.guest_profiles) : null;
-            const guestName = (guestProfile ? guestProfile.full_name : null) || r.booker_name || 'Guest';
+            const gCard = r.guest_card_files ? (Array.isArray(r.guest_card_files) ? r.guest_card_files[0] : r.guest_card_files) : null;
+            const guestName = r.guest_name || gCard?.full_name || r.booker_name || 'Guest';
             const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '-';
             const resNo = r.reservation_number || r.id.slice(0, 8);
             html += `<option value="${r.id}">[${r.status}] [Kamar ${roomNo}] ${guestName} (${resNo})</option>`;
@@ -1657,8 +1659,8 @@ export function filterTransferTargets() {
     }
 
     const filtered = transferTargetReservationsCache.filter(r => {
-        const guestProfile = r.guest_profiles ? (Array.isArray(r.guest_profiles) ? r.guest_profiles[0] : r.guest_profiles) : null;
-        const guestName = (guestProfile ? guestProfile.full_name : '').toLowerCase();
+        const gCard = r.guest_card_files ? (Array.isArray(r.guest_card_files) ? r.guest_card_files[0] : r.guest_card_files) : null;
+        const guestName = (r.guest_name || gCard?.full_name || '').toLowerCase();
         const bookerName = (r.booker_name || '').toLowerCase();
         const roomNo = (r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : '').toLowerCase();
         const resNo = (r.reservation_number || r.id).toLowerCase();
@@ -2159,7 +2161,8 @@ export function handlePrintFolio() {
     if (!currentFolioReservation) return;
 
     const res = currentFolioReservation;
-    const guestName = res.guest_profiles ? res.guest_profiles.full_name : (res.booker_name || 'Guest');
+    const gCard = res.guest_card_files ? (Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files) : null;
+    const guestName = res.guest_name || gCard?.full_name || res.booker_name || 'Guest';
     const roomNo = res.rooms ? res.rooms.room_number : '-';
     const resNo = res.reservation_number || res.id.slice(0, 8);
     const folioNo = res.folio_number || (`FOL-${resNo}`);
@@ -2368,7 +2371,7 @@ export async function handlePrintMasterFolio() {
     if (queryOr.length > 0) {
         const { data: resList } = await supabaseClient
             .from('reservations')
-            .select('id, reservation_number, parent_reservation_id, booker_name, check_in_date, check_out_date, guest_profiles(full_name), rooms(room_number), corporate_profiles(company_name)')
+            .select('id, reservation_number, parent_reservation_id, guest_name, booker_name, check_in_date, check_out_date, guest_card_files!fk_reservations_guest_card(full_name), rooms(room_number), corporate_profiles(company_name)')
             .or(queryOr.join(','));
 
         if (resList && resList.length > 0) {
@@ -2398,8 +2401,9 @@ export async function handlePrintMasterFolio() {
     // 1. Nama Penanggung Jawab / Nama Grup (Must not be static "Master Folio")
     let responsibleName = '';
     if (parentRes) {
-        const profileName = parentRes.guest_profiles ? (Array.isArray(parentRes.guest_profiles) ? parentRes.guest_profiles[0]?.full_name : parentRes.guest_profiles.full_name) : null;
-        responsibleName = profileName || parentRes.booker_name || parentRes.guest_name || '';
+        const gCard = parentRes.guest_card_files ? (Array.isArray(parentRes.guest_card_files) ? parentRes.guest_card_files[0] : parentRes.guest_card_files) : null;
+        const profileName = gCard?.full_name;
+        responsibleName = parentRes.guest_name || profileName || parentRes.booker_name || '';
     }
     if (!responsibleName) {
         responsibleName = currentMasterGroup?.responsible_name || (groupName && groupName !== 'Master Folio' ? groupName : 'Individual Guest');
