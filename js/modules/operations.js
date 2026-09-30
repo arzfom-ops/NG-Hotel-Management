@@ -324,7 +324,13 @@ export async function fetchNsgList() {
             const guestFullName = gCard ? (gCard.full_name || gCard.name) : null;
             const accountName = item.booker_name || guestFullName || '-';
             const description = item.comment || '-';
-            const status = item.status || 'Checkin';
+            const status = item.status || 'ACTIVE';
+            const upperStatus = status.toUpperCase();
+            const isActive = upperStatus === 'CHECKIN' || upperStatus === 'CHECKED_IN' || upperStatus === 'ACTIVE';
+
+            const statusBadgeHTML = isActive
+                ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>ACTIVE</span>`
+                : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/15 text-slate-700 border border-slate-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>INACTIVE</span>`;
 
             return `
                 <tr class="hover:bg-slate-50 transition-colors">
@@ -332,7 +338,7 @@ export async function fetchNsgList() {
                     <td class="py-3 px-4 font-medium text-slate-900">${accountName}</td>
                     <td class="py-3 px-4 text-slate-600">${description}</td>
                     <td class="py-3 px-4">
-                        ${getStatusBadgeHTML(status)}
+                        ${statusBadgeHTML}
                     </td>
                     <td class="py-3 px-4 text-right">
                         <button onclick="openFolioModal('${item.id}')" class="px-3 py-1.5 bg-primary hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs inline-flex items-center gap-1 cursor-pointer">
@@ -386,7 +392,7 @@ export async function handleSaveNsg(event) {
 
         const payload = {
             guest_type: 'Non-Staying Guest',
-            status: 'Checkin',
+            status: 'ACTIVE',
             qty: 1,
             room_id: null,
             booker_name: accountName,
