@@ -3464,7 +3464,7 @@
             </div>
 
             <!-- Search & Filter Bar -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 shrink-0">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4 shrink-0">
                 <div class="sm:col-span-2 relative">
                     <input type="text" id="gcf-lookup-search" oninput="window.handleGcfSearchInput()" placeholder="Cari nama, email, no hp, KTP, perusahaan..." class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 pl-10 text-sm focus:outline-none focus:border-primary">
                     <i class="ph ph-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-base"></i>
@@ -3476,6 +3476,11 @@
                         <option value="Company">Company</option>
                         <option value="Travel Agent">Travel Agent</option>
                     </select>
+                </div>
+                <div>
+                    <button type="button" onclick="window.handleAddNewGcf()" class="w-full h-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-3.5 py-2.5 text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer">
+                        <i class="ph ph-user-plus text-base"></i> + Add New GCF
+                    </button>
                 </div>
             </div>
 
@@ -3511,7 +3516,7 @@
     </div>
 
     <!-- Modal: Comprehensive GCF Editor -->
-    <div id="modal-gcf-editor" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto hidden">
+    <div id="modal-gcf-editor" class="fixed inset-0 z-[70] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto hidden">
         <form id="gcf-editor-form" onsubmit="window.saveGcfProfile(event)" class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             <!-- Modal Header -->
             <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">

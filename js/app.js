@@ -86,6 +86,7 @@ import {
     handleSaveReservation,
     openGuestLookupModal,
     closeGuestLookupModal,
+    handleAddNewGcf,
     handleGcfSearchInput,
     selectGuestFromLookup,
     handleQtyChange,
@@ -696,6 +697,7 @@ if (typeof window !== 'undefined') {
     window.handlePrintRegistrationCard = handlePrintRegistrationCard;
     window.openGuestLookupModal = openGuestLookupModal;
     window.closeGuestLookupModal = closeGuestLookupModal;
+    window.handleAddNewGcf = handleAddNewGcf;
     window.handleGcfSearchInput = handleGcfSearchInput;
     window.selectGuestFromLookup = selectGuestFromLookup;
     window.handleQtyChange = handleQtyChange;
