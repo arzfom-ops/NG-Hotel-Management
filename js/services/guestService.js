@@ -82,7 +82,7 @@ export async function getGuestCardById(id) {
 
         if (error) {
             const { data: profile, error: profErr } = await supabaseClient
-                .from('guest_profiles')
+                .from('guest_card_files')
                 .select('*')
                 .eq('id', id)
                 .single();
