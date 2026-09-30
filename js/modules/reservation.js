@@ -1136,23 +1136,23 @@ export async function openEditReservation(id) {
 
         document.getElementById('res-guest-profile-id').value = guestProfileId;
         if (document.getElementById('res-card-type')) {
-            document.getElementById('res-card-type').value = gcfObj?.card_type || guestCard?.card_type || guestProfile?.card_type || 'Individual';
+            document.getElementById('res-card-type').value = gcfObj?.card_type || guestCard?.card_type || 'Individual';
         }
         if (document.getElementById('res-title')) {
-            document.getElementById('res-title').value = gcfObj?.title || guestCard?.title || guestProfile?.title || 'Mr.';
+            document.getElementById('res-title').value = gcfObj?.title || guestCard?.title || 'Mr.';
         }
         document.getElementById('res-booker-name').value = res.booker_name || '';
         document.getElementById('res-guest-name').value = guestName;
         if (document.getElementById('res-identity-type')) {
-            document.getElementById('res-identity-type').value = guestCard?.id_card_type || guestProfile?.id_card_type || gcfObj?.id_card_type || gcfObj?.identity_type || 'KTP';
+            document.getElementById('res-identity-type').value = gcfObj?.id_card_type || gcfObj?.identity_type || guestCard?.id_card_type || guestCard?.identity_type || 'KTP';
         }
-        document.getElementById('res-id-card').value = (guestCard ? guestCard.id_card_no : '') || (guestProfile ? guestProfile.id_card_no : '') || (gcfObj ? gcfObj.id_card_no : '') || '';
-        document.getElementById('res-phone').value = (guestCard ? (guestCard.phone || guestCard.mobile_no) : '') || (guestProfile ? guestProfile.phone_number : '') || (gcfObj ? (gcfObj.phone || gcfObj.mobile_no) : '') || '';
-        document.getElementById('res-email').value = (guestCard ? guestCard.email : '') || (guestProfile ? guestProfile.email : '') || (gcfObj ? gcfObj.email : '') || '';
-        document.getElementById('res-birth-date').value = (guestCard ? (guestCard.birthdate || guestCard.birth_date) : '') || (guestProfile ? guestProfile.birth_date : '') || (gcfObj ? (gcfObj.birthdate || gcfObj.birth_date) : '') || '';
-        document.getElementById('res-address').value = (guestCard ? guestCard.address : '') || (guestProfile ? guestProfile.address : '') || (gcfObj ? gcfObj.address : '') || '';
-        document.getElementById('res-city').value = (guestCard ? guestCard.city : '') || (guestProfile ? guestProfile.city : '') || (gcfObj ? gcfObj.city : '') || '';
-        document.getElementById('res-nationality').value = (guestCard ? guestCard.nationality : '') || (guestProfile ? guestProfile.nationality : '') || (gcfObj ? gcfObj.nationality : '') || 'Indonesia';
+        document.getElementById('res-id-card').value = gcfObj?.id_card_no || guestCard?.id_card_no || '';
+        document.getElementById('res-phone').value = gcfObj?.phone || gcfObj?.mobile_no || guestCard?.phone || guestCard?.mobile_no || guestCard?.phone_number || '';
+        document.getElementById('res-email').value = gcfObj?.email || guestCard?.email || '';
+        document.getElementById('res-birth-date').value = gcfObj?.birthdate || gcfObj?.birth_date || guestCard?.birthdate || guestCard?.birth_date || '';
+        document.getElementById('res-address').value = gcfObj?.address || guestCard?.address || '';
+        document.getElementById('res-city').value = gcfObj?.city || guestCard?.city || '';
+        document.getElementById('res-nationality').value = gcfObj?.nationality || guestCard?.nationality || 'Indonesia';
 
         const checkInInput = document.getElementById('res-check-in');
         checkInInput.removeAttribute('min');
