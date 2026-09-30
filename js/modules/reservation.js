@@ -297,9 +297,9 @@ export async function handleGuestSearchInput(query) {
     guestSearchDebounceTimer = setTimeout(async () => {
         try {
             const { data, error } = await supabaseClient
-                .from('guest_profiles')
+                .from('guest_card_files')
                 .select('*')
-                .ilike('full_name', `%${trimmed}%`)
+                .or(`name.ilike.%${trimmed}%,full_name.ilike.%${trimmed}%`)
                 .limit(8);
 
             if (error) throw error;
@@ -312,20 +312,22 @@ export async function handleGuestSearchInput(query) {
                 `;
             } else {
                 suggestionsDiv.innerHTML = data.map(g => {
-                    const escapedName = (g.full_name || '').replace(/'/g, "\\'");
-                    const escapedPhone = (g.phone_number || '').replace(/'/g, "\\'");
+                    const fullName = g.full_name || g.name || '';
+                    const phone = g.phone || g.mobile_no || g.phone_number || '';
+                    const escapedName = fullName.replace(/'/g, "\\'");
+                    const escapedPhone = phone.replace(/'/g, "\\'");
                     const escapedEmail = (g.email || '').replace(/'/g, "\\'");
                     const escapedIdCard = (g.id_card_no || '').replace(/'/g, "\\'");
                     const escapedAddress = (g.address || '').replace(/'/g, "\\'");
                     const escapedCity = (g.city || '').replace(/'/g, "\\'");
                     const escapedNationality = (g.nationality || '').replace(/'/g, "\\'");
-                    const birthDate = g.birth_date || '';
+                    const birthDate = g.birthdate || g.birth_date || '';
 
                     return `
                         <div onclick="selectGuestProfile('${g.id}', '${escapedName}', '${escapedIdCard}', '${escapedPhone}', '${escapedEmail}', '${birthDate}', '${escapedAddress}', '${escapedCity}', '${escapedNationality}')" class="px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-b-0">
-                            <div class="font-medium text-xs text-slate-800">${g.full_name}</div>
+                            <div class="font-medium text-xs text-slate-800">${fullName}</div>
                             <div class="text-[11px] text-slate-500 flex gap-2">
-                                <span>${g.phone_number || 'No phone'}</span>
+                                <span>${phone || 'No phone'}</span>
                                 <span>•</span>
                                 <span>${g.id_card_no || 'No ID'}</span>
                             </div>
@@ -1087,10 +1089,9 @@ export async function openEditReservation(id) {
         }
 
         const guestCard = res.guest_card_files ? (Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files) : null;
-        const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
-        const guestProfileId = res.guest_profile_id || (guestProfile ? guestProfile.id : '');
         const guestCardIdVal = res.guest_card_id || (guestCard ? guestCard.id : '');
-        const guestName = res.guest_name || (guestCard ? (guestCard.full_name || guestCard.name) : '') || (guestProfile ? guestProfile.full_name : '') || res.booker_name || '';
+        const guestProfileId = res.guest_profile_id || guestCardIdVal;
+        const guestName = res.guest_name || (guestCard ? (guestCard.full_name || guestCard.name) : '') || res.booker_name || '';
 
         let gcfObj = null;
         if (guestCardIdVal) {
@@ -1662,8 +1663,8 @@ export async function splitGroupReservation(reservationId) {
             // Create isolated guest profile for child room
             let childProfileId = null;
             const { data: newProfile } = await supabaseClient
-                .from('guest_profiles')
-                .insert([{ full_name: childGuestName, nationality: 'Indonesia' }])
+                .from('guest_card_files')
+                .insert([{ name: childGuestName, full_name: childGuestName, nationality: 'Indonesia' }])
                 .select()
                 .single();
             if (newProfile) childProfileId = newProfile.id;
@@ -1818,7 +1819,7 @@ export async function openGroupRoomingListModal(reservationId) {
             tbody.innerHTML = childReservations.map((cRes, idx) => {
                 const rtName = cRes.room_types ? (Array.isArray(cRes.room_types) ? cRes.room_types[0]?.name : cRes.room_types.name) : 'Kamar';
                 const gCard = cRes.guest_card_files ? (Array.isArray(cRes.guest_card_files) ? cRes.guest_card_files[0] : cRes.guest_card_files) : null;
-                const guestName = cRes.guest_name || (gCard ? (gCard.full_name || gCard.name) : '') || (cRes.guest_profiles ? (Array.isArray(cRes.guest_profiles) ? cRes.guest_profiles[0]?.full_name : cRes.guest_profiles.full_name) : '') || '';
+                const guestName = cRes.guest_name || (gCard ? (gCard.full_name || gCard.name) : '') || cRes.booker_name || '';
 
                 let roomOptions = `<option value="">Belum Dialokasikan</option>`;
 
@@ -1949,13 +1950,13 @@ export async function handleSaveGroupRoomingList(event) {
 
             if (profileId) {
                 await supabaseClient
-                    .from('guest_profiles')
-                    .update({ full_name: newGuestName })
+                    .from('guest_card_files')
+                    .update({ name: newGuestName, full_name: newGuestName })
                     .eq('id', profileId);
             } else if (newGuestName) {
                 const { data: newProfile } = await supabaseClient
-                    .from('guest_profiles')
-                    .insert([{ full_name: newGuestName }])
+                    .from('guest_card_files')
+                    .insert([{ name: newGuestName, full_name: newGuestName }])
                     .select()
                     .single();
 
@@ -2029,14 +2030,13 @@ export async function handlePrintRegistrationCard() {
         }
 
         const guestCard = res.guest_card_files ? (Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files) : null;
-        const guestProfile = res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0] : res.guest_profiles) : null;
-        const guestName = res.guest_name || (guestCard ? (guestCard.full_name || guestCard.name) : '') || (guestProfile ? guestProfile.full_name : '') || res.booker_name || '-';
-        const phone = (guestCard ? (guestCard.phone || guestCard.mobile_no) : '') || (guestProfile ? guestProfile.phone_number : '') || '-';
-        const email = (guestCard ? guestCard.email : '') || (guestProfile ? guestProfile.email : '') || '-';
-        const idCard = (guestCard ? guestCard.id_card_no : '') || (guestProfile ? guestProfile.id_card_no : '') || '-';
-        const address = (guestCard ? guestCard.address : '') || (guestProfile ? guestProfile.address : '') || '-';
-        const city = (guestCard ? guestCard.city : '') || (guestProfile ? guestProfile.city : '') || '-';
-        const nationality = (guestCard ? guestCard.nationality : '') || (guestProfile ? guestProfile.nationality : '') || 'Indonesia';
+        const guestName = res.guest_name || (guestCard ? (guestCard.full_name || guestCard.name) : '') || res.booker_name || '-';
+        const phone = (guestCard ? (guestCard.phone || guestCard.mobile_no) : '') || '-';
+        const email = (guestCard ? guestCard.email : '') || '-';
+        const idCard = (guestCard ? guestCard.id_card_no : '') || '-';
+        const address = (guestCard ? guestCard.address : '') || '-';
+        const city = (guestCard ? guestCard.city : '') || '-';
+        const nationality = (guestCard ? guestCard.nationality : '') || 'Indonesia';
 
         const roomTypeName = res.room_types ? (Array.isArray(res.room_types) ? res.room_types[0]?.name : res.room_types.name) : '-';
         const roomNumber = res.rooms ? (Array.isArray(res.rooms) ? res.rooms[0]?.room_number : res.rooms.room_number) : '-';
@@ -2297,13 +2297,14 @@ export async function handleSaveReservation(event) {
         } else if (guestProfileId) {
             try {
                 await supabaseClient
-                    .from('guest_profiles')
+                    .from('guest_card_files')
                     .update({
+                        name: guestNameVal,
                         full_name: guestNameVal,
                         id_card_no: idCardVal || null,
-                        phone_number: phoneVal || null,
+                        phone: phoneVal || null,
                         email: emailVal || null,
-                        birth_date: birthDateVal,
+                        birthdate: birthDateVal,
                         address: addressVal || null,
                         city: cityVal || null,
                         nationality: nationalityVal || 'Indonesia'

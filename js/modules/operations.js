@@ -294,7 +294,7 @@ export async function fetchNsgList() {
             .select(`
                 *,
                 rooms (room_number),
-                guest_profiles (full_name)
+                guest_card_files!fk_reservations_guest_card (full_name, name)
             `)
             .order('created_at', { ascending: false });
 
@@ -320,7 +320,8 @@ export async function fetchNsgList() {
 
         tbody.innerHTML = filteredData.map(item => {
             const resNo = item.reservation_number || (item.id ? item.id.slice(0, 8) : '-');
-            const guestFullName = item.guest_profiles ? (Array.isArray(item.guest_profiles) ? item.guest_profiles[0]?.full_name : item.guest_profiles.full_name) : null;
+            const gCard = item.guest_card_files ? (Array.isArray(item.guest_card_files) ? item.guest_card_files[0] : item.guest_card_files) : null;
+            const guestFullName = gCard ? (gCard.full_name || gCard.name) : null;
             const accountName = item.booker_name || guestFullName || '-';
             const description = item.comment || '-';
             const status = item.status || 'Checkin';
@@ -785,7 +786,7 @@ export async function fetchCancelList() {
     try {
         const { data, error } = await supabaseClient
             .from('reservations')
-            .select('id, reservation_number, booker_name, reservation_source, voucher_number, check_in_date, check_out_date, cancel_reason, created_at, guest_profiles(full_name)')
+            .select('id, reservation_number, booker_name, reservation_source, voucher_number, check_in_date, check_out_date, cancel_reason, created_at, guest_card_files!fk_reservations_guest_card(full_name, name)')
             .eq('status', 'Cancelled')
             .order('created_at', { ascending: false });
 
@@ -804,7 +805,8 @@ export async function fetchCancelList() {
         }
 
         tbody.innerHTML = data.map(res => {
-            const guestFullName = (res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0]?.full_name : res.guest_profiles.full_name) : null) || res.booker_name || '-';
+            const gCard = res.guest_card_files ? (Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files) : null;
+            const guestFullName = (gCard ? (gCard.full_name || gCard.name) : null) || res.booker_name || '-';
             const resNumber = res.reservation_number || '-';
             const source = res.reservation_source || 'Direct';
             const voucher = res.voucher_number ? ` / ${res.voucher_number}` : '';

@@ -13,7 +13,7 @@ export let editingGroupId = null;
             try {
                 const { data: res, error } = await supabaseClient
                     .from('reservations')
-                    .select('*, guest_profiles(full_name), room_types(name)')
+                    .select('*, guest_card_files!fk_reservations_guest_card(full_name, name), room_types(name)')
                     .eq('id', reservationId)
                     .single();
 
@@ -28,7 +28,8 @@ export let editingGroupId = null;
                     return;
                 }
 
-                const originalGuestName = (res.guest_profiles ? (Array.isArray(res.guest_profiles) ? res.guest_profiles[0]?.full_name : res.guest_profiles.full_name) : null) || res.booker_name || 'Tamu';
+                const gCard = res.guest_card_files ? (Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files) : null;
+                const originalGuestName = (gCard ? (gCard.full_name || gCard.name) : null) || res.booker_name || 'Tamu';
                 const rtName = res.room_types ? (Array.isArray(res.room_types) ? res.room_types[0]?.name : res.room_types.name) : 'Kamar';
                 const stayFmt = formatStayDatesCompact(res.check_in_date, res.check_out_date);
 
@@ -314,13 +315,13 @@ export let editingGroupId = null;
                             // Row 1: Update original reservation and guest profile if needed
                             if (origRes.guest_profile_id) {
                                 await supabaseClient
-                                    .from('guest_profiles')
-                                    .update({ full_name: guestName })
+                                    .from('guest_card_files')
+                                    .update({ name: guestName, full_name: guestName })
                                     .eq('id', origRes.guest_profile_id);
                             } else {
                                 const { data: newG, error: newGErr } = await supabaseClient
-                                    .from('guest_profiles')
-                                    .insert([{ full_name: guestName }])
+                                    .from('guest_card_files')
+                                    .insert([{ name: guestName, full_name: guestName }])
                                     .select();
                                 if (!newGErr && newG && newG.length > 0) {
                                     await supabaseClient
@@ -342,8 +343,8 @@ export let editingGroupId = null;
                         } else {
                             // Row 2+: Insert new guest profile and new reservation
                             const { data: gData, error: gErr } = await supabaseClient
-                                .from('guest_profiles')
-                                .insert([{ full_name: guestName }])
+                                .from('guest_card_files')
+                                .insert([{ name: guestName, full_name: guestName }])
                                 .select();
 
                             if (gErr) throw gErr;
@@ -447,10 +448,10 @@ export let editingGroupId = null;
                     const roomRate = rateInput && parseFloat(rateInput.value) >= 0 ? parseFloat(rateInput.value) : 0;
                     const rtId = tr.getAttribute('data-rt-id');
 
-                    // a) Insert new guest profile in guest_profiles
+                    // a) Insert new guest profile in guest_card_files
                     const { data: gData, error: gErr } = await supabaseClient
-                        .from('guest_profiles')
-                        .insert([{ full_name: guestName }])
+                        .from('guest_card_files')
+                        .insert([{ name: guestName, full_name: guestName }])
                         .select();
 
                     if (gErr) throw gErr;

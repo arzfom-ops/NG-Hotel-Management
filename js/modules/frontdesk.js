@@ -344,7 +344,7 @@ export function renderDashboardTable() {
         filteredList = filteredList.filter(r => {
             const resNo = (r.reservation_number || r.id || '').toLowerCase();
             const bookingRef = (r.booking_reference || '').toLowerCase();
-            const gCard = Array.isArray(r.guest_card_files) ? r.guest_card_files[0] : (r.guest_card_files || r.guest_profiles);
+            const gCard = Array.isArray(r.guest_card_files) ? r.guest_card_files[0] : r.guest_card_files;
             const guestName = (r.guest_name ||
                               gCard?.full_name ||
                               `${gCard?.first_name || ''} ${gCard?.last_name || ''}`.trim() ||
@@ -379,7 +379,7 @@ export function renderDashboardTable() {
 
     tbody.innerHTML = filteredList.map(r => {
         const resNo = r.reservation_number || r.id.slice(0, 8);
-        const gCard = Array.isArray(r.guest_card_files) ? r.guest_card_files[0] : (r.guest_card_files || r.guest_profiles);
+        const gCard = Array.isArray(r.guest_card_files) ? r.guest_card_files[0] : r.guest_card_files;
         const guestName = r.guest_name ||
                           gCard?.full_name ||
                           `${gCard?.first_name || ''} ${gCard?.last_name || ''}`.trim() ||
@@ -779,7 +779,7 @@ export async function renderTapeChart() {
                     if (widthPx > 0) {
                         const status = (res.status || 'Reserved').toLowerCase();
                         const source = res.reservation_source || 'Direct';
-                        const gCard = Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : (res.guest_card_files || res.guest_profiles);
+                        const gCard = Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files;
                         const displayName = res.guest_name ||
                                             gCard?.full_name ||
                                             `${gCard?.first_name || ''} ${gCard?.last_name || ''}`.trim() ||
