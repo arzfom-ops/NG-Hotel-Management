@@ -128,6 +128,8 @@ import {
     folioRoutingAvailableArticles,
     folioRoutingRulesState,
     activeFolioTab,
+    isNsgFolio,
+    updateCheckoutButtonText,
     switchFolioTab,
     getOrCreateMasterFolioId,
     fetchMasterFolioDetails,
@@ -739,6 +741,8 @@ if (typeof window !== 'undefined') {
     window.folioRoutingAvailableArticles = folioRoutingAvailableArticles;
     window.folioRoutingRulesState = folioRoutingRulesState;
     window.activeFolioTab = activeFolioTab;
+    window.isNsgFolio = isNsgFolio;
+    window.updateCheckoutButtonText = updateCheckoutButtonText;
     window.switchFolioTab = switchFolioTab;
     window.getOrCreateMasterFolioId = getOrCreateMasterFolioId;
     window.fetchMasterFolioDetails = fetchMasterFolioDetails;

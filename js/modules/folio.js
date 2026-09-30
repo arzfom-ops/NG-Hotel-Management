@@ -12,6 +12,29 @@ export let folioRoutingAvailableArticles = [];
 export let folioRoutingRulesState = [];
 export let activeFolioTab = 'pribadi';
 
+export function isNsgFolio(res) {
+    if (!res) return false;
+    const resNo = res.reservation_number || '';
+    const roomNo = res.rooms ? (Array.isArray(res.rooms) ? res.rooms[0]?.room_number : res.rooms.room_number) : null;
+    const isPmRoom = roomNo && String(roomNo).toLowerCase().startsWith('pm-');
+    return res.guest_type === 'Non-Staying Guest' ||
+           resNo.startsWith('NSG-') ||
+           res.is_nsg === true ||
+           isPmRoom ||
+           (!res.room_id && res.guest_type === 'Non-Staying Guest');
+}
+
+export function updateCheckoutButtonText(isNsg = false) {
+    const checkoutBtn = document.getElementById('processCheckoutBtn');
+    if (checkoutBtn) {
+        if (isNsg) {
+            checkoutBtn.innerHTML = `<i class="ph ph-x-circle text-lg"></i> Close Bill`;
+        } else {
+            checkoutBtn.innerHTML = `<i class="ph ph-sign-out text-lg"></i> Process Check-out`;
+        }
+    }
+}
+
 // ==========================================
 // GUEST & MASTER FOLIO MODAL
 // ==========================================
@@ -36,6 +59,8 @@ export async function switchFolioTab(tabName) {
         if (contentPribadi) contentPribadi.classList.add('hidden');
         if (contentMaster) contentMaster.classList.remove('hidden');
 
+        updateCheckoutButtonText(false);
+
         let masterFolioId = currentFolioReservation?.master_folio_id || currentMasterGroup?.master_folio_id || currentMasterGroup?.id;
         if (!masterFolioId && currentFolioReservation) {
             masterFolioId = await getOrCreateMasterFolioId(currentFolioReservation);
@@ -52,6 +77,8 @@ export async function switchFolioTab(tabName) {
         }
         if (contentPribadi) contentPribadi.classList.remove('hidden');
         if (contentMaster) contentMaster.classList.add('hidden');
+
+        updateCheckoutButtonText(isNsgFolio(currentFolioReservation));
 
         if (currentFolioReservation?.id) {
             await fetchFolioTransactions(currentFolioReservation.id);
@@ -168,6 +195,7 @@ export async function openFolioModal(reservationId) {
 
         currentFolioReservation = res;
         renderFolioModal(res);
+        updateCheckoutButtonText(isNsgFolio(res));
 
         // Render Guest & Room Info
         const guestCard = res.guest_card_files ? (Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files) : null;
@@ -257,6 +285,7 @@ export function closeFolioModal() {
     currentFolioReservation = null;
     currentFolioTransactions = [];
     calculatedCurrentBalance = 0;
+    updateCheckoutButtonText(false);
 }
 
 export async function checkAndUpdateMasterFolioHeader(res) {
@@ -2051,18 +2080,43 @@ export async function handleSaveFolioRouting() {
 export async function handleProcessCheckout() {
     if (!currentFolioReservation) return;
 
+    const isNsg = isNsgFolio(currentFolioReservation);
+
     if (calculatedCurrentBalance !== 0) {
-        alert('Cannot Check-out. Folio balance must be 0.');
+        if (isNsg) {
+            alert('Folio harus lunas (Balance Rp 0) sebelum Close Bill.');
+        } else {
+            alert('Cannot Check-out. Folio balance must be 0.');
+        }
         return;
     }
 
     const checkoutBtn = document.getElementById('processCheckoutBtn');
     if (checkoutBtn) {
         checkoutBtn.disabled = true;
-        checkoutBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Processing Check-out...`;
+        if (isNsg) {
+            checkoutBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Closing Bill...`;
+        } else {
+            checkoutBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Processing Check-out...`;
+        }
     }
 
     try {
+        if (isNsg) {
+            const { error } = await supabaseClient
+                .from('reservations')
+                .update({ status: 'INACTIVE' })
+                .eq('id', currentFolioReservation.id);
+
+            if (error) throw error;
+
+            alert('Bill NSG berhasil ditutup (Close Bill)!');
+            closeFolioModal();
+            if (typeof window.fetchNsgList === 'function') await window.fetchNsgList();
+            if (typeof window.fetchNsgAccounts === 'function') await window.fetchNsgAccounts();
+            return;
+        }
+
         let rpcSuccess = false;
         try {
             const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_process_checkout', {
@@ -2109,7 +2163,7 @@ export async function handleProcessCheckout() {
     } finally {
         if (checkoutBtn) {
             checkoutBtn.disabled = false;
-            checkoutBtn.innerHTML = `<i class="ph ph-sign-out text-lg"></i> Process Check-out`;
+            updateCheckoutButtonText(isNsg);
         }
     }
 }
