@@ -604,6 +604,16 @@ export async function saveGcfProfile(event) {
 
         showToast(editingGcfId ? 'Profil GCF berhasil diperbarui.' : 'Profil GCF baru berhasil dibuat.');
         closeGcfEditorModal();
+
+        const resModal = document.getElementById('reservationModal');
+        const lookupModal = document.getElementById('modal-guest-lookup');
+        const isResModalOpen = resModal && !resModal.classList.contains('hidden');
+        const isLookupModalOpen = lookupModal && !lookupModal.classList.contains('hidden');
+
+        if ((isResModalOpen || isLookupModalOpen) && gcfId && typeof window.selectGuestFromLookup === 'function') {
+            await window.selectGuestFromLookup(gcfId);
+        }
+
         renderGuestProfilesTable();
     } catch (err) {
         console.error('Error saving GCF profile:', err);

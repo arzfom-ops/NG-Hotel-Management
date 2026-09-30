@@ -404,6 +404,28 @@ export function closeGuestLookupModal() {
     }
 }
 
+export async function handleAddNewGcf() {
+    const searchInput = document.getElementById('gcf-lookup-search');
+    const query = searchInput ? searchInput.value.trim() : '';
+
+    if (typeof window !== 'undefined' && typeof window.openGcfEditorModal === 'function') {
+        await window.openGcfEditorModal(null);
+    }
+
+    if (query) {
+        const cardTypeSelect = document.getElementById('gcf-card-type');
+        const cardType = cardTypeSelect ? cardTypeSelect.value : 'Individual';
+
+        if (cardType === 'Company' || cardType === 'Travel Agent') {
+            const compNameInput = document.getElementById('gcf-company-name');
+            if (compNameInput) compNameInput.value = query;
+        } else {
+            const lastNameInput = document.getElementById('gcf-last-name');
+            if (lastNameInput) lastNameInput.value = query;
+        }
+    }
+}
+
 export function handleGcfSearchInput() {
     if (gcfSearchDebounceTimer) {
         clearTimeout(gcfSearchDebounceTimer);
