@@ -234,7 +234,8 @@ import {
     closeEodReportModal,
     printEodReport,
     fetchNightAuditHistory,
-    openEodReportFromHistory
+    openEodReportFromHistory,
+    renderNightAudit
 } from './modules/night_audit.js';
 
 import {
@@ -415,6 +416,11 @@ export function toggleFrontdeskAccordion(forceOpen) {
 
 // Single Page Application (SPA) View Toggling
 export async function switchView(viewName) {
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+        // Safe check if mainContent container is used dynamically
+    }
+
     const frontdeskTopbar = document.getElementById('frontdesk-topbar');
     const frontdeskView = document.getElementById('frontdesk-view');
     const nsgView = document.getElementById('nsg-view');
@@ -426,6 +432,24 @@ export async function switchView(viewName) {
     const cancelListView = document.getElementById('cancel-list-view');
     const drrView = document.getElementById('report-drr-view') || document.getElementById('drr-view');
     const adminSettingsView = document.getElementById('admin-settings-view');
+
+    const allViews = [
+        frontdeskView,
+        nsgView,
+        roomForecastView,
+        housekeepingView,
+        corporateView,
+        guestProfilesView,
+        nightAuditView,
+        cancelListView,
+        drrView,
+        adminSettingsView
+    ];
+
+    // Clean hide all view containers
+    allViews.forEach(viewEl => {
+        if (viewEl) viewEl.classList.add('hidden');
+    });
 
     const navFrontdesk = document.getElementById('nav-frontdesk');
     const navRoomForecast = document.getElementById('nav-room-forecast');
@@ -456,32 +480,12 @@ export async function switchView(viewName) {
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Night Audit / End of Day Processing";
 
-        if (frontdeskView) frontdeskView.classList.add('hidden');
-        if (nsgView) nsgView.classList.add('hidden');
-        if (roomForecastView) roomForecastView.classList.add('hidden');
-        if (housekeepingView) housekeepingView.classList.add('hidden');
-        if (corporateView) corporateView.classList.add('hidden');
-        if (guestProfilesView) guestProfilesView.classList.add('hidden');
-        if (cancelListView) cancelListView.classList.add('hidden');
-        if (drrView) drrView.classList.add('hidden');
-        if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (nightAuditView) nightAuditView.classList.remove('hidden');
-
         if (navNightAudit) navNightAudit.className = activeNavClass;
 
-        fetchPreAuditCheck();
-        fetchNightAuditHistory();
+        await renderNightAudit();
     } else if (viewName === 'settings') {
         if (frontdeskTopbar) frontdeskTopbar.classList.add('hidden');
-        if (frontdeskView) frontdeskView.classList.add('hidden');
-        if (nsgView) nsgView.classList.add('hidden');
-        if (roomForecastView) roomForecastView.classList.add('hidden');
-        if (housekeepingView) housekeepingView.classList.add('hidden');
-        if (corporateView) corporateView.classList.add('hidden');
-        if (guestProfilesView) guestProfilesView.classList.add('hidden');
-        if (nightAuditView) nightAuditView.classList.add('hidden');
-        if (cancelListView) cancelListView.classList.add('hidden');
-        if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.remove('hidden');
 
         if (navSettings) navSettings.className = activeNavClass;
@@ -490,14 +494,6 @@ export async function switchView(viewName) {
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Reports / Daily Revenue Report";
 
-        if (frontdeskView) frontdeskView.classList.add('hidden');
-        if (nsgView) nsgView.classList.add('hidden');
-        if (roomForecastView) roomForecastView.classList.add('hidden');
-        if (housekeepingView) housekeepingView.classList.add('hidden');
-        if (corporateView) corporateView.classList.add('hidden');
-        if (guestProfilesView) guestProfilesView.classList.add('hidden');
-        if (cancelListView) cancelListView.classList.add('hidden');
-        if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (drrView) drrView.classList.remove('hidden');
 
         if (navDrr) navDrr.className = activeNavClass;
@@ -509,14 +505,6 @@ export async function switchView(viewName) {
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Frontdesk / Non-Stay Guest (NSG)";
 
-        if (frontdeskView) frontdeskView.classList.add('hidden');
-        if (roomForecastView) roomForecastView.classList.add('hidden');
-        if (housekeepingView) housekeepingView.classList.add('hidden');
-        if (corporateView) corporateView.classList.add('hidden');
-        if (guestProfilesView) guestProfilesView.classList.add('hidden');
-        if (cancelListView) cancelListView.classList.add('hidden');
-        if (drrView) drrView.classList.add('hidden');
-        if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (nsgView) nsgView.classList.remove('hidden');
 
         if (navNsg) navNsg.className = activeNavClass;
@@ -528,14 +516,6 @@ export async function switchView(viewName) {
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Frontdesk / Room Forecast";
 
-        if (frontdeskView) frontdeskView.classList.add('hidden');
-        if (nsgView) nsgView.classList.add('hidden');
-        if (housekeepingView) housekeepingView.classList.add('hidden');
-        if (corporateView) corporateView.classList.add('hidden');
-        if (guestProfilesView) guestProfilesView.classList.add('hidden');
-        if (cancelListView) cancelListView.classList.add('hidden');
-        if (drrView) drrView.classList.add('hidden');
-        if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (roomForecastView) roomForecastView.classList.remove('hidden');
 
         if (navRoomForecast) navRoomForecast.className = activeNavClass;
@@ -546,14 +526,6 @@ export async function switchView(viewName) {
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Corporate / Travel Agent Profiles";
 
-        if (frontdeskView) frontdeskView.classList.add('hidden');
-        if (nsgView) nsgView.classList.add('hidden');
-        if (roomForecastView) roomForecastView.classList.add('hidden');
-        if (housekeepingView) housekeepingView.classList.add('hidden');
-        if (guestProfilesView) guestProfilesView.classList.add('hidden');
-        if (cancelListView) cancelListView.classList.add('hidden');
-        if (drrView) drrView.classList.add('hidden');
-        if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (corporateView) corporateView.classList.remove('hidden');
 
         if (navCorporate) navCorporate.className = activeNavClass;
@@ -564,14 +536,6 @@ export async function switchView(viewName) {
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Master Data / Guest Card File (GCF)";
 
-        if (frontdeskView) frontdeskView.classList.add('hidden');
-        if (nsgView) nsgView.classList.add('hidden');
-        if (roomForecastView) roomForecastView.classList.add('hidden');
-        if (housekeepingView) housekeepingView.classList.add('hidden');
-        if (corporateView) corporateView.classList.add('hidden');
-        if (cancelListView) cancelListView.classList.add('hidden');
-        if (drrView) drrView.classList.add('hidden');
-        if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (guestProfilesView) guestProfilesView.classList.remove('hidden');
 
         if (navGuestProfiles) navGuestProfiles.className = activeNavClass;
@@ -582,14 +546,6 @@ export async function switchView(viewName) {
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Reports / Cancel List";
 
-        if (frontdeskView) frontdeskView.classList.add('hidden');
-        if (nsgView) nsgView.classList.add('hidden');
-        if (roomForecastView) roomForecastView.classList.add('hidden');
-        if (housekeepingView) housekeepingView.classList.add('hidden');
-        if (corporateView) corporateView.classList.add('hidden');
-        if (guestProfilesView) guestProfilesView.classList.add('hidden');
-        if (drrView) drrView.classList.add('hidden');
-        if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.remove('hidden');
 
         if (navCancelList) navCancelList.className = activeNavClass;
@@ -600,14 +556,6 @@ export async function switchView(viewName) {
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Housekeeping / Room Status";
 
-        if (frontdeskView) frontdeskView.classList.add('hidden');
-        if (nsgView) nsgView.classList.add('hidden');
-        if (roomForecastView) roomForecastView.classList.add('hidden');
-        if (corporateView) corporateView.classList.add('hidden');
-        if (guestProfilesView) guestProfilesView.classList.add('hidden');
-        if (cancelListView) cancelListView.classList.add('hidden');
-        if (drrView) drrView.classList.add('hidden');
-        if (adminSettingsView) adminSettingsView.classList.add('hidden');
         if (housekeepingView) housekeepingView.classList.remove('hidden');
 
         if (navHousekeeping) navHousekeeping.className = activeNavClass;
@@ -620,14 +568,6 @@ export async function switchView(viewName) {
         if (topbarHeader) topbarHeader.textContent = "Frontdesk / Tape Chart";
 
         if (frontdeskView) frontdeskView.classList.remove('hidden');
-        if (nsgView) nsgView.classList.add('hidden');
-        if (roomForecastView) roomForecastView.classList.add('hidden');
-        if (housekeepingView) housekeepingView.classList.add('hidden');
-        if (corporateView) corporateView.classList.add('hidden');
-        if (guestProfilesView) guestProfilesView.classList.add('hidden');
-        if (cancelListView) cancelListView.classList.add('hidden');
-        if (drrView) drrView.classList.add('hidden');
-        if (adminSettingsView) adminSettingsView.classList.add('hidden');
 
         if (navFrontdesk) navFrontdesk.className = activeNavClass;
 
@@ -882,6 +822,7 @@ if (typeof window !== 'undefined') {
     window.printEodReport = printEodReport;
     window.fetchNightAuditHistory = fetchNightAuditHistory;
     window.openEodReportFromHistory = openEodReportFromHistory;
+    window.renderNightAudit = renderNightAudit;
 
     // Shift & Settlement Module
     window.getActiveShift = getActiveShift;

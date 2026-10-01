@@ -455,3 +455,16 @@ export async function handleNightAudit(auditDateStr) {
 export async function runNightAudit(auditDateStr) {
     return await handleExecuteNightAudit();
 }
+
+/**
+ * Main render function for Night Audit view
+ */
+export async function renderNightAudit() {
+    const viewContainer = document.getElementById('night-audit-view');
+    if (viewContainer) {
+        // Ensure container is displayed cleanly
+        viewContainer.classList.remove('hidden');
+    }
+    await fetchPreAuditCheck();
+    await fetchNightAuditHistory();
+}
