@@ -380,6 +380,36 @@ todayDate.setHours(0, 0, 0, 0);
 
 export let initializedAppDate = new Date().toDateString();
 
+/**
+ * Gets the current hotel business date from system_settings and sets window.currentHotelDate
+ */
+export async function getHotelBusinessDate() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('system_settings')
+            .select('setting_value')
+            .eq('setting_key', 'current_hotel_date')
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data && data.setting_value) {
+            if (typeof window !== 'undefined') {
+                window.currentHotelDate = data.setting_value;
+            }
+            return data.setting_value;
+        }
+    } catch (err) {
+        console.error('Error fetching hotel business date:', err);
+    }
+
+    const fallbackDate = formatDateISO(new Date());
+    if (typeof window !== 'undefined') {
+        window.currentHotelDate = fallbackDate;
+    }
+    return fallbackDate;
+}
+
 // Mobile Drawer Toggle Function
 window.toggleMobileSidebar = function() {
     const overlay = document.getElementById('mobile-sidebar-overlay');
@@ -587,6 +617,7 @@ export async function switchView(viewName) {
 if (typeof window !== 'undefined') {
     window.todayDate = todayDate;
     window.initializedAppDate = initializedAppDate;
+    window.getHotelBusinessDate = getHotelBusinessDate;
     window.toggleFrontdeskAccordion = toggleFrontdeskAccordion;
     window.switchView = switchView;
 
@@ -1050,6 +1081,9 @@ export async function initApp() {
                 propNameSpan.textContent = data[0].name;
             }
         }
+
+        // Fetch Hotel Business Date
+        await getHotelBusinessDate();
 
         // Populate Room Type Filter
         if (typeof window.populateCalendarRoomTypeFilter === 'function') {
