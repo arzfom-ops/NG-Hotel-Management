@@ -422,32 +422,34 @@ export function mapFolioTransactionData(tx) {
     if (!tx) return { txType: 'CHARGE', catUpper: '', qty: 1, unitPrice: 0, total: 0 };
 
     const catUpper = (tx.category || '').toUpperCase();
-    let txType = (tx.transaction_type || '').toUpperCase();
+    let txType = (tx.transaction_type || tx.type || '').toUpperCase();
+
+    const isPaymentCategory = ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD', 'CASH', 'CREDIT_CARD', 'BANK_TRANSFER'].includes(catUpper) ||
+                              ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD'].includes(txType);
+
     if (!txType) {
-        if (catUpper.includes('ROOM') || catUpper === 'ROOM_CHARGE' || catUpper === 'ROOM') {
-            txType = 'CHARGE';
-        } else {
-            txType = 'CHARGE';
-        }
+        txType = isPaymentCategory ? 'PAYMENT' : 'CHARGE';
+    } else if (isPaymentCategory) {
+        txType = 'PAYMENT';
     }
 
-    // 1. QTY: Jika item.qty kosong/undefined, gunakan 1 sebagai fallback (khusus untuk kategori ROOM_CHARGE & Charge items)
+    // 1. QTY: Jika item.qty kosong/undefined, gunakan 1 sebagai fallback
     let qty = tx.qty;
     if (qty === null || qty === undefined || qty === '' || isNaN(Number(qty)) || Number(qty) <= 0) {
-        if (catUpper === 'ROOM_CHARGE' || catUpper === 'ROOM' || catUpper.includes('ROOM') || txType === 'CHARGE') {
-            qty = 1;
-        } else {
-            qty = 1;
-        }
+        qty = 1;
     } else {
         qty = Number(qty);
     }
 
-    // 2. UNIT PRICE: item.unit_price ATAU item.amount ATAU item.charge
+    // 2. UNIT PRICE: item.unit_price ATAU item.amount ATAU item.credit ATAU item.charge ATAU item.total
     let unitPrice = tx.unit_price;
     if (unitPrice === null || unitPrice === undefined || unitPrice === '' || isNaN(Number(unitPrice))) {
         if (tx.amount !== undefined && tx.amount !== null && tx.amount !== '' && !isNaN(Number(tx.amount))) {
             unitPrice = tx.amount;
+        } else if (tx.total !== undefined && tx.total !== null && tx.total !== '' && !isNaN(Number(tx.total))) {
+            unitPrice = tx.total;
+        } else if (tx.credit !== undefined && tx.credit !== null && tx.credit !== '' && !isNaN(Number(tx.credit))) {
+            unitPrice = tx.credit;
         } else if (tx.charge !== undefined && tx.charge !== null && tx.charge !== '' && !isNaN(Number(tx.charge))) {
             unitPrice = tx.charge;
         } else {
@@ -456,19 +458,19 @@ export function mapFolioTransactionData(tx) {
     }
     unitPrice = Number(unitPrice || 0);
 
-    // 3. TOTAL: item.total ATAU (qty * unit_price) ATAU item.amount
+    // 3. TOTAL: item.total ATAU item.amount ATAU item.credit ATAU (qty * unitPrice)
     let total = tx.total;
-    if (total === null || total === undefined || total === '' || isNaN(Number(total))) {
-        if (tx.qty !== undefined && tx.qty !== null && tx.unit_price !== undefined && tx.unit_price !== null && !isNaN(Number(tx.qty)) && !isNaN(Number(tx.unit_price))) {
-            total = Number(tx.qty) * Number(tx.unit_price);
-        } else if (tx.amount !== undefined && tx.amount !== null && tx.amount !== '' && !isNaN(Number(tx.amount))) {
+    if (total === null || total === undefined || total === '' || isNaN(Number(total)) || Number(total) === 0) {
+        if (tx.amount !== undefined && tx.amount !== null && tx.amount !== '' && !isNaN(Number(tx.amount)) && Number(tx.amount) !== 0) {
             total = tx.amount;
-        } else if (tx.charge !== undefined && tx.charge !== null && tx.charge !== '' && !isNaN(Number(tx.charge))) {
+        } else if (tx.credit !== undefined && tx.credit !== null && tx.credit !== '' && !isNaN(Number(tx.credit)) && Number(tx.credit) !== 0) {
+            total = tx.credit;
+        } else if (tx.charge !== undefined && tx.charge !== null && tx.charge !== '' && !isNaN(Number(tx.charge)) && Number(tx.charge) !== 0) {
             total = tx.charge;
         } else if (qty && unitPrice) {
             total = qty * unitPrice;
         } else {
-            total = 0;
+            total = Number(tx.total || tx.amount || tx.credit || tx.charge || 0);
         }
     }
     total = Number(total || 0);
@@ -524,10 +526,12 @@ export function renderFolioTransactions() {
             const isTransferredToMaster = !!(tx.master_folio_id);
 
             if (!isVoided && !isTransferredToMaster) {
-                if (txType === 'CHARGE' || catUpper.includes('ROOM')) {
-                    totalCharge += total;
-                } else if (txType === 'PAYMENT') {
+                const isPaymentCategory = ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD', 'CASH', 'CREDIT_CARD', 'BANK_TRANSFER'].includes(catUpper) ||
+                                          ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD'].includes(txType);
+                if (isPaymentCategory || txType === 'PAYMENT') {
                     totalPayment += total;
+                } else {
+                    totalCharge += total;
                 }
             }
 
@@ -769,8 +773,13 @@ export function renderMasterFolioTab(data) {
             const isVoided = tx.is_voided === true;
 
             if (!isVoided) {
-                if (txType === 'CHARGE' || catUpper.includes('ROOM')) totalCharges += total;
-                else if (txType === 'PAYMENT') totalPayments += total;
+                const isPaymentCategory = ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD', 'CASH', 'CREDIT_CARD', 'BANK_TRANSFER'].includes(catUpper) ||
+                                          ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD'].includes(txType);
+                if (isPaymentCategory || txType === 'PAYMENT') {
+                    totalPayments += total;
+                } else {
+                    totalCharges += total;
+                }
             }
 
             const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
@@ -1088,10 +1097,12 @@ export function renderMasterFolioTransactions() {
             const isVoided = tx.is_voided === true;
 
             if (!isVoided) {
-                if (txType === 'CHARGE' || catUpper.includes('ROOM')) {
-                    totalCharge += total;
-                } else if (txType === 'PAYMENT') {
+                const isPaymentCategory = ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD', 'CASH', 'CREDIT_CARD', 'BANK_TRANSFER'].includes(catUpper) ||
+                                          ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD'].includes(txType);
+                if (isPaymentCategory || txType === 'PAYMENT') {
                     totalPayment += total;
+                } else {
+                    totalCharge += total;
                 }
             }
 
@@ -1308,7 +1319,7 @@ export async function openAddPaymentModal() {
                 pmSelect.innerHTML = data.map(pm => {
                     const methodType = pm.method_type || pm.type || '';
                     const optionText = methodType ? `${methodType} - ${pm.name}` : pm.name;
-                    return `<option value="${pm.name}" data-type="${methodType}">${optionText}</option>`;
+                    return `<option value="${pm.name}" data-type="${methodType}" data-id="${pm.id}">${optionText}</option>`;
                 }).join('');
             } else {
                 pmSelect.innerHTML = `<option value="Cash" data-type="Cash">Cash - Cash</option>`;
@@ -1452,6 +1463,8 @@ export async function handleSaveFolioTransaction(e) {
         const descInput = document.getElementById('folio-tx-description');
         let noteDesc = descInput ? descInput.value.trim() : '';
         amount = parseFloat(document.getElementById('folio-tx-amount').value) || 0;
+        qty = 1;
+        unitPrice = amount;
 
         const paymentMethodSelect = document.getElementById('folio-tx-payment-method');
         const selectedOption = paymentMethodSelect ? paymentMethodSelect.options[paymentMethodSelect.selectedIndex] : null;
@@ -1505,8 +1518,8 @@ export async function handleSaveFolioTransaction(e) {
                 p_transaction_type: txType,
                 p_description: description,
                 p_category: category,
-                p_qty: qty,
-                p_unit_price: unitPrice,
+                p_qty: txType === 'PAYMENT' ? 1 : qty,
+                p_unit_price: txType === 'PAYMENT' ? amount : unitPrice,
                 p_amount: amount,
                 p_reference_number: referenceNumber
             });
@@ -1527,9 +1540,12 @@ export async function handleSaveFolioTransaction(e) {
                 description: description,
                 category: category,
                 payment_method_id: paymentMethodId || null,
-                qty: qty,
-                unit_price: unitPrice,
+                qty: txType === 'PAYMENT' ? 1 : (qty || 1),
+                unit_price: txType === 'PAYMENT' ? amount : (unitPrice || amount),
                 amount: amount,
+                total: amount,
+                charge: txType === 'CHARGE' ? amount : 0,
+                credit: txType === 'PAYMENT' ? amount : 0,
                 reference_number: referenceNumber,
                 transaction_date: new Date().toISOString()
             };

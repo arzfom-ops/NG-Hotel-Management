@@ -618,6 +618,7 @@ if (typeof window !== 'undefined') {
     window.todayDate = todayDate;
     window.initializedAppDate = initializedAppDate;
     window.getHotelBusinessDate = getHotelBusinessDate;
+    window.fetchHotelBusinessDate = getHotelBusinessDate;
     window.toggleFrontdeskAccordion = toggleFrontdeskAccordion;
     window.switchView = switchView;
 
