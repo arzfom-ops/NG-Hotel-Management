@@ -223,9 +223,18 @@ import {
 
 import {
     getCurrentBusinessDate,
+    fetchPreAuditCheck,
+    openNightAuditConfirmModal,
+    closeNightAuditConfirmModal,
+    handleExecuteNightAudit,
     executeNightAudit,
     handleNightAudit,
-    runNightAudit
+    runNightAudit,
+    openEodReportModal,
+    closeEodReportModal,
+    printEodReport,
+    fetchNightAuditHistory,
+    openEodReportFromHistory
 } from './modules/night_audit.js';
 
 import {
@@ -413,6 +422,7 @@ export async function switchView(viewName) {
     const housekeepingView = document.getElementById('housekeeping-view');
     const corporateView = document.getElementById('corporate-view');
     const guestProfilesView = document.getElementById('view-guest-profiles');
+    const nightAuditView = document.getElementById('night-audit-view');
     const cancelListView = document.getElementById('cancel-list-view');
     const drrView = document.getElementById('report-drr-view') || document.getElementById('drr-view');
     const adminSettingsView = document.getElementById('admin-settings-view');
@@ -423,6 +433,7 @@ export async function switchView(viewName) {
     const navHousekeeping = document.getElementById('nav-housekeeping');
     const navCorporate = document.getElementById('nav-corporate');
     const navGuestProfiles = document.getElementById('nav-guest-profiles');
+    const navNightAudit = document.getElementById('nav-night-audit');
     const navCancelList = document.getElementById('nav-cancel-list');
     const navDrr = document.getElementById('nav-report-drr') || document.getElementById('nav-drr');
     const navSettings = document.getElementById('nav-settings');
@@ -435,12 +446,32 @@ export async function switchView(viewName) {
         if (btn) btn.className = inactiveNavClass;
     });
 
-    const allMainNavBtns = [navHousekeeping, navCorporate, navGuestProfiles, navCancelList, navDrr, navSettings];
+    const allMainNavBtns = [navHousekeeping, navCorporate, navGuestProfiles, navNightAudit, navCancelList, navDrr, navSettings];
     allMainNavBtns.forEach(btn => {
         if (btn) btn.className = inactiveNavClass;
     });
 
-    if (viewName === 'settings') {
+    if (viewName === 'night-audit' || viewName === 'nightaudit') {
+        if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+        const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+        if (topbarHeader) topbarHeader.textContent = "Night Audit / End of Day Processing";
+
+        if (frontdeskView) frontdeskView.classList.add('hidden');
+        if (nsgView) nsgView.classList.add('hidden');
+        if (roomForecastView) roomForecastView.classList.add('hidden');
+        if (housekeepingView) housekeepingView.classList.add('hidden');
+        if (corporateView) corporateView.classList.add('hidden');
+        if (guestProfilesView) guestProfilesView.classList.add('hidden');
+        if (cancelListView) cancelListView.classList.add('hidden');
+        if (drrView) drrView.classList.add('hidden');
+        if (adminSettingsView) adminSettingsView.classList.add('hidden');
+        if (nightAuditView) nightAuditView.classList.remove('hidden');
+
+        if (navNightAudit) navNightAudit.className = activeNavClass;
+
+        fetchPreAuditCheck();
+        fetchNightAuditHistory();
+    } else if (viewName === 'settings') {
         if (frontdeskTopbar) frontdeskTopbar.classList.add('hidden');
         if (frontdeskView) frontdeskView.classList.add('hidden');
         if (nsgView) nsgView.classList.add('hidden');
@@ -448,6 +479,7 @@ export async function switchView(viewName) {
         if (housekeepingView) housekeepingView.classList.add('hidden');
         if (corporateView) corporateView.classList.add('hidden');
         if (guestProfilesView) guestProfilesView.classList.add('hidden');
+        if (nightAuditView) nightAuditView.classList.add('hidden');
         if (cancelListView) cancelListView.classList.add('hidden');
         if (drrView) drrView.classList.add('hidden');
         if (adminSettingsView) adminSettingsView.classList.remove('hidden');
@@ -838,9 +870,18 @@ if (typeof window !== 'undefined') {
 
     // Night Audit Module
     window.getCurrentBusinessDate = getCurrentBusinessDate;
+    window.fetchPreAuditCheck = fetchPreAuditCheck;
+    window.openNightAuditConfirmModal = openNightAuditConfirmModal;
+    window.closeNightAuditConfirmModal = closeNightAuditConfirmModal;
+    window.handleExecuteNightAudit = handleExecuteNightAudit;
     window.executeNightAudit = executeNightAudit;
     window.handleNightAudit = handleNightAudit;
     window.runNightAudit = runNightAudit;
+    window.openEodReportModal = openEodReportModal;
+    window.closeEodReportModal = closeEodReportModal;
+    window.printEodReport = printEodReport;
+    window.fetchNightAuditHistory = fetchNightAuditHistory;
+    window.openEodReportFromHistory = openEodReportFromHistory;
 
     // Shift & Settlement Module
     window.getActiveShift = getActiveShift;
