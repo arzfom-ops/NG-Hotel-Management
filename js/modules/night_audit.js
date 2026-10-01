@@ -183,6 +183,11 @@ export async function handleExecuteNightAudit() {
 
         showToast('Night Audit Berhasil!', 'success');
 
+        // Refresh global hotel business date
+        if (typeof window !== 'undefined' && typeof window.getHotelBusinessDate === 'function') {
+            await window.getHotelBusinessDate();
+        }
+
         // Refresh pre audit checklist & history
         await fetchPreAuditCheck();
         await fetchNightAuditHistory();

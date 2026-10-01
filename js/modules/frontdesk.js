@@ -3,7 +3,7 @@ import { formatDateISO, formatStayDatesCompact, getStatusBadgeHTML } from '../ut
 
 // Global State for Frontdesk Dashboard
 export var currentDashboardTab = 'arrival';
-export var dashboardSelectedDate = typeof formatDateISO === 'function' && typeof window.todayDate !== 'undefined' ? formatDateISO(window.todayDate) : new Date().toISOString().split('T')[0];
+export var dashboardSelectedDate = (typeof window !== 'undefined' && window.currentHotelDate) ? window.currentHotelDate : (typeof formatDateISO === 'function' && typeof window.todayDate !== 'undefined' ? formatDateISO(window.todayDate) : new Date().toISOString().split('T')[0]);
 export var dashboardRoomTypeFilter = '';
 export let dashboardSearchQuery = '';
 export let dashboardData = {
@@ -101,13 +101,17 @@ export function switchDashboardTab(tabName) {
 }
 
 export async function fetchFrontdeskDashboard() {
+    if (typeof window !== 'undefined' && window.currentHotelDate && (!dashboardSelectedDate || dashboardSelectedDate === formatDateISO(window.todayDate))) {
+        dashboardSelectedDate = window.currentHotelDate;
+    }
+
     const datePickerEl = document.getElementById('dash-date-picker');
-    if (datePickerEl && !datePickerEl.value) {
+    if (datePickerEl) {
         datePickerEl.value = dashboardSelectedDate;
     }
 
     try {
-        const selectedDateISO = dashboardSelectedDate || formatDateISO(window.todayDate);
+        const selectedDateISO = dashboardSelectedDate || (typeof window !== 'undefined' && window.currentHotelDate ? window.currentHotelDate : formatDateISO(window.todayDate));
 
         // 1. Fetch Reservations
         const { data: resData, error: resErr } = await supabaseClient
@@ -582,7 +586,13 @@ export async function openCreateReservationModal(roomId, checkInDate, checkOutDa
 }
 
 // Global Tape Chart State
-export var currentStartDate = typeof window.todayDate !== 'undefined' ? new Date(window.todayDate) : new Date();
+function initCurrentStartDate() {
+    if (typeof window !== 'undefined' && window.currentHotelDate) {
+        return new Date(window.currentHotelDate + 'T00:00:00');
+    }
+    return typeof window !== 'undefined' && window.todayDate ? new Date(window.todayDate) : new Date();
+}
+export var currentStartDate = initCurrentStartDate();
 export var selectedRoomTypeFilter = '';
 
 export async function renderTapeChart() {
@@ -622,6 +632,13 @@ export async function renderTapeChart() {
 
         // Sync datepicker input with currentStartDate
         const datepickerInput = document.getElementById('calendar-jump-date');
+        if (typeof window !== 'undefined' && window.currentHotelDate && (!datepickerInput?.value || datepickerInput.value === formatDateISO(window.todayDate))) {
+            const hDate = new Date(window.currentHotelDate + 'T00:00:00');
+            if (!isNaN(hDate.getTime())) {
+                currentStartDate = hDate;
+            }
+        }
+
         if (datepickerInput) {
             datepickerInput.value = formatDateISO(currentStartDate);
         }
@@ -884,7 +901,11 @@ export async function renderTapeChart() {
 
 // --- Smart Control Bar Handlers ---
 export function handleTodayClick() {
-    currentStartDate = new Date(window.todayDate);
+    if (typeof window !== 'undefined' && window.currentHotelDate) {
+        currentStartDate = new Date(window.currentHotelDate + 'T00:00:00');
+    } else {
+        currentStartDate = new Date(window.todayDate);
+    }
     renderTapeChart();
 }
 
