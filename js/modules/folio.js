@@ -418,12 +418,70 @@ export function handleOpenFolioFromEdit() {
     }
 }
 
+export function mapFolioTransactionData(tx) {
+    if (!tx) return { txType: 'CHARGE', catUpper: '', qty: 1, unitPrice: 0, total: 0 };
+
+    const catUpper = (tx.category || '').toUpperCase();
+    let txType = (tx.transaction_type || '').toUpperCase();
+    if (!txType) {
+        if (catUpper.includes('ROOM') || catUpper === 'ROOM_CHARGE' || catUpper === 'ROOM') {
+            txType = 'CHARGE';
+        } else {
+            txType = 'CHARGE';
+        }
+    }
+
+    // 1. QTY: Jika item.qty kosong/undefined, gunakan 1 sebagai fallback (khusus untuk kategori ROOM_CHARGE & Charge items)
+    let qty = tx.qty;
+    if (qty === null || qty === undefined || qty === '' || isNaN(Number(qty)) || Number(qty) <= 0) {
+        if (catUpper === 'ROOM_CHARGE' || catUpper === 'ROOM' || catUpper.includes('ROOM') || txType === 'CHARGE') {
+            qty = 1;
+        } else {
+            qty = 1;
+        }
+    } else {
+        qty = Number(qty);
+    }
+
+    // 2. UNIT PRICE: item.unit_price ATAU item.amount ATAU item.charge
+    let unitPrice = tx.unit_price;
+    if (unitPrice === null || unitPrice === undefined || unitPrice === '' || isNaN(Number(unitPrice))) {
+        if (tx.amount !== undefined && tx.amount !== null && tx.amount !== '' && !isNaN(Number(tx.amount))) {
+            unitPrice = tx.amount;
+        } else if (tx.charge !== undefined && tx.charge !== null && tx.charge !== '' && !isNaN(Number(tx.charge))) {
+            unitPrice = tx.charge;
+        } else {
+            unitPrice = 0;
+        }
+    }
+    unitPrice = Number(unitPrice || 0);
+
+    // 3. TOTAL: item.total ATAU (qty * unit_price) ATAU item.amount
+    let total = tx.total;
+    if (total === null || total === undefined || total === '' || isNaN(Number(total))) {
+        if (tx.qty !== undefined && tx.qty !== null && tx.unit_price !== undefined && tx.unit_price !== null && !isNaN(Number(tx.qty)) && !isNaN(Number(tx.unit_price))) {
+            total = Number(tx.qty) * Number(tx.unit_price);
+        } else if (tx.amount !== undefined && tx.amount !== null && tx.amount !== '' && !isNaN(Number(tx.amount))) {
+            total = tx.amount;
+        } else if (tx.charge !== undefined && tx.charge !== null && tx.charge !== '' && !isNaN(Number(tx.charge))) {
+            total = tx.charge;
+        } else if (qty && unitPrice) {
+            total = qty * unitPrice;
+        } else {
+            total = 0;
+        }
+    }
+    total = Number(total || 0);
+
+    return { txType, catUpper, qty, unitPrice, total };
+}
+
 export async function fetchFolioTransactions(reservationId = currentFolioReservation?.id) {
     if (!reservationId) return;
     const tbody = document.getElementById('folioTransactionsTbody');
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Loading transactions...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Loading transactions...</td></tr>`;
 
     try {
         const { data, error } = await supabaseClient
@@ -440,7 +498,7 @@ export async function fetchFolioTransactions(reservationId = currentFolioReserva
 
     } catch (err) {
         console.error('Error fetching folio transactions:', err);
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500 font-semibold">Gagal memuat transaksi: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-red-500 font-semibold">Gagal memuat transaksi: ${err.message}</td></tr>`;
     }
 }
 
@@ -458,26 +516,30 @@ export function renderFolioTransactions() {
     ));
 
     if (currentFolioTransactions.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada transaksi di folio ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Belum ada transaksi di folio ini.</td></tr>`;
     } else {
         tbody.innerHTML = currentFolioTransactions.map(tx => {
-            const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
-            const amount = Number(tx.amount || 0);
+            const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
             const isVoided = tx.is_voided === true;
             const isTransferredToMaster = !!(tx.master_folio_id);
 
             if (!isVoided && !isTransferredToMaster) {
-                if (txType === 'CHARGE') {
-                    totalCharge += amount;
+                if (txType === 'CHARGE' || catUpper.includes('ROOM')) {
+                    totalCharge += total;
                 } else if (txType === 'PAYMENT') {
-                    totalPayment += amount;
+                    totalPayment += total;
                 }
             }
 
             const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-            const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '-';
-            const chargeDisplay = txType === 'CHARGE' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
-            const paymentDisplay = txType === 'PAYMENT' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
+            const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '';
+
+            const typeBadgeClass = txType === 'PAYMENT' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-indigo-100 text-indigo-800 border-indigo-200';
+            const typeDisplay = `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${typeBadgeClass}">${txType}</span>`;
+
+            const qtyDisplay = txType === 'PAYMENT' ? '-' : qty;
+            const unitPriceDisplay = txType === 'PAYMENT' ? '-' : `Rp ${unitPrice.toLocaleString('id-ID')}`;
+            const totalDisplay = `Rp ${total.toLocaleString('id-ID')}`;
 
             let rowClass = isVoided ? 'bg-red-50/50 text-slate-400 line-through' : (isTransferredToMaster ? 'bg-amber-50/40 text-slate-600' : 'hover:bg-slate-50 text-slate-700');
             let desc = tx.description || '-';
@@ -515,10 +577,11 @@ export function renderFolioTransactions() {
                         <input type="checkbox" value="${tx.id}" class="folio-tx-cb folio-tx-checkbox rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer" onchange="updateTransferButtonsState()" ${isVoided || isTransferredToMaster ? 'disabled' : ''}>
                     </td>
                     <td class="p-3 font-medium whitespace-nowrap text-slate-500">${dateStr}</td>
-                    <td class="p-3 font-semibold text-slate-800">${desc}</td>
-                    <td class="p-3 text-center">${categoryBadge}</td>
-                    <td class="p-3 text-right font-medium text-slate-900">${chargeDisplay}</td>
-                    <td class="p-3 text-right font-medium text-emerald-600">${paymentDisplay}</td>
+                    <td class="p-3 text-center">${typeDisplay}</td>
+                    <td class="p-3 font-semibold text-slate-800">${desc} ${categoryBadge}</td>
+                    <td class="p-3 text-center font-medium text-slate-700">${qtyDisplay}</td>
+                    <td class="p-3 text-right font-medium text-slate-700">${unitPriceDisplay}</td>
+                    <td class="p-3 text-right font-bold ${txType === 'PAYMENT' ? 'text-emerald-600' : 'text-slate-900'}">${totalDisplay}</td>
                     <td class="p-3 text-center">${actionBtn}</td>
                 </tr>
             `;
@@ -702,19 +765,18 @@ export function renderMasterFolioTab(data) {
         }
     } else if (tbody) {
         tbody.innerHTML = data.transactions.map(tx => {
-            const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
-            const amount = Number(tx.amount || 0);
+            const { txType, catUpper, total } = mapFolioTransactionData(tx);
             const isVoided = tx.is_voided === true;
 
             if (!isVoided) {
-                if (txType === 'CHARGE') totalCharges += amount;
-                else if (txType === 'PAYMENT') totalPayments += amount;
+                if (txType === 'CHARGE' || catUpper.includes('ROOM')) totalCharges += total;
+                else if (txType === 'PAYMENT') totalPayments += total;
             }
 
             const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
             const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '';
-            const chargeDisplay = txType === 'CHARGE' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
-            const paymentDisplay = txType === 'PAYMENT' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
+            const chargeDisplay = (txType === 'CHARGE' || catUpper.includes('ROOM')) ? `Rp ${total.toLocaleString('id-ID')}` : '-';
+            const paymentDisplay = txType === 'PAYMENT' ? `Rp ${total.toLocaleString('id-ID')}` : '-';
 
             let sourceRoomDisplay = '-';
             let originalFolioId = tx.reservation_id || null;
@@ -1022,22 +1084,26 @@ export function renderMasterFolioTransactions() {
         tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada transaksi di Master Folio ini.</td></tr>`;
     } else {
         tbody.innerHTML = currentMasterTransactions.map(tx => {
-            const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
-            const amount = Number(tx.amount || 0);
+            const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
             const isVoided = tx.is_voided === true;
 
             if (!isVoided) {
-                if (txType === 'CHARGE') {
-                    totalCharge += amount;
+                if (txType === 'CHARGE' || catUpper.includes('ROOM')) {
+                    totalCharge += total;
                 } else if (txType === 'PAYMENT') {
-                    totalPayment += amount;
+                    totalPayment += total;
                 }
             }
 
             const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-            const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '-';
-            const chargeDisplay = txType === 'CHARGE' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
-            const paymentDisplay = txType === 'PAYMENT' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
+            const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '';
+
+            const typeBadgeClass = txType === 'PAYMENT' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-indigo-100 text-indigo-800 border-indigo-200';
+            const typeDisplay = `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${typeBadgeClass}">${txType}</span>`;
+
+            const qtyDisplay = txType === 'PAYMENT' ? '-' : qty;
+            const unitPriceDisplay = txType === 'PAYMENT' ? '-' : `Rp ${unitPrice.toLocaleString('id-ID')}`;
+            const totalDisplay = `Rp ${total.toLocaleString('id-ID')}`;
 
             let rowClass = isVoided ? 'bg-red-50/50 text-slate-400 line-through' : 'hover:bg-slate-50 text-slate-700';
             let desc = tx.description || '-';
@@ -1055,14 +1121,12 @@ export function renderMasterFolioTransactions() {
 
             return `
                 <tr class="${rowClass} border-b border-slate-100 transition-colors text-xs">
-                    <td class="p-3 text-center">
-                        <input type="checkbox" value="${tx.id}" class="master-folio-tx-cb rounded border-slate-300 text-indigo-500 focus:ring-indigo-400 cursor-pointer" ${isVoided ? 'disabled' : ''}>
-                    </td>
                     <td class="p-3 font-medium whitespace-nowrap text-slate-500">${dateStr}</td>
-                    <td class="p-3 font-semibold text-slate-800">${desc}</td>
-                    <td class="p-3 text-center">${categoryBadge}</td>
-                    <td class="p-3 text-right font-medium text-slate-900">${chargeDisplay}</td>
-                    <td class="p-3 text-right font-medium text-emerald-600">${paymentDisplay}</td>
+                    <td class="p-3 text-center">${typeDisplay}</td>
+                    <td class="p-3 font-semibold text-slate-800">${desc} ${categoryBadge}</td>
+                    <td class="p-3 text-center font-medium text-slate-700">${qtyDisplay}</td>
+                    <td class="p-3 text-right font-medium text-slate-700">${unitPriceDisplay}</td>
+                    <td class="p-3 text-right font-bold ${txType === 'PAYMENT' ? 'text-emerald-600' : 'text-slate-900'}">${totalDisplay}</td>
                     <td class="p-3 text-center">${actionBtns}</td>
                 </tr>
             `;
@@ -2226,25 +2290,25 @@ export function handlePrintFolio() {
     let totalPayments = 0;
 
     const rowsHtml = currentFolioTransactions.map(tx => {
-        const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
-        const amount = Number(tx.amount || 0);
+        const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
         const isVoided = tx.is_voided === true;
 
         if (!isVoided) {
-            if (txType === 'CHARGE') totalCharges += amount;
-            else if (txType === 'PAYMENT') totalPayments += amount;
+            if (txType === 'CHARGE' || catUpper.includes('ROOM')) totalCharges += total;
+            else if (txType === 'PAYMENT') totalPayments += total;
         }
 
         const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
-        const chargeDisplay = txType === 'CHARGE' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
-        const paymentDisplay = txType === 'PAYMENT' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
+        const chargeDisplay = (txType === 'CHARGE' || catUpper.includes('ROOM')) ? `Rp ${total.toLocaleString('id-ID')}` : '-';
+        const paymentDisplay = txType === 'PAYMENT' ? `Rp ${total.toLocaleString('id-ID')}` : '-';
         const desc = isVoided ? `<span style="text-decoration: line-through; color: #94a3b8;">${tx.description || '-'} [VOID]</span>` : (tx.description || '-');
+        const qtyDisplay = txType === 'PAYMENT' ? '-' : qty;
 
         return `
             <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
                 <td style="padding: 6px 8px;">${dateStr}</td>
                 <td style="padding: 6px 8px;">${desc}</td>
-                <td style="padding: 6px 8px; text-align: center;">${txType === 'CHARGE' ? (tx.qty || 1) : '-'}</td>
+                <td style="padding: 6px 8px; text-align: center;">${qtyDisplay}</td>
                 <td style="padding: 6px 8px; text-align: right;">${chargeDisplay}</td>
                 <td style="padding: 6px 8px; text-align: right;">${paymentDisplay}</td>
             </tr>
@@ -2497,25 +2561,25 @@ export async function handlePrintMasterFolio() {
     let totalPayments = 0;
 
     const rowsHtml = (masterTxList || []).map(tx => {
-        const txType = (tx.transaction_type || 'CHARGE').toUpperCase();
-        const amount = Number(tx.amount || 0);
+        const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
         const isVoided = tx.is_voided === true;
 
         if (!isVoided) {
-            if (txType === 'CHARGE') totalCharges += amount;
-            else if (txType === 'PAYMENT') totalPayments += amount;
+            if (txType === 'CHARGE' || catUpper.includes('ROOM')) totalCharges += total;
+            else if (txType === 'PAYMENT') totalPayments += total;
         }
 
         const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
-        const chargeDisplay = txType === 'CHARGE' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
-        const paymentDisplay = txType === 'PAYMENT' ? `Rp ${amount.toLocaleString('id-ID')}` : '-';
+        const chargeDisplay = (txType === 'CHARGE' || catUpper.includes('ROOM')) ? `Rp ${total.toLocaleString('id-ID')}` : '-';
+        const paymentDisplay = txType === 'PAYMENT' ? `Rp ${total.toLocaleString('id-ID')}` : '-';
         const desc = isVoided ? `<span style="text-decoration: line-through; color: #94a3b8;">${tx.description || '-'} [VOID]</span>` : (tx.description || '-');
+        const qtyDisplay = txType === 'PAYMENT' ? '-' : qty;
 
         return `
             <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
                 <td style="padding: 6px 8px;">${dateStr}</td>
                 <td style="padding: 6px 8px;">${desc}</td>
-                <td style="padding: 6px 8px; text-align: center;">${txType === 'CHARGE' ? (tx.qty || 1) : '-'}</td>
+                <td style="padding: 6px 8px; text-align: center;">${qtyDisplay}</td>
                 <td style="padding: 6px 8px; text-align: right;">${chargeDisplay}</td>
                 <td style="padding: 6px 8px; text-align: right;">${paymentDisplay}</td>
             </tr>
