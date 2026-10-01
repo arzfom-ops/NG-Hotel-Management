@@ -184,6 +184,9 @@ export async function handleExecuteNightAudit() {
         showToast('Night Audit Berhasil!', 'success');
 
         // Refresh global hotel business date
+        if (data && data.new_business_date && typeof window !== 'undefined') {
+            window.currentHotelDate = data.new_business_date;
+        }
         if (typeof window !== 'undefined' && typeof window.getHotelBusinessDate === 'function') {
             await window.getHotelBusinessDate();
         }
@@ -243,9 +246,22 @@ export function openEodReportModal(reportData) {
     if (modal) modal.classList.remove('hidden');
 }
 
-export function closeEodReportModal() {
+export async function closeEodReportModal() {
     const modal = document.getElementById('modal-eod-report');
     if (modal) modal.classList.add('hidden');
+
+    if (typeof window !== 'undefined') {
+        if (typeof window.getHotelBusinessDate === 'function') {
+            await window.getHotelBusinessDate();
+        }
+        if (typeof window.fetchHotelBusinessDate === 'function') {
+            await window.fetchHotelBusinessDate();
+        }
+        if (typeof window.renderCurrentModule === 'function') {
+            window.renderCurrentModule();
+        }
+        window.location.reload();
+    }
 }
 
 /**
