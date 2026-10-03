@@ -1606,6 +1606,8 @@ export async function handleSaveFolioTransaction(e) {
                 credit: txType === 'PAYMENT' ? amount : 0,
                 reference_number: referenceNumber,
                 transaction_date: new Date().toISOString(),
+                hotel_business_date: window.currentHotelDate || new Date().toISOString().split('T')[0],
+                cashier_session_id: localStorage.getItem('activeShiftId') || null,
                 created_by: currentUser
             };
 

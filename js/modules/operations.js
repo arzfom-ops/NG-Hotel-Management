@@ -720,7 +720,9 @@ export async function handleDepositSettlement(settlementType) {
             transaction_type: 'CHARGE',
             description: description,
             amount: depositAmt,
-            transaction_date: new Date().toISOString()
+            transaction_date: new Date().toISOString(),
+            hotel_business_date: window.currentHotelDate || new Date().toISOString().split('T')[0],
+            cashier_session_id: localStorage.getItem('activeShiftId') || null
         };
 
         const { error: txErr } = await supabaseClient

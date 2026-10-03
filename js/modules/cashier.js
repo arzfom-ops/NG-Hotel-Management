@@ -376,16 +376,15 @@ export async function handleCloseCashierShiftSubmit(e) {
         /**
          * PERFORMANCE NOTE:
          * Pastikan tabel folio_transactions memiliki composite index:
-         * CREATE INDEX idx_folio_tx_shift ON folio_transactions (cashier_shift_id, created_at);
-         * CREATE INDEX idx_folio_tx_user_date ON folio_transactions (user_id, business_date);
+         * CREATE INDEX idx_folio_tx_shift ON folio_transactions (cashier_session_id, created_at);
+         * CREATE INDEX idx_folio_tx_user_date ON folio_transactions (user_id, hotel_business_date);
          * Tanpa index ini, query agregasi saat close shift akan lambat seiring bertambahnya data.
          */
-        // Query transactions created during this shift session
+        // Query transactions for this cashier session using cashier_session_id
         const { data: txList, error: txErr } = await supabaseClient
             .from('folio_transactions')
             .select('*, payment_methods(id, name, type, method_type)')
-            .gte('created_at', openedAt)
-            .lte('created_at', closedAt);
+            .eq('cashier_session_id', session.id);
 
         if (txErr) throw txErr;
 
@@ -463,19 +462,15 @@ export async function renderClosedShiftReportState() {
     const openedTime = session.opened_at ? new Date(session.opened_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
     const closedTime = session.closed_at ? new Date(session.closed_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
 
-    // Fetch transactions during this session
+    // Fetch transactions for this session using cashier_session_id
     let txList = [];
     try {
-        const query = supabaseClient
+        const { data, error } = await supabaseClient
             .from('folio_transactions')
             .select('*, payment_methods(id, name, type, method_type), reservations(id, reservation_number, guest_name, booker_name, guest_card_files!fk_reservations_guest_card(full_name))')
-            .gte('created_at', session.opened_at);
+            .eq('cashier_session_id', session.id)
+            .order('created_at', { ascending: true });
 
-        if (session.closed_at) {
-            query.lte('created_at', session.closed_at);
-        }
-
-        const { data, error } = await query.order('created_at', { ascending: true });
         if (!error && data) txList = data;
     } catch (e) {
         console.error('Error fetching transactions for cashier report:', e);
