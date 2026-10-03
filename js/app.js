@@ -254,7 +254,9 @@ import {
     printEodReport,
     fetchNightAuditHistory,
     openEodReportFromHistory,
-    renderNightAudit
+    renderNightAudit,
+    fetchEodCashierReconciliation,
+    renderCashierReconciliationSummaryUI
 } from './modules/night_audit.js';
 
 import {
@@ -891,6 +893,8 @@ if (typeof window !== 'undefined') {
     window.fetchNightAuditHistory = fetchNightAuditHistory;
     window.openEodReportFromHistory = openEodReportFromHistory;
     window.renderNightAudit = renderNightAudit;
+    window.fetchEodCashierReconciliation = fetchEodCashierReconciliation;
+    window.renderCashierReconciliationSummaryUI = renderCashierReconciliationSummaryUI;
 
     // Shift & Settlement Module
     window.getActiveShift = getActiveShift;

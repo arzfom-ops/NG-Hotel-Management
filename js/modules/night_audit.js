@@ -51,10 +51,16 @@ export async function fetchPreAuditCheck() {
         const dateEl = document.getElementById('na-current-date');
         const arrEl = document.getElementById('na-pending-arrivals');
         const depEl = document.getElementById('na-pending-departures');
+        const openShiftEl = document.getElementById('na-open-shifts');
+
         const arrCard = document.getElementById('card-pending-arrivals');
         const depCard = document.getElementById('card-pending-departures');
+        const openShiftCard = document.getElementById('card-open-shifts');
+
         const arrLink = document.getElementById('link-pending-arrivals');
         const depLink = document.getElementById('link-pending-departures');
+        const openShiftLink = document.getElementById('link-open-shifts');
+
         const banner = document.getElementById('na-status-banner');
         const bannerMsg = document.getElementById('na-status-message');
         const runBtn = document.getElementById('btn-run-night-audit');
@@ -77,10 +83,26 @@ export async function fetchPreAuditCheck() {
         currentPreAuditCheck = data || {};
 
         const currentDateStr = data?.current_hotel_date || formatDateISO(new Date());
+
+        // Check open cashier sessions for currentDateStr
+        let openShifts = [];
+        try {
+            const { data: shiftData, error: shiftErr } = await supabaseClient
+                .from('cashier_sessions')
+                .select('*')
+                .eq('business_date', currentDateStr)
+                .eq('status', 'OPEN');
+            if (!shiftErr && shiftData) {
+                openShifts = shiftData;
+            }
+        } catch (sErr) {
+            console.warn('Error querying cashier_sessions in pre-audit check:', sErr);
+        }
+
         const pendingArrivals = Number(data?.pending_arrivals) || 0;
         const pendingDepartures = Number(data?.pending_departures) || 0;
+        const openShiftCount = openShifts.length;
         const isRunning = Boolean(data?.is_audit_running);
-        const canProceed = Boolean(data?.can_proceed) && pendingArrivals === 0 && pendingDepartures === 0 && !isRunning;
 
         // Render Current Business Date
         if (dateEl) dateEl.textContent = currentDateStr;
@@ -109,11 +131,36 @@ export async function fetchPreAuditCheck() {
             if (depLink) depLink.classList.add('hidden');
         }
 
+        // Render Open Shifts
+        if (openShiftEl) openShiftEl.textContent = `${openShiftCount} Shift`;
+        if (openShiftCount > 0) {
+            if (openShiftEl) openShiftEl.className = "text-2xl font-bold text-red-600";
+            if (openShiftCard) openShiftCard.className = "p-4 rounded-xl bg-red-50 border border-red-200 flex flex-col justify-between";
+            if (openShiftLink) openShiftLink.classList.remove('hidden');
+        } else {
+            if (openShiftEl) openShiftEl.className = "text-2xl font-bold text-slate-800";
+            if (openShiftCard) openShiftCard.className = "p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between";
+            if (openShiftLink) openShiftLink.classList.add('hidden');
+        }
+
         // Render Status Banner & Action Button State
-        if (pendingArrivals > 0 || pendingDepartures > 0 || isRunning) {
+        const blockingReasons = [];
+        if (pendingArrivals > 0) blockingReasons.push(`${pendingArrivals} Check-In gantung`);
+        if (pendingDepartures > 0) blockingReasons.push(`${pendingDepartures} Check-Out gantung`);
+        if (openShiftCount > 0) {
+            const shiftUsers = openShifts.map(s => s.user_name || 'Kasir').join(', ');
+            blockingReasons.push(`Shift kasir masih terbuka (${shiftUsers})`);
+        }
+        if (isRunning) blockingReasons.push("Proses audit sedang berjalan");
+
+        if (blockingReasons.length > 0) {
             if (banner) banner.className = "p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 mb-6 text-sm flex items-start gap-3";
             if (bannerMsg) {
-                bannerMsg.textContent = "Night Audit diblokir. Harap selesaikan seluruh proses Check-In dan Check-Out gantung terlebih dahulu.";
+                if (openShiftCount > 0) {
+                    bannerMsg.innerHTML = `<strong>Night Audit diblokir!</strong> Shift masih terbuka! Harap tutup semua shift sebelum audit. <br><span class="text-xs text-red-600 mt-1 block">Detail kendala: ${blockingReasons.join('; ')}.</span>`;
+                } else {
+                    bannerMsg.textContent = `Night Audit diblokir. Harap selesaikan seluruh prasyarat terlebih dahulu: ${blockingReasons.join('; ')}.`;
+                }
             }
             if (runBtn) {
                 runBtn.disabled = true;
@@ -122,7 +169,7 @@ export async function fetchPreAuditCheck() {
         } else {
             if (banner) banner.className = "p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 mb-6 text-sm flex items-start gap-3";
             if (bannerMsg) {
-                bannerMsg.textContent = "Seluruh prasyarat terpenuhi. Sistem siap untuk menjalankan proses Night Audit dan penutupan tanggal bisnis.";
+                bannerMsg.textContent = "Seluruh prasyarat (Check-In, Check-Out, dan Shift Kasir Closed) terpenuhi. Sistem siap untuk menjalankan proses Night Audit dan penutupan tanggal bisnis.";
             }
             if (runBtn) {
                 runBtn.disabled = false;
@@ -214,9 +261,175 @@ export async function executeNightAudit(auditDateStr) {
 }
 
 /**
+ * Helper to classify folio transaction into categories
+ */
+
+function classifyTransactionHelper(tx) {
+    const isVoid = tx.is_void === true || tx.is_voided === true;
+    if (isVoid) {
+        return { categoryType: 'VOID', amount: parseFloat(tx.amount || tx.total || tx.charge || tx.credit || 0) };
+    }
+
+    const catUpper = (tx.category || '').toUpperCase();
+    const txType = (tx.transaction_type || tx.type || '').toUpperCase();
+    const pmType = (tx.payment_methods?.type || tx.payment_methods?.method_type || '').toUpperCase();
+    const pmName = (tx.payment_methods?.name || '').toUpperCase();
+
+    const amount = parseFloat(tx.amount || tx.total || tx.charge || tx.credit || 0);
+
+    if (txType === 'PAID_OUT' || catUpper === 'PAID_OUT') {
+        return { categoryType: 'PAID_OUT', amount };
+    }
+
+    if (txType === 'PAYMENT' || ['PAYMENT', 'DEPOSIT', 'CASH', 'BANK_TRANSFER', 'CREDIT_CARD', 'CITY_LEDGER', 'AR'].includes(catUpper)) {
+        if (catUpper === 'BANK_TRANSFER' || pmType.includes('TRANSFER') || pmType.includes('BANK') || pmName.includes('TRANSFER') || pmName.includes('BANK')) {
+            return { categoryType: 'BANK_TRANSFER', amount };
+        }
+        if (catUpper === 'CREDIT_CARD' || pmType.includes('CARD') || pmType.includes('CREDIT') || pmType.includes('EDC') || pmName.includes('CARD') || pmName.includes('CREDIT') || pmName.includes('EDC')) {
+            return { categoryType: 'CREDIT_CARD', amount };
+        }
+        if (catUpper === 'CITY_LEDGER' || catUpper === 'AR' || pmType.includes('CITY') || pmType.includes('LEDGER') || pmName.includes('CITY') || pmName.includes('LEDGER')) {
+            return { categoryType: 'CITY_LEDGER', amount };
+        }
+        return { categoryType: 'CASH_PAYMENT', amount };
+    }
+
+    return { categoryType: 'OTHER', amount: 0 };
+}
+
+/**
+ * Fetch and aggregate Cashier Reconciliation Summary for a given business date
+ */
+export async function fetchEodCashierReconciliation(businessDate) {
+    try {
+        // 1. Fetch CLOSED cashier sessions for this business date
+        const { data: sessions, error: sessErr } = await supabaseClient
+            .from('cashier_sessions')
+            .select('*')
+            .eq('business_date', businessDate)
+            .eq('status', 'CLOSED');
+
+        if (sessErr) {
+            console.error('Error fetching cashier sessions for EOD reconciliation:', sessErr);
+        }
+
+        const closedSessions = sessions || [];
+
+        let totalExpectedCash = 0;
+        let totalDeclaredCash = 0;
+        let totalOverShort = 0;
+        let totalRemittance = 0;
+        let totalOpeningFloat = 0;
+        let totalSystemNetCash = 0;
+
+        closedSessions.forEach(s => {
+            totalExpectedCash += Number(s.system_expected_cash || 0);
+            totalDeclaredCash += Number(s.declared_total_cash || 0);
+            totalOverShort += Number(s.over_short || 0);
+            totalRemittance += Number(s.remittance_amount || 0);
+            totalOpeningFloat += Number(s.opening_float || 0);
+            totalSystemNetCash += Number(s.system_net_cash || 0);
+        });
+
+        const status = totalOverShort === 0 ? 'BALANCED' : 'VARIANCE_DETECTED';
+
+        // Session time intervals for checking assigned vs unassigned transactions
+        const sessionTimeRanges = closedSessions.map(s => ({
+            opened_at: s.opened_at,
+            closed_at: s.closed_at
+        })).filter(r => r.opened_at && r.closed_at);
+
+        // 2. Fetch folio transactions to classify and check for unassigned/orphan tx
+        const { data: allTx, error: txErr } = await supabaseClient
+            .from('folio_transactions')
+            .select('*, payment_methods(id, name, type, method_type)')
+            .eq('business_date', businessDate);
+
+        if (txErr) {
+            console.error('Error fetching folio transactions for EOD reconciliation:', txErr);
+        }
+
+        const txList = allTx || [];
+
+        let cashReceived = 0;
+        let nonCashReceived = 0;
+        let cityLedger = 0;
+        let paidOut = 0;
+        let voidsCount = 0;
+        let voidsAmount = 0;
+
+        let unassignedCount = 0;
+        let unassignedTotalAmount = 0;
+
+        txList.forEach(tx => {
+            const txCreatedIso = tx.created_at ? tx.created_at.split('T')[0] : null;
+            const isDateMatch = tx.business_date === businessDate || txCreatedIso === businessDate;
+
+            // Check if tx falls within any closed shift timestamp range
+            let isAssignedToSession = false;
+            if (tx.created_at && sessionTimeRanges.length > 0) {
+                const txTime = new Date(tx.created_at).getTime();
+                isAssignedToSession = sessionTimeRanges.some(r => {
+                    const openTime = new Date(r.opened_at).getTime();
+                    const closeTime = new Date(r.closed_at).getTime();
+                    return txTime >= openTime && txTime <= closeTime;
+                });
+            }
+
+            if (isAssignedToSession) {
+                const classified = classifyTransactionHelper(tx);
+                if (classified.categoryType === 'VOID') {
+                    voidsCount++;
+                    voidsAmount += classified.amount;
+                } else if (classified.categoryType === 'PAID_OUT') {
+                    paidOut += classified.amount;
+                } else if (classified.categoryType === 'CASH_PAYMENT') {
+                    cashReceived += classified.amount;
+                } else if (classified.categoryType === 'BANK_TRANSFER' || classified.categoryType === 'CREDIT_CARD') {
+                    nonCashReceived += classified.amount;
+                } else if (classified.categoryType === 'CITY_LEDGER') {
+                    cityLedger += classified.amount;
+                }
+            } else if (isDateMatch) {
+                // Relevant to today's date but not assigned to any closed session interval
+                unassignedCount++;
+                unassignedTotalAmount += Number(tx.amount || tx.total || tx.charge || tx.credit || 0);
+            }
+        });
+
+        return {
+            totalExpectedCash,
+            totalDeclaredCash,
+            totalOverShort,
+            totalRemittance,
+            totalOpeningFloat,
+            totalSystemNetCash,
+            status,
+            closedSessionsCount: closedSessions.length,
+            closedSessions,
+            breakdown: {
+                cashReceived,
+                nonCashReceived,
+                cityLedger,
+                paidOut,
+                voidsCount,
+                voidsAmount
+            },
+            unassignedTransactions: {
+                count: unassignedCount,
+                totalAmount: unassignedTotalAmount
+            }
+        };
+    } catch (err) {
+        console.error('Exception in fetchEodCashierReconciliation:', err);
+        return null;
+    }
+}
+
+/**
  * EOD Flash Report Modal Management
  */
-export function openEodReportModal(reportData) {
+export async function openEodReportModal(reportData) {
     if (!reportData) return;
 
     currentEodReportData = reportData;
@@ -242,8 +455,93 @@ export function openEodReportModal(reportData) {
     if (revEl) revEl.textContent = formatCurrency(roomRevenue);
     if (taxEl) taxEl.textContent = formatCurrency(taxService);
 
+    // Fetch and render Cashier Reconciliation Summary
+    const reconc = await fetchEodCashierReconciliation(businessDate);
+    if (reconc) {
+        currentEodReportData.reconciliation = reconc;
+        renderCashierReconciliationSummaryUI(reconc);
+    }
+
     const modal = document.getElementById('modal-eod-report');
     if (modal) modal.classList.remove('hidden');
+}
+
+/**
+ * Render Cashier Reconciliation Summary into EOD Modal UI
+ */
+export function renderCashierReconciliationSummaryUI(reconc) {
+    const container = document.getElementById('eod-cashier-reconciliation-container');
+    if (!container || !reconc) return;
+
+    const isBalanced = reconc.status === 'BALANCED';
+    const statusBadge = isBalanced
+        ? `<span class="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">BALANCED</span>`
+        : `<span class="px-2.5 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-300">VARIANCE DETECTED</span>`;
+
+    const overShortText = reconc.totalOverShort === 0
+        ? `<span class="text-emerald-700 font-bold">Rp 0 (Pass)</span>`
+        : (reconc.totalOverShort < 0
+            ? `<span class="text-rose-700 font-bold">-${formatCurrency(Math.abs(reconc.totalOverShort))} (Short)</span>`
+            : `<span class="text-amber-700 font-bold">+${formatCurrency(reconc.totalOverShort)} (Over)</span>`);
+
+    const unassignedAlert = reconc.unassignedTransactions?.count > 0 ? `
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+            <i class="ph ph-warning-circle text-lg text-amber-600 shrink-0 mt-0.5"></i>
+            <div>
+                <strong class="font-bold">Peringatan Transaksi Tanpa Session (Unassigned Transactions):</strong>
+                <p class="mt-0.5">Terdapat <span class="font-bold text-amber-900">${reconc.unassignedTransactions.count} transaksi</span> senilai <span class="font-bold text-amber-900">${formatCurrency(reconc.unassignedTransactions.totalAmount)}</span> yang dicatat pada tanggal bisnis ini tetapi tidak terhubung ke shift kasir manapun.</p>
+            </div>
+        </div>
+    ` : '';
+
+    container.innerHTML = `
+        <div class="flex items-center justify-between border-b pb-1">
+            <h4 class="font-bold text-sm text-slate-700 uppercase tracking-wider">Cashier Reconciliation Summary</h4>
+            ${statusBadge}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span class="text-xs font-bold text-slate-500 block uppercase">Total Expected Cash</span>
+                <span class="text-lg font-black text-slate-800 font-mono mt-0.5 block">${formatCurrency(reconc.totalExpectedCash)}</span>
+                <span class="text-[10px] text-slate-400">Sum expected cash (${reconc.closedSessionsCount} closed shifts)</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span class="text-xs font-bold text-slate-500 block uppercase">Total Actual Cash Collected</span>
+                <span class="text-lg font-black text-slate-900 font-mono mt-0.5 block">${formatCurrency(reconc.totalDeclaredCash)}</span>
+                <span class="text-[10px] text-slate-400">Sum declared cash dari shift kasir</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span class="text-xs font-bold text-slate-500 block uppercase">Total Over / Short</span>
+                <div class="text-lg font-black font-mono mt-0.5">${overShortText}</div>
+                <span class="text-[10px] text-slate-400">Aggregat selisih kasir hari ini</span>
+            </div>
+        </div>
+
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+            <div class="font-bold text-slate-700 mb-2 uppercase text-[11px] tracking-wider">Rincian Penerimaan Kasir (Closed Shifts)</div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-600">
+                <div>
+                    <span class="text-slate-400 block text-[10px] font-semibold">Cash Received</span>
+                    <strong class="text-slate-800 font-mono text-xs">${formatCurrency(reconc.breakdown.cashReceived)}</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] font-semibold">Non-Cash (Cards/Transfer)</span>
+                    <strong class="text-indigo-800 font-mono text-xs">${formatCurrency(reconc.breakdown.nonCashReceived)}</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] font-semibold">City Ledger / AR</span>
+                    <strong class="text-amber-800 font-mono text-xs">${formatCurrency(reconc.breakdown.cityLedger)}</strong>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] font-semibold">Adjustments / Voids</span>
+                    <strong class="text-rose-800 font-mono text-xs">${reconc.breakdown.voidsCount} Tx (${formatCurrency(reconc.breakdown.voidsAmount)})</strong>
+                </div>
+            </div>
+        </div>
+
+        ${unassignedAlert}
+    `;
 }
 
 export async function closeEodReportModal() {
@@ -277,6 +575,53 @@ export function printEodReport(data) {
     const roomsOccupied = report.total_occupied ?? report.total_rooms_occupied ?? 0;
     const roomRevenue = report.total_revenue ?? report.total_room_revenue ?? 0;
     const taxService = report.total_tax_service ?? 0;
+
+    const reconc = report.reconciliation || null;
+
+    let reconcHtml = '';
+    if (reconc) {
+        const isBalanced = reconc.status === 'BALANCED';
+        const statusLabel = isBalanced ? 'BALANCED' : 'VARIANCE DETECTED';
+        const overShortStr = reconc.totalOverShort === 0 ? 'Rp 0 (Pass)' : (reconc.totalOverShort < 0 ? `-${formatCurrency(Math.abs(reconc.totalOverShort))} (Short)` : `+${formatCurrency(reconc.totalOverShort)} (Over)`);
+
+        let unassignedNote = '';
+        if (reconc.unassignedTransactions?.count > 0) {
+            unassignedNote = `
+                <div style="margin-top: 10px; padding: 10px; background: #fffbebf5; border: 1px solid #fcd34d; border-radius: 6px; font-size: 11px; color: #92400e;">
+                    <strong>PERINGATAN UNASSIGNED TRANSACTIONS:</strong> Terdapat ${reconc.unassignedTransactions.count} transaksi tanpa session kasir senilai ${formatCurrency(reconc.unassignedTransactions.totalAmount)}.
+                </div>
+            `;
+        }
+
+        reconcHtml = `
+            <div class="summary-title" style="margin-top: 20px;">Cashier Reconciliation Summary (${statusLabel})</div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Expected Cash</div>
+                    <div class="metric-value">${formatCurrency(reconc.totalExpectedCash)}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Actual Cash Collected</div>
+                    <div class="metric-value">${formatCurrency(reconc.totalDeclaredCash)}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Over / Short</div>
+                    <div class="metric-value">${overShortStr}</div>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px; margin-bottom: 15px;">
+                <div style="font-weight: bold; margin-bottom: 6px; text-transform: uppercase; font-size: 11px; color: #475569;">Rincian Penerimaan Kasir (${reconc.closedSessionsCount} Closed Shift)</div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                    <div><span style="color: #64748b; font-size: 10px;">Cash Received:</span><br><strong>${formatCurrency(reconc.breakdown.cashReceived)}</strong></div>
+                    <div><span style="color: #64748b; font-size: 10px;">Non-Cash (Cards/Transfer):</span><br><strong>${formatCurrency(reconc.breakdown.nonCashReceived)}</strong></div>
+                    <div><span style="color: #64748b; font-size: 10px;">City Ledger (AR):</span><br><strong>${formatCurrency(reconc.breakdown.cityLedger)}</strong></div>
+                    <div><span style="color: #64748b; font-size: 10px;">Voids / Adjustments:</span><br><strong>${reconc.breakdown.voidsCount} Tx (${formatCurrency(reconc.breakdown.voidsAmount)})</strong></div>
+                </div>
+            </div>
+            ${unassignedNote}
+        `;
+    }
 
     const printWindow = window.open('', '_blank', 'width=800,height=900');
     if (!printWindow) {
@@ -349,6 +694,8 @@ export function printEodReport(data) {
                     <div class="metric-value">${formatCurrency(taxService)}</div>
                 </div>
             </div>
+
+            ${reconcHtml}
 
             <div class="footer">
                 Dicetak pada ${new Date().toLocaleString('id-ID')} | Dokumen Resmi Sistem PMS

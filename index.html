@@ -3104,7 +3104,7 @@
                         <i class="ph ph-clipboard-text text-amber-500"></i> Seksi A: Pre-Audit Checklist (Validasi Prasyarat)
                     </h3>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <!-- Tanggal Bisnis Saat Ini -->
                         <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
                             <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Tanggal Bisnis Saat Ini</div>
@@ -3134,6 +3134,19 @@
                             <div id="link-pending-departures" class="mt-3 hidden">
                                 <button type="button" onclick="switchView('frontdesk')" class="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-800 underline">
                                     Selesaikan di Frontdesk <i class="ph ph-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Shift Kasir Terbuka -->
+                        <div id="card-open-shifts" class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                            <div>
+                                <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Shift Kasir Terbuka (Open)</div>
+                                <div id="na-open-shifts" class="text-2xl font-bold text-slate-800">0 Shift</div>
+                            </div>
+                            <div id="link-open-shifts" class="mt-3 hidden">
+                                <button type="button" onclick="switchView('cashier-report')" class="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-800 underline">
+                                    Tutup Shift Kasir <i class="ph ph-arrow-right"></i>
                                 </button>
                             </div>
                         </div>
@@ -4036,9 +4049,9 @@
 
     <!-- Modal EOD Report / Flash Report -->
     <div id="modal-eod-report" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
             <!-- Header -->
-            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
                 <div class="flex items-center gap-2">
                     <i class="ph ph-file-text text-amber-400 text-xl"></i>
                     <h3 class="font-bold text-lg">Laporan End of Day (EOD Flash Report)</h3>
@@ -4049,7 +4062,7 @@
             </div>
 
             <!-- Printable EOD Content -->
-            <div id="eod-report-content" class="p-6 overflow-y-auto space-y-6 text-slate-800">
+            <div id="eod-report-content" class="p-6 flex-1 overflow-y-auto space-y-6 text-slate-800">
                 <div class="text-center border-b border-slate-200 pb-4">
                     <h2 class="text-xl font-bold uppercase tracking-wide text-primary">Laporan Flash Night Audit</h2>
                     <p class="text-slate-500 text-sm">Property Management System - End of Day Summary</p>
@@ -4091,6 +4104,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Cashier Reconciliation Summary Section -->
+                <div id="eod-cashier-reconciliation-container" class="space-y-3"></div>
 
                 <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 space-y-1">
                     <div>* Seluruh transaksi Room Charge telah diposting secara otomatis ke Folio masing-masing reservasi aktif.</div>
