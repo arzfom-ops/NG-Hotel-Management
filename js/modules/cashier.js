@@ -373,6 +373,13 @@ export async function handleCloseCashierShiftSubmit(e) {
         const openedAt = session.opened_at;
         const closedAt = new Date().toISOString();
 
+        /**
+         * PERFORMANCE NOTE:
+         * Pastikan tabel folio_transactions memiliki composite index:
+         * CREATE INDEX idx_folio_tx_shift ON folio_transactions (cashier_shift_id, created_at);
+         * CREATE INDEX idx_folio_tx_user_date ON folio_transactions (user_id, business_date);
+         * Tanpa index ini, query agregasi saat close shift akan lambat seiring bertambahnya data.
+         */
         // Query transactions created during this shift session
         const { data: txList, error: txErr } = await supabaseClient
             .from('folio_transactions')
@@ -432,8 +439,13 @@ export async function handleCloseCashierShiftSubmit(e) {
     } catch (err) {
         console.error('Error closing cashier shift:', err);
         alert('Gagal menutup shift kasir: ' + err.message);
-    } finally {
         if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="ph ph-check-circle text-base"></i> Submit Tutup Shift`;
+        }
+    } finally {
+        // Ensure button state is restored if modal remains open
+        if (btn && currentCashierSession?.status === 'OPEN') {
             btn.disabled = false;
             btn.innerHTML = `<i class="ph ph-check-circle text-base"></i> Submit Tutup Shift`;
         }

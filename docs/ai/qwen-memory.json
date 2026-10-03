@@ -1,5 +1,6 @@
 {
   "project_name": "Hotel PMS",
+  "status": "MERGED",
   "modules": {
     "cashier.js": {
       "path": "js/modules/cashier.js",
@@ -47,6 +48,12 @@
     },
     "paid_out_handling_strategy": {
       "description": "Paid Out transactions (transaction_type = 'PAID_OUT' or category = 'PAID_OUT') represent cash drawer disbursements (e.g. staff expense). They reduce physical cash in drawer (Expected Cash) but do not represent hotel sales revenue. They are listed in Section 1 (Cash Movement) as Outflows."
+    },
+    "close_shift_debouncing": {
+      "description": "Close Shift submission immediately disables #btnSubmitCloseShift with a loading spinner to prevent race conditions or duplicate submissions. Re-enables on error or re-open."
+    },
+    "indexing_hints": {
+      "description": "Added JSDoc performance commentary in js/modules/cashier.js detailing recommended composite indexes on folio_transactions: idx_folio_tx_shift (cashier_shift_id, created_at) and idx_folio_tx_user_date (user_id, business_date)."
     }
   }
 }
