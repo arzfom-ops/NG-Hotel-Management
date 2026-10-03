@@ -89,7 +89,7 @@ export async function fetchPreAuditCheck() {
         try {
             const { data: shiftData, error: shiftErr } = await supabaseClient
                 .from('cashier_sessions')
-                .select('*')
+                .select('id, user_id, user_name')
                 .eq('business_date', currentDateStr)
                 .eq('status', 'OPEN');
             if (!shiftErr && shiftData) {
@@ -302,11 +302,12 @@ function classifyTransactionHelper(tx) {
  */
 export async function fetchEodCashierReconciliation(businessDate) {
     try {
+        const currentBusinessDate = typeof businessDate === 'string' ? businessDate : formatDateISO(businessDate || new Date());
         // 1. Fetch CLOSED cashier sessions for this business date
         const { data: sessions, error: sessErr } = await supabaseClient
             .from('cashier_sessions')
             .select('*')
-            .eq('business_date', businessDate)
+            .eq('business_date', currentBusinessDate)
             .eq('status', 'CLOSED');
 
         if (sessErr) {
@@ -324,8 +325,8 @@ export async function fetchEodCashierReconciliation(businessDate) {
 
         closedSessions.forEach(s => {
             totalExpectedCash += Number(s.system_expected_cash || 0);
-            totalDeclaredCash += Number(s.declared_total_cash || 0);
-            totalOverShort += Number(s.over_short || 0);
+            totalDeclaredCash += Number(s.declared_total_cash || s.closing_declared_cash || 0);
+            totalOverShort += Number(s.over_short || s.over_short_amount || 0);
             totalRemittance += Number(s.remittance_amount || 0);
             totalOpeningFloat += Number(s.opening_float || 0);
             totalSystemNetCash += Number(s.system_net_cash || 0);
@@ -339,14 +340,35 @@ export async function fetchEodCashierReconciliation(businessDate) {
             closed_at: s.closed_at
         })).filter(r => r.opened_at && r.closed_at);
 
-        // 2. Fetch folio transactions to classify and check for unassigned/orphan tx
-        const { data: allTx, error: txErr } = await supabaseClient
+        // 2. Fetch folio transactions filtering by hotel_business_date and inner joining cashier_sessions
+        let allTx = [];
+        const { data: txData, error: txErr } = await supabaseClient
             .from('folio_transactions')
-            .select('*, payment_methods(id, name, type, method_type)')
-            .eq('business_date', businessDate);
+            .select(`
+                *,
+                payment_methods(name),
+                cashier_sessions!inner(status, id, opening_float, system_expected_cash, closing_declared_cash, over_short_amount)
+            `)
+            .eq('hotel_business_date', currentBusinessDate)
+            .eq('cashier_sessions.status', 'CLOSED')
+            .order('transaction_date', { ascending: true });
 
         if (txErr) {
             console.error('Error fetching folio transactions for EOD reconciliation:', txErr);
+            // Fallback order by created_at if transaction_date order fails
+            const { data: fallbackData } = await supabaseClient
+                .from('folio_transactions')
+                .select(`
+                    *,
+                    payment_methods(name),
+                    cashier_sessions!inner(status, id, opening_float, system_expected_cash, closing_declared_cash, over_short_amount)
+                `)
+                .eq('hotel_business_date', currentBusinessDate)
+                .eq('cashier_sessions.status', 'CLOSED')
+                .order('created_at', { ascending: true });
+            if (fallbackData) allTx = fallbackData;
+        } else {
+            allTx = txData || [];
         }
 
         const txList = allTx || [];
@@ -363,7 +385,7 @@ export async function fetchEodCashierReconciliation(businessDate) {
 
         txList.forEach(tx => {
             const txCreatedIso = tx.created_at ? tx.created_at.split('T')[0] : null;
-            const isDateMatch = tx.business_date === businessDate || txCreatedIso === businessDate;
+            const isDateMatch = tx.hotel_business_date === currentBusinessDate || txCreatedIso === currentBusinessDate;
 
             // Check if tx falls within any closed shift timestamp range
             let isAssignedToSession = false;

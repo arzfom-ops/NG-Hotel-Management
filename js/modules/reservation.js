@@ -2762,7 +2762,9 @@ export async function handleSaveReservation(event) {
                         description: 'Deposit',
                         amount: d.amount,
                         payment_method_id: d.payment_method_id,
-                        transaction_date: d.transaction_date || new Date().toISOString()
+                        transaction_date: d.transaction_date || new Date().toISOString(),
+                        hotel_business_date: window.currentHotelDate || new Date().toISOString().split('T')[0],
+                        cashier_session_id: localStorage.getItem('activeShiftId') || null
                     }));
                     await supabaseClient.from('folio_transactions').insert(txPayloads);
                 }
@@ -2854,7 +2856,9 @@ export async function handleSaveReservation(event) {
                         description: 'Deposit',
                         amount: d.amount,
                         payment_method_id: d.payment_method_id,
-                        transaction_date: d.transaction_date || new Date().toISOString()
+                        transaction_date: d.transaction_date || new Date().toISOString(),
+                        hotel_business_date: window.currentHotelDate || new Date().toISOString().split('T')[0],
+                        cashier_session_id: localStorage.getItem('activeShiftId') || null
                     }));
                     await supabaseClient.from('folio_transactions').insert(txPayloads);
                 }
