@@ -1,5 +1,5 @@
 import { supabaseClient } from '../config/supabase.js';
-import { formatCurrency, formatRupiah } from '../utils/formatters.js';
+import { formatCurrency, formatRupiah, formatDateISO } from '../utils/formatters.js';
 
 /**
  * Fetch Daily Revenue Report from Supabase RPC rpc_get_daily_revenue_report
@@ -14,12 +14,13 @@ export async function fetchDailyRevenueReport(selectedDate) {
     }
 
     if (!targetDate) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const year = yesterday.getFullYear();
-        const month = String(yesterday.getMonth() + 1).padStart(2, '0');
-        const day = String(yesterday.getDate()).padStart(2, '0');
-        targetDate = `${year}-${month}-${day}`;
+        if (typeof window !== 'undefined' && typeof window.getHotelBusinessDate === 'function') {
+            targetDate = await window.getHotelBusinessDate();
+        } else if (typeof window !== 'undefined' && window.currentHotelDate) {
+            targetDate = window.currentHotelDate;
+        } else {
+            targetDate = formatDateISO(new Date());
+        }
     }
 
     if (reportDateInput) {
