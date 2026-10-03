@@ -1,0 +1,52 @@
+{
+  "project_name": "Hotel PMS",
+  "modules": {
+    "cashier.js": {
+      "path": "js/modules/cashier.js",
+      "description": "Manages Cashier Shift sessions (OPEN, CLOSED), Blind Drop Denomination Settlement, Over/Short mathematical calculation, and 4-Section Cashier Shift Printable Summary Report.",
+      "functions": [
+        "fetchCurrentCashierSession",
+        "renderCashierReportView",
+        "renderOpenShiftState",
+        "handleOpenCashierShiftSubmit",
+        "renderActiveShiftState",
+        "openDenominationModal",
+        "closeDenominationModal",
+        "resetDenominationForm",
+        "calculateDenominationsTotal",
+        "handleCloseCashierShiftSubmit",
+        "renderClosedShiftReportState",
+        "classifyTransaction"
+      ]
+    },
+    "folio.js": {
+      "path": "js/modules/folio.js",
+      "description": "Manages Guest & Master Folios, Charges, Payments, Paid Out, Voided transactions with required audit trail reasons, Bill Transfers, Routing rules, and Checkouts."
+    },
+    "frontdesk.js": {
+      "path": "js/modules/frontdesk.js",
+      "description": "Frontdesk Dashboard, DataGrid, Tape Chart matrix, and Room Forecast calculations."
+    },
+    "night_audit.js": {
+      "path": "js/modules/night_audit.js",
+      "description": "End-of-day Night Audit processing, Pre-Audit checklist, EOD Flash Report generation and business date advancement."
+    }
+  },
+  "design_decisions": {
+    "blind_drop_method": {
+      "description": "During an active shift (OPEN), system expected cash totals are hidden from the cashier. Closing shift triggers Denomination Calculator modal (#modal-close-cashier-shift) where the user counts physical cash coins and notes manually. System expected cash and Over/Short are calculated only upon submission.",
+      "formula": {
+        "system_net_cash": "Total Cash Payments - Total Paid Out",
+        "system_expected_cash": "Opening Float + System Net Cash",
+        "remittance_amount": "Total Declared Cash - Petty Cash Retained",
+        "over_short": "Total Declared Cash - System Expected Cash"
+      }
+    },
+    "void_handling_strategy": {
+      "description": "Voided transactions (is_void = true or is_voided = true) require mandatory void_reason, voided_by, and voided_at. Voided amounts are excluded from Total Sales Revenue and expected drawer cash calculations, but appear in Section 4 (Voided Transactions) of the Cashier Shift Report for audit trail traceability."
+    },
+    "paid_out_handling_strategy": {
+      "description": "Paid Out transactions (transaction_type = 'PAID_OUT' or category = 'PAID_OUT') represent cash drawer disbursements (e.g. staff expense). They reduce physical cash in drawer (Expected Cash) but do not represent hotel sales revenue. They are listed in Section 1 (Cash Movement) as Outflows."
+    }
+  }
+}
