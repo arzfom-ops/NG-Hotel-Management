@@ -200,7 +200,8 @@ import {
     resetDenominationForm,
     calculateDenominationsTotal,
     handleCloseCashierShiftSubmit,
-    renderClosedShiftReportState
+    renderClosedShiftReportState,
+    classifyTransaction
 } from './modules/cashier.js';
 
 import {
@@ -923,6 +924,7 @@ if (typeof window !== 'undefined') {
     window.calculateDenominationsTotal = calculateDenominationsTotal;
     window.handleCloseCashierShiftSubmit = handleCloseCashierShiftSubmit;
     window.renderClosedShiftReportState = renderClosedShiftReportState;
+    window.classifyTransaction = classifyTransaction;
 
     // Guest Service (GCF Module)
     window.searchGuestCards = searchGuestCards;

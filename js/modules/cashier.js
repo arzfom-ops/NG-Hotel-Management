@@ -263,6 +263,43 @@ export function resetDenominationForm() {
 }
 
 /**
+ * Helper to classify transactions into Cash, Non-Cash, Paid Out, City Ledger, or Void
+ */
+export function classifyTransaction(tx) {
+    const isVoid = tx.is_void === true || tx.is_voided === true;
+    if (isVoid) {
+        return { categoryType: 'VOID', amount: parseFloat(tx.amount || tx.total || tx.charge || tx.credit || 0) };
+    }
+
+    const catUpper = (tx.category || '').toUpperCase();
+    const txType = (tx.transaction_type || tx.type || '').toUpperCase();
+    const pmType = (tx.payment_methods?.type || tx.payment_methods?.method_type || '').toUpperCase();
+    const pmName = (tx.payment_methods?.name || '').toUpperCase();
+    const descUpper = (tx.description || '').toUpperCase();
+
+    const amount = parseFloat(tx.amount || tx.total || tx.charge || tx.credit || 0);
+
+    if (txType === 'PAID_OUT' || catUpper === 'PAID_OUT') {
+        return { categoryType: 'PAID_OUT', amount };
+    }
+
+    if (txType === 'PAYMENT' || ['PAYMENT', 'DEPOSIT', 'CASH', 'BANK_TRANSFER', 'CREDIT_CARD', 'CITY_LEDGER', 'AR'].includes(catUpper)) {
+        if (catUpper === 'BANK_TRANSFER' || pmType.includes('TRANSFER') || pmType.includes('BANK') || pmName.includes('TRANSFER') || pmName.includes('BANK')) {
+            return { categoryType: 'BANK_TRANSFER', amount };
+        }
+        if (catUpper === 'CREDIT_CARD' || pmType.includes('CARD') || pmType.includes('CREDIT') || pmType.includes('EDC') || pmName.includes('CARD') || pmName.includes('CREDIT') || pmName.includes('EDC')) {
+            return { categoryType: 'CREDIT_CARD', amount };
+        }
+        if (catUpper === 'CITY_LEDGER' || catUpper === 'AR' || pmType.includes('CITY') || pmType.includes('LEDGER') || pmName.includes('CITY') || pmName.includes('LEDGER')) {
+            return { categoryType: 'CITY_LEDGER', amount };
+        }
+        return { categoryType: 'CASH_PAYMENT', amount };
+    }
+
+    return { categoryType: 'OTHER', amount: 0 };
+}
+
+/**
  * Auto-Calculate Denomination Totals
  */
 export function calculateDenominationsTotal() {
@@ -272,7 +309,11 @@ export function calculateDenominationsTotal() {
     denoms.forEach(d => {
         const input = document.getElementById(`denom-qty-${d}`);
         const totalEl = document.getElementById(`denom-total-${d}`);
-        const qty = parseInt(input?.value) || 0;
+        let qty = parseInt(input?.value) || 0;
+        if (qty < 0) {
+            qty = 0;
+            if (input) input.value = '0';
+        }
         const subtotal = d * qty;
         totalDeclared += subtotal;
 
@@ -283,7 +324,11 @@ export function calculateDenominationsTotal() {
     if (declaredTotalEl) declaredTotalEl.textContent = formatRupiah(totalDeclared);
 
     const pettyInput = document.getElementById('close-petty-retained');
-    const pettyRetained = parseFloat(pettyInput?.value) || 0;
+    let pettyRetained = parseFloat(pettyInput?.value) || 0;
+    if (pettyRetained < 0) {
+        pettyRetained = 0;
+        if (pettyInput) pettyInput.value = '0';
+    }
 
     const remittance = totalDeclared - pettyRetained;
     const remittanceEl = document.getElementById('close-remittance-amount');
@@ -341,21 +386,11 @@ export async function handleCloseCashierShiftSubmit(e) {
         let totalPaidOut = 0;
 
         (txList || []).forEach(tx => {
-            const isVoided = tx.is_void === true || tx.is_voided === true;
-            if (isVoided) return;
-
-            const catUpper = (tx.category || '').toUpperCase();
-            const txType = (tx.transaction_type || tx.type || '').toUpperCase();
-            const pmType = (tx.payment_methods?.type || tx.payment_methods?.method_type || '').toUpperCase();
-
-            const amount = parseFloat(tx.amount || tx.total || tx.charge || tx.credit || 0);
-
-            if (txType === 'PAID_OUT' || catUpper === 'PAID_OUT') {
-                totalPaidOut += amount;
-            } else if (txType === 'PAYMENT' || ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'CASH'].includes(catUpper)) {
-                if (catUpper === 'CASH' || pmType.includes('CASH') || catUpper === 'DEPOSIT') {
-                    totalCashPayments += amount;
-                }
+            const classified = classifyTransaction(tx);
+            if (classified.categoryType === 'PAID_OUT') {
+                totalPaidOut += classified.amount;
+            } else if (classified.categoryType === 'CASH_PAYMENT') {
+                totalCashPayments += classified.amount;
             }
         });
 
@@ -452,33 +487,22 @@ export async function renderClosedShiftReportState() {
     const voidedList = [];
 
     txList.forEach(tx => {
-        const isVoid = tx.is_void === true || tx.is_voided === true;
-        const amount = parseFloat(tx.amount || tx.total || tx.charge || tx.credit || 0);
-
-        if (isVoid) {
+        const classified = classifyTransaction(tx);
+        if (classified.categoryType === 'VOID') {
             voidedList.push(tx);
-            return;
-        }
-
-        const catUpper = (tx.category || '').toUpperCase();
-        const txType = (tx.transaction_type || tx.type || '').toUpperCase();
-        const pmType = (tx.payment_methods?.type || tx.payment_methods?.method_type || '').toUpperCase();
-
-        if (txType === 'PAID_OUT' || catUpper === 'PAID_OUT') {
-            totalPaidOut += amount;
-        } else if (txType === 'PAYMENT' || ['PAYMENT', 'DEPOSIT', 'CASH', 'BANK_TRANSFER', 'CREDIT_CARD'].includes(catUpper)) {
-            if (catUpper === 'BANK_TRANSFER' || pmType.includes('TRANSFER') || pmType.includes('BANK')) {
-                nonCashTransfers.push(tx);
-                totalTransfers += amount;
-            } else if (catUpper === 'CREDIT_CARD' || pmType.includes('CARD') || pmType.includes('CREDIT') || pmType.includes('EDC')) {
-                nonCashCards.push(tx);
-                totalCards += amount;
-            } else if (catUpper === 'CITY_LEDGER' || catUpper === 'AR' || pmType.includes('CITY') || pmType.includes('LEDGER')) {
-                cityLedgerArList.push(tx);
-                totalCityLedger += amount;
-            } else {
-                totalCashPayments += amount;
-            }
+        } else if (classified.categoryType === 'PAID_OUT') {
+            totalPaidOut += classified.amount;
+        } else if (classified.categoryType === 'BANK_TRANSFER') {
+            nonCashTransfers.push(tx);
+            totalTransfers += classified.amount;
+        } else if (classified.categoryType === 'CREDIT_CARD') {
+            nonCashCards.push(tx);
+            totalCards += classified.amount;
+        } else if (classified.categoryType === 'CITY_LEDGER') {
+            cityLedgerArList.push(tx);
+            totalCityLedger += classified.amount;
+        } else if (classified.categoryType === 'CASH_PAYMENT') {
+            totalCashPayments += classified.amount;
         }
     });
 
