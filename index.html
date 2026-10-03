@@ -118,6 +118,9 @@
             <!-- Reports Section -->
             <div class="pt-2 space-y-1">
                 <div class="px-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reports</div>
+                <a href="#" onclick="switchView('cashier-report')" id="nav-cashier-report" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-sm font-semibold cursor-pointer">
+                    <i class="ph ph-receipt text-xl"></i> Cashier Report
+                </a>
                 <a href="#" onclick="switchView('report-drr')" id="nav-report-drr" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-sm font-semibold cursor-pointer">
                     <i class="ph ph-chart-bar text-xl"></i> Daily Revenue Report (DRR)
                 </a>
@@ -1002,6 +1005,9 @@
                         <button type="button" onclick="openAddChargeModal()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
                             <i class="ph ph-plus-circle text-base"></i> + Add Charge
                         </button>
+                        <button type="button" onclick="openAddPaidOutModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                            <i class="ph ph-hand-coins text-base"></i> + Paid Out
+                        </button>
                         <button type="button" onclick="openAddPaymentModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
                             <i class="ph ph-plus-circle text-base"></i> + Add Payment
                         </button>
@@ -1223,6 +1229,9 @@
                     <div class="flex items-center gap-2">
                         <button type="button" onclick="openMasterAddChargeModal()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
                             <i class="ph ph-plus-circle text-base"></i> + Add Master Charge
+                        </button>
+                        <button type="button" onclick="openMasterAddPaidOutModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
+                            <i class="ph ph-hand-coins text-base"></i> + Paid Out
                         </button>
                         <button type="button" onclick="openMasterAddPaymentModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5">
                             <i class="ph ph-plus-circle text-base"></i> + Add Master Payment
@@ -3028,6 +3037,11 @@
             </div>
         </div>
 
+        <!-- Content Area: Cashier Report View -->
+        <div id="cashier-report-view" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
+            <!-- Dynamically populated via cashier.js -->
+        </div>
+
         <!-- Content Area: Cancel List View -->
         <div id="cancel-list-view" class="p-4 md:p-6 flex-1 overflow-y-auto hidden">
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 min-h-[500px] flex flex-col">
@@ -4093,6 +4107,128 @@
                     <i class="ph ph-printer text-lg"></i> Print EOD Report
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Close Shift & Denomination Calculator -->
+    <div id="modal-close-cashier-shift" class="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto transition-opacity duration-300 hidden">
+        <div class="bg-white/90 backdrop-blur-2xl border border-white/90 shadow-2xl shadow-slate-900/20 rounded-3xl p-6 sm:p-8 max-w-xl w-full mx-auto transform transition-all duration-300 relative overflow-hidden">
+
+            <!-- Header -->
+            <div class="pb-4 border-b border-slate-200/60 flex justify-between items-center shrink-0 mb-6">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="ph ph-calculator text-xl text-rose-600"></i> Denomination Calculator (Tutup Shift)
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Penghitungan Uang Fisik Kasir (Blind Drop Settlement)</p>
+                </div>
+                <button type="button" onclick="closeDenominationModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="closeShiftDenomForm" onsubmit="handleCloseCashierShiftSubmit(event)" class="space-y-4">
+                <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div class="col-span-4 text-xs font-bold text-slate-700">Rp 100.000</div>
+                        <div class="col-span-1 text-center text-xs text-slate-400 font-bold">x</div>
+                        <div class="col-span-3">
+                            <input type="number" id="denom-qty-100000" min="0" value="0" oninput="calculateDenominationsTotal()" class="w-full px-2 py-1 text-xs border border-slate-300 rounded-lg text-center font-bold">
+                        </div>
+                        <div class="col-span-4 text-right text-xs font-mono font-bold text-slate-800" id="denom-total-100000">Rp 0</div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div class="col-span-4 text-xs font-bold text-slate-700">Rp 50.000</div>
+                        <div class="col-span-1 text-center text-xs text-slate-400 font-bold">x</div>
+                        <div class="col-span-3">
+                            <input type="number" id="denom-qty-50000" min="0" value="0" oninput="calculateDenominationsTotal()" class="w-full px-2 py-1 text-xs border border-slate-300 rounded-lg text-center font-bold">
+                        </div>
+                        <div class="col-span-4 text-right text-xs font-mono font-bold text-slate-800" id="denom-total-50000">Rp 0</div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div class="col-span-4 text-xs font-bold text-slate-700">Rp 20.000</div>
+                        <div class="col-span-1 text-center text-xs text-slate-400 font-bold">x</div>
+                        <div class="col-span-3">
+                            <input type="number" id="denom-qty-20000" min="0" value="0" oninput="calculateDenominationsTotal()" class="w-full px-2 py-1 text-xs border border-slate-300 rounded-lg text-center font-bold">
+                        </div>
+                        <div class="col-span-4 text-right text-xs font-mono font-bold text-slate-800" id="denom-total-20000">Rp 0</div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div class="col-span-4 text-xs font-bold text-slate-700">Rp 10.000</div>
+                        <div class="col-span-1 text-center text-xs text-slate-400 font-bold">x</div>
+                        <div class="col-span-3">
+                            <input type="number" id="denom-qty-10000" min="0" value="0" oninput="calculateDenominationsTotal()" class="w-full px-2 py-1 text-xs border border-slate-300 rounded-lg text-center font-bold">
+                        </div>
+                        <div class="col-span-4 text-right text-xs font-mono font-bold text-slate-800" id="denom-total-10000">Rp 0</div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div class="col-span-4 text-xs font-bold text-slate-700">Rp 5.000</div>
+                        <div class="col-span-1 text-center text-xs text-slate-400 font-bold">x</div>
+                        <div class="col-span-3">
+                            <input type="number" id="denom-qty-5000" min="0" value="0" oninput="calculateDenominationsTotal()" class="w-full px-2 py-1 text-xs border border-slate-300 rounded-lg text-center font-bold">
+                        </div>
+                        <div class="col-span-4 text-right text-xs font-mono font-bold text-slate-800" id="denom-total-5000">Rp 0</div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div class="col-span-4 text-xs font-bold text-slate-700">Rp 2.000</div>
+                        <div class="col-span-1 text-center text-xs text-slate-400 font-bold">x</div>
+                        <div class="col-span-3">
+                            <input type="number" id="denom-qty-2000" min="0" value="0" oninput="calculateDenominationsTotal()" class="w-full px-2 py-1 text-xs border border-slate-300 rounded-lg text-center font-bold">
+                        </div>
+                        <div class="col-span-4 text-right text-xs font-mono font-bold text-slate-800" id="denom-total-2000">Rp 0</div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div class="col-span-4 text-xs font-bold text-slate-700">Rp 1.000</div>
+                        <div class="col-span-1 text-center text-xs text-slate-400 font-bold">x</div>
+                        <div class="col-span-3">
+                            <input type="number" id="denom-qty-1000" min="0" value="0" oninput="calculateDenominationsTotal()" class="w-full px-2 py-1 text-xs border border-slate-300 rounded-lg text-center font-bold">
+                        </div>
+                        <div class="col-span-4 text-right text-xs font-mono font-bold text-slate-800" id="denom-total-1000">Rp 0</div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div class="col-span-4 text-xs font-bold text-slate-700">Rp 500 / Koin</div>
+                        <div class="col-span-1 text-center text-xs text-slate-400 font-bold">x</div>
+                        <div class="col-span-3">
+                            <input type="number" id="denom-qty-500" min="0" value="0" oninput="calculateDenominationsTotal()" class="w-full px-2 py-1 text-xs border border-slate-300 rounded-lg text-center font-bold">
+                        </div>
+                        <div class="col-span-4 text-right text-xs font-mono font-bold text-slate-800" id="denom-total-500">Rp 0</div>
+                    </div>
+                </div>
+
+                <!-- Totals Grid -->
+                <div class="p-4 bg-slate-100/90 rounded-2xl border border-slate-200 space-y-2 text-xs">
+                    <div class="flex justify-between items-center font-bold text-slate-800">
+                        <span>Total Declared Cash (Uang Fisik):</span>
+                        <span id="close-total-declared" class="font-extrabold text-slate-900 font-mono text-base">Rp 0</span>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-200">
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Petty Cash Retained (Modal Ditinggal di Laci)</label>
+                        <input type="number" id="close-petty-retained" min="0" value="0" step="any" oninput="calculateDenominationsTotal()" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold focus:outline-none focus:border-primary">
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-200 font-bold text-slate-900">
+                        <span>Remittance (Uang Disetor ke Akunting):</span>
+                        <span id="close-remittance-amount" class="text-lg font-extrabold text-emerald-600 font-mono">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeDenominationModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" id="btnSubmitCloseShift" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+                        <i class="ph ph-check-circle text-base"></i> Submit Tutup Shift
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
