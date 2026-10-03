@@ -1,5 +1,5 @@
 import { supabaseClient } from '../config/supabase.js';
-import { formatDateISO, formatStayDatesCompact, getStatusBadgeHTML } from '../utils/formatters.js';
+import { formatDateISO, formatStayDatesCompact, getStatusBadgeHTML, parseSafeDateOnly } from '../utils/formatters.js';
 
 // Global State for Frontdesk Dashboard
 export var currentDashboardTab = 'arrival';
@@ -1026,11 +1026,18 @@ export async function populateCalendarRoomTypeFilter() {
 }
 
 // --- Room Forecast JS Logic ---
-export let forecastStartDate = new Date();
+function initForecastStartDate() {
+    if (typeof window !== 'undefined' && window.currentHotelDate) {
+        return parseSafeDateOnly(window.currentHotelDate);
+    }
+    return typeof window !== 'undefined' && window.todayDate ? new Date(window.todayDate) : new Date();
+}
+
+export let forecastStartDate = initForecastStartDate();
 
 export function handleForecastDateChange(val) {
     if (!val) return;
-    forecastStartDate = new Date(val);
+    forecastStartDate = parseSafeDateOnly(val);
     renderRoomForecast();
 }
 
@@ -1040,10 +1047,17 @@ export async function renderRoomForecast() {
 
     if (!container) return;
 
-    if (datepicker && !datepicker.value) {
-        datepicker.value = formatDateISO(forecastStartDate);
-    } else if (datepicker && datepicker.value) {
-        forecastStartDate = new Date(datepicker.value);
+    const hotelBizDateStr = (typeof window !== 'undefined' && window.currentHotelDate) ? window.currentHotelDate : formatDateISO(new Date());
+
+    if (datepicker) {
+        if (!datepicker.value) {
+            datepicker.value = hotelBizDateStr;
+            forecastStartDate = parseSafeDateOnly(hotelBizDateStr);
+        } else {
+            forecastStartDate = parseSafeDateOnly(datepicker.value);
+        }
+    } else {
+        forecastStartDate = parseSafeDateOnly(hotelBizDateStr);
     }
 
     try {
@@ -1185,7 +1199,7 @@ export async function renderRoomForecast() {
         datesList.forEach((d, idx) => {
             const dayStr = d.toLocaleDateString('id-ID', { weekday: 'short' });
             const dateNumStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-            const isToday = formatDateISO(d) === formatDateISO(window.todayDate);
+            const isToday = formatDateISO(d) === hotelBizDateStr;
 
             tableHTML += `
                 <th class="p-2.5 text-center border-r border-slate-200 min-w-[85px] max-w-[85px] ${isToday ? 'bg-blue-50 font-bold text-primary' : 'text-slate-700'}">

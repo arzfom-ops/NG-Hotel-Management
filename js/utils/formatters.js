@@ -32,6 +32,18 @@ export function addDays(dateObj, days) {
     return res;
 }
 
+export function parseSafeDateOnly(dateStr) {
+    if (!dateStr) return new Date();
+    if (dateStr instanceof Date) return new Date(dateStr.getTime());
+    const str = String(dateStr).trim().split('T')[0];
+    const parts = str.split('-').map(Number);
+    if (parts.length >= 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? new Date() : d;
+}
+
 export function formatCurrency(amount) {
     const val = Number(amount) || 0;
     return `Rp ${val.toLocaleString('id-ID')}`;
@@ -93,6 +105,7 @@ if (typeof window !== 'undefined') {
     window.formatDateISO = formatDateISO;
     window.formatStayDatesCompact = formatStayDatesCompact;
     window.addDays = addDays;
+    window.parseSafeDateOnly = parseSafeDateOnly;
     window.formatCurrency = formatCurrency;
     window.formatRupiah = formatRupiah;
     window.getStatusBadgeHTML = getStatusBadgeHTML;

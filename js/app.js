@@ -1,5 +1,5 @@
 import { supabaseClient } from './config/supabase.js';
-import { formatDateISO, formatStayDatesCompact, addDays } from './utils/formatters.js';
+import { formatDateISO, formatStayDatesCompact, addDays, parseSafeDateOnly } from './utils/formatters.js';
 
 import {
     currentDashboardTab,
@@ -528,6 +528,7 @@ export async function switchView(viewName) {
 
         if (navDrr) navDrr.className = activeNavClass;
 
+        await getHotelBusinessDate();
         fetchDailyRevenueReport();
     } else if (viewName === 'nsg') {
         toggleFrontdeskAccordion(true);
@@ -550,6 +551,7 @@ export async function switchView(viewName) {
 
         if (navRoomForecast) navRoomForecast.className = activeNavClass;
 
+        await getHotelBusinessDate();
         renderRoomForecast();
     } else if (viewName === 'corporate') {
         if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
@@ -619,6 +621,7 @@ if (typeof window !== 'undefined') {
     window.initializedAppDate = initializedAppDate;
     window.getHotelBusinessDate = getHotelBusinessDate;
     window.fetchHotelBusinessDate = getHotelBusinessDate;
+    window.parseSafeDateOnly = parseSafeDateOnly;
     window.toggleFrontdeskAccordion = toggleFrontdeskAccordion;
     window.switchView = switchView;
 
