@@ -156,8 +156,10 @@ import {
     handleVoidMasterTransaction,
     openAddChargeModal,
     openAddPaymentModal,
+    openAddPaidOutModal,
     openMasterAddChargeModal,
     openMasterAddPaymentModal,
+    openMasterAddPaidOutModal,
     closeFolioTransactionModal,
     handleChargeItemChange,
     handleFolioPaymentMethodChange,
@@ -184,6 +186,22 @@ import {
     handlePrintMasterFolio,
     printMasterInvoice
 } from './modules/folio.js';
+
+import {
+    currentCashierSession,
+    cashierSessionTransactions,
+    fetchCurrentCashierSession,
+    renderCashierReportView,
+    renderOpenShiftState,
+    handleOpenCashierShiftSubmit,
+    renderActiveShiftState,
+    openDenominationModal,
+    closeDenominationModal,
+    resetDenominationForm,
+    calculateDenominationsTotal,
+    handleCloseCashierShiftSubmit,
+    renderClosedShiftReportState
+} from './modules/cashier.js';
 
 import {
     fetchHousekeepingRooms,
@@ -461,6 +479,7 @@ export async function switchView(viewName) {
     const nightAuditView = document.getElementById('night-audit-view');
     const cancelListView = document.getElementById('cancel-list-view');
     const drrView = document.getElementById('report-drr-view') || document.getElementById('drr-view');
+    const cashierReportView = document.getElementById('cashier-report-view');
     const adminSettingsView = document.getElementById('admin-settings-view');
 
     const allViews = [
@@ -473,6 +492,7 @@ export async function switchView(viewName) {
         nightAuditView,
         cancelListView,
         drrView,
+        cashierReportView,
         adminSettingsView
     ];
 
@@ -490,6 +510,7 @@ export async function switchView(viewName) {
     const navNightAudit = document.getElementById('nav-night-audit');
     const navCancelList = document.getElementById('nav-cancel-list');
     const navDrr = document.getElementById('nav-report-drr') || document.getElementById('nav-drr');
+    const navCashierReport = document.getElementById('nav-cashier-report');
     const navSettings = document.getElementById('nav-settings');
 
     const inactiveNavClass = "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-sm font-semibold cursor-pointer";
@@ -500,12 +521,21 @@ export async function switchView(viewName) {
         if (btn) btn.className = inactiveNavClass;
     });
 
-    const allMainNavBtns = [navHousekeeping, navCorporate, navGuestProfiles, navNightAudit, navCancelList, navDrr, navSettings];
+    const allMainNavBtns = [navHousekeeping, navCorporate, navGuestProfiles, navNightAudit, navCancelList, navDrr, navCashierReport, navSettings];
     allMainNavBtns.forEach(btn => {
         if (btn) btn.className = inactiveNavClass;
     });
 
-    if (viewName === 'night-audit' || viewName === 'nightaudit') {
+    if (viewName === 'cashier-report' || viewName === 'cashier' || viewName === 'cashier-shift') {
+        if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
+        const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
+        if (topbarHeader) topbarHeader.textContent = "Reports / Cashier Shift Report";
+
+        if (cashierReportView) cashierReportView.classList.remove('hidden');
+        if (navCashierReport) navCashierReport.className = activeNavClass;
+
+        await renderCashierReportView();
+    } else if (viewName === 'night-audit' || viewName === 'nightaudit') {
         if (frontdeskTopbar) frontdeskTopbar.classList.remove('hidden');
         const topbarHeader = frontdeskTopbar ? frontdeskTopbar.querySelector('h2') : null;
         if (topbarHeader) topbarHeader.textContent = "Night Audit / End of Day Processing";
@@ -780,8 +810,10 @@ if (typeof window !== 'undefined') {
     window.handleVoidMasterTransaction = handleVoidMasterTransaction;
     window.openAddChargeModal = openAddChargeModal;
     window.openAddPaymentModal = openAddPaymentModal;
+    window.openAddPaidOutModal = openAddPaidOutModal;
     window.openMasterAddChargeModal = openMasterAddChargeModal;
     window.openMasterAddPaymentModal = openMasterAddPaymentModal;
+    window.openMasterAddPaidOutModal = openMasterAddPaidOutModal;
     window.closeFolioTransactionModal = closeFolioTransactionModal;
     window.handleChargeItemChange = handleChargeItemChange;
     window.handleFolioPaymentMethodChange = handleFolioPaymentMethodChange;
@@ -876,6 +908,21 @@ if (typeof window !== 'undefined') {
     window.renderShiftLogbooks = renderShiftLogbooks;
     window.handleAddLogbookEntry = handleAddLogbookEntry;
     window.handleResolveLogbook = handleResolveLogbook;
+
+    // Cashier Shift & Report Module
+    window.currentCashierSession = currentCashierSession;
+    window.cashierSessionTransactions = cashierSessionTransactions;
+    window.fetchCurrentCashierSession = fetchCurrentCashierSession;
+    window.renderCashierReportView = renderCashierReportView;
+    window.renderOpenShiftState = renderOpenShiftState;
+    window.handleOpenCashierShiftSubmit = handleOpenCashierShiftSubmit;
+    window.renderActiveShiftState = renderActiveShiftState;
+    window.openDenominationModal = openDenominationModal;
+    window.closeDenominationModal = closeDenominationModal;
+    window.resetDenominationForm = resetDenominationForm;
+    window.calculateDenominationsTotal = calculateDenominationsTotal;
+    window.handleCloseCashierShiftSubmit = handleCloseCashierShiftSubmit;
+    window.renderClosedShiftReportState = renderClosedShiftReportState;
 
     // Guest Service (GCF Module)
     window.searchGuestCards = searchGuestCards;

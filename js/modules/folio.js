@@ -424,6 +424,10 @@ export function mapFolioTransactionData(tx) {
     const catUpper = (tx.category || '').toUpperCase();
     let txType = (tx.transaction_type || tx.type || '').toUpperCase();
 
+    if (txType === 'PAID_OUT' || catUpper === 'PAID_OUT') {
+        txType = 'PAID_OUT';
+    }
+
     const isPaymentCategory = ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD', 'CASH', 'CREDIT_CARD', 'BANK_TRANSFER'].includes(catUpper) ||
                               ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD'].includes(txType);
 
@@ -522,7 +526,7 @@ export function renderFolioTransactions() {
     } else {
         tbody.innerHTML = currentFolioTransactions.map(tx => {
             const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
-            const isVoided = tx.is_voided === true;
+            const isVoided = tx.is_void === true || tx.is_voided === true;
             const isTransferredToMaster = !!(tx.master_folio_id);
 
             if (!isVoided && !isTransferredToMaster) {
@@ -538,7 +542,8 @@ export function renderFolioTransactions() {
             const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
             const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '';
 
-            const typeBadgeClass = txType === 'PAYMENT' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-indigo-100 text-indigo-800 border-indigo-200';
+            const typeBadgeClass = txType === 'PAID_OUT' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                  (txType === 'PAYMENT' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-indigo-100 text-indigo-800 border-indigo-200');
             const typeDisplay = `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${typeBadgeClass}">${txType}</span>`;
 
             const qtyDisplay = txType === 'PAYMENT' ? '-' : qty;
@@ -1094,7 +1099,7 @@ export function renderMasterFolioTransactions() {
     } else {
         tbody.innerHTML = currentMasterTransactions.map(tx => {
             const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
-            const isVoided = tx.is_voided === true;
+            const isVoided = tx.is_void === true || tx.is_voided === true;
 
             if (!isVoided) {
                 const isPaymentCategory = ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD', 'CASH', 'CREDIT_CARD', 'BANK_TRANSFER'].includes(catUpper) ||
@@ -1109,7 +1114,8 @@ export function renderMasterFolioTransactions() {
             const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
             const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '';
 
-            const typeBadgeClass = txType === 'PAYMENT' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-indigo-100 text-indigo-800 border-indigo-200';
+            const typeBadgeClass = txType === 'PAID_OUT' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                  (txType === 'PAYMENT' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-indigo-100 text-indigo-800 border-indigo-200');
             const typeDisplay = `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${typeBadgeClass}">${txType}</span>`;
 
             const qtyDisplay = txType === 'PAYMENT' ? '-' : qty;
@@ -1344,8 +1350,51 @@ export async function openMasterAddChargeModal() {
     if (txModal) txModal.dataset.isMasterMode = "true";
 }
 
+export async function openAddPaidOutModal() {
+    const txModal = document.getElementById('folioTransactionModal');
+    const txTypeSelect = document.getElementById('folio-tx-type');
+    const modalTitle = document.getElementById('folioTxModalTitle');
+
+    if (txTypeSelect) txTypeSelect.value = 'PAID_OUT';
+    if (modalTitle) modalTitle.innerHTML = `<i class="ph ph-hand-coins text-amber-500"></i> Post Paid Out (Kas Keluar)`;
+
+    document.getElementById('folio-tx-charge-item-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-custom-desc-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-category-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-qty-price-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-desc-container')?.classList.remove('hidden');
+    document.getElementById('folio-tx-payment-method-container')?.classList.add('hidden');
+    document.getElementById('folio-tx-ref-container')?.classList.add('hidden');
+
+    const descLabel = document.getElementById('folio-tx-desc-label');
+    if (descLabel) descLabel.textContent = 'Keterangan Paid Out / Kas Keluar';
+
+    const descInput = document.getElementById('folio-tx-description');
+    if (descInput) {
+        descInput.placeholder = 'e.g. Kas Keluar Taksi Tamu / Refund Kasir';
+        descInput.value = '';
+    }
+
+    const amountInput = document.getElementById('folio-tx-amount');
+    if (amountInput) {
+        amountInput.removeAttribute('readonly');
+        amountInput.value = '';
+    }
+
+    if (txModal) {
+        delete txModal.dataset.isMasterMode;
+        txModal.classList.remove('hidden');
+    }
+}
+
 export async function openMasterAddPaymentModal() {
     await openAddPaymentModal();
+    const txModal = document.getElementById('folioTransactionModal');
+    if (txModal) txModal.dataset.isMasterMode = "true";
+}
+
+export async function openMasterAddPaidOutModal() {
+    await openAddPaidOutModal();
     const txModal = document.getElementById('folioTransactionModal');
     if (txModal) txModal.dataset.isMasterMode = "true";
 }
@@ -1459,6 +1508,14 @@ export async function handleSaveFolioTransaction(e) {
             alert('Deskripsi transaksi harus diisi.');
             return;
         }
+    } else if (txType === 'PAID_OUT') {
+        const descInput = document.getElementById('folio-tx-description');
+        let noteDesc = descInput ? descInput.value.trim() : '';
+        amount = parseFloat(document.getElementById('folio-tx-amount').value) || 0;
+        qty = 1;
+        unitPrice = amount;
+        category = 'PAID_OUT';
+        description = noteDesc ? `Paid Out: ${noteDesc}` : 'Paid Out (Kas Keluar)';
     } else { // PAYMENT
         const descInput = document.getElementById('folio-tx-description');
         let noteDesc = descInput ? descInput.value.trim() : '';
@@ -1533,6 +1590,7 @@ export async function handleSaveFolioTransaction(e) {
         }
 
         if (!rpcSuccess) {
+            const currentUser = localStorage.getItem('cashierName') || 'Staff';
             const payload = {
                 reservation_id: resId,
                 master_folio_id: masterId,
@@ -1540,14 +1598,15 @@ export async function handleSaveFolioTransaction(e) {
                 description: description,
                 category: category,
                 payment_method_id: paymentMethodId || null,
-                qty: txType === 'PAYMENT' ? 1 : (qty || 1),
-                unit_price: txType === 'PAYMENT' ? amount : (unitPrice || amount),
+                qty: (txType === 'PAYMENT' || txType === 'PAID_OUT') ? 1 : (qty || 1),
+                unit_price: (txType === 'PAYMENT' || txType === 'PAID_OUT') ? amount : (unitPrice || amount),
                 amount: amount,
                 total: amount,
-                charge: txType === 'CHARGE' ? amount : 0,
+                charge: (txType === 'CHARGE' || txType === 'PAID_OUT') ? amount : 0,
                 credit: txType === 'PAYMENT' ? amount : 0,
                 reference_number: referenceNumber,
-                transaction_date: new Date().toISOString()
+                transaction_date: new Date().toISOString(),
+                created_by: currentUser
             };
 
             const { error } = await supabaseClient
@@ -1583,10 +1642,13 @@ export async function handleSaveFolioTransaction(e) {
 export async function handleVoidTransaction(transactionId) {
     if (!transactionId) return;
 
-    const voidReason = prompt("Masukkan alasan pembatalan (wajib diisi):");
+    const voidReason = prompt("Alasan Void (wajib diisi):");
     if (voidReason === null || voidReason.trim() === "") {
+        alert("Alasan Void wajib diisi.");
         return;
     }
+
+    const currentUser = localStorage.getItem('cashierName') || 'Cashier';
 
     try {
         let rpcSuccess = false;
@@ -1604,18 +1666,19 @@ export async function handleVoidTransaction(transactionId) {
             console.warn('rpc_void_folio_transaction call exception, falling back:', e);
         }
 
-        if (!rpcSuccess) {
-            const { error } = await supabaseClient
-                .from('folio_transactions')
-                .update({
-                    is_voided: true,
-                    void_reason: voidReason.trim(),
-                    voided_at: new Date().toISOString()
-                })
-                .eq('id', transactionId);
+        // Direct update ensures all columns (is_void, is_voided, void_reason, voided_by, voided_at) are saved
+        const { error } = await supabaseClient
+            .from('folio_transactions')
+            .update({
+                is_void: true,
+                is_voided: true,
+                void_reason: voidReason.trim(),
+                voided_by: currentUser,
+                voided_at: new Date().toISOString()
+            })
+            .eq('id', transactionId);
 
-            if (error) throw error;
-        }
+        if (error && !rpcSuccess) throw error;
 
         if (currentFolioReservation && currentFolioReservation.id) {
             await fetchFolioTransactions(currentFolioReservation.id);
