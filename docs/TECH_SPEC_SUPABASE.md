@@ -482,6 +482,328 @@ All server-side business logic and atomic database operations are exposed via Po
 
 ---
 
+## API Reference (RPC Functions - OpenAPI-Style)
+
+> **Note**: This section provides an OpenAPI-style reference for all Supabase RPC functions. For detailed business logic and side effects, refer to the "RPC Functions Contract" section above.
+
+### Endpoint Pattern
+All RPC functions are invoked via:
+```http
+POST https://{PROJECT_REF}.supabase.co/rest/v1/rpc/{function_name}
+Headers:
+Authorization: Bearer {JWT_TOKEN}
+apikey: {SUPABASE_ANON_KEY}
+Content-Type: application/json
+Body: { "param1": value1, "param2": value2, ... }
+```
+
+### Function Catalog
+
+#### 1. `fn_pre_night_audit_check`
+```yaml
+summary: Validate system readiness before executing Night Audit
+parameters:
+  - (none)
+responses:
+  200:
+    description: Validation result
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            can_proceed: { type: boolean }
+            reason: { type: string }
+            open_shifts: { type: integer }
+            pending_arrivals: { type: integer }
+            pending_departures: { type: integer }
+security: [bearerAuth: []]
+```
+
+#### 2. `fn_execute_night_audit`
+```yaml
+summary: Execute End-of-Day settlement and advance business date
+parameters:
+  - name: p_user_name
+    in: body
+    required: true
+    schema: { type: string }
+    description: Name of auditor initiating EOD
+responses:
+  200:
+    description: EOD execution result
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            success: { type: boolean }
+            new_business_date: { type: string, format: date }
+            total_revenue: { type: number }
+            total_occupied: { type: integer }
+security: [bearerAuth: []]
+```
+
+#### 3. `rpc_open_cashier_shift`
+```yaml
+summary: Open a new cashier shift session
+parameters:
+  - name: p_cashier_name
+    in: body
+    required: true
+    schema: { type: string }
+  - name: p_shift_name
+    in: body
+    required: true
+    schema: { type: string }
+    example: "Morning"
+  - name: p_opening_float
+    in: body
+    required: true
+    schema: { type: number }
+responses:
+  200:
+    description: Created shift metadata
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            status: { type: string, enum: [OPEN] }
+            business_date: { type: string, format: date }
+security: [bearerAuth: []]
+```
+
+#### 4. `rpc_close_cashier_shift`
+```yaml
+summary: Close cashier shift with blind drop reconciliation
+parameters:
+  - name: p_shift_id
+    in: body
+    required: true
+    schema: { type: string, format: uuid }
+  - name: p_actual_cash
+    in: body
+    required: true
+    schema: { type: number }
+    description: Declared physical cash total
+  - name: p_cash_drop
+    in: body
+    required: true
+    schema: { type: number }
+    description: Remittance amount for bank deposit
+  - name: p_notes
+    in: body
+    required: false
+    schema: { type: string }
+responses:
+  200:
+    description: Closed shift with variance calculation
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            over_short: { type: number }
+            system_expected_cash: { type: number }
+            declared_total_cash: { type: number }
+security: [bearerAuth: []]
+```
+
+#### 5. `rpc_get_available_physical_rooms`
+```yaml
+summary: Fetch available physical rooms for a date range
+parameters:
+  - name: p_room_type_id
+    in: body
+    required: false
+    schema: { type: string, format: uuid }
+  - name: p_check_in
+    in: body
+    required: true
+    schema: { type: string, format: date }
+  - name: p_check_out
+    in: body
+    required: true
+    schema: { type: string, format: date }
+  - name: p_current_res_id
+    in: body
+    required: false
+    schema: { type: string, format: uuid }
+    description: Exclude this reservation (for edit mode)
+responses:
+  200:
+    description: List of available rooms
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              room_number: { type: string }
+              room_type_id: { type: string, format: uuid }
+              room_type_name: { type: string }
+              status: { type: string }
+security: [bearerAuth: []]
+```
+
+#### 6. `rpc_post_folio_transaction`
+```yaml
+summary: Post a charge or payment to a folio
+parameters:
+  - name: p_reservation_id
+    in: body
+    required: false
+    schema: { type: string, format: uuid }
+  - name: p_master_folio_id
+    in: body
+    required: false
+    schema: { type: string, format: uuid }
+  - name: p_transaction_type
+    in: body
+    required: true
+    schema: { type: string, enum: [CHARGE, PAYMENT, DEPOSIT, TRANSFER] }
+  - name: p_description
+    in: body
+    required: true
+    schema: { type: string }
+  - name: p_category
+    in: body
+    required: false
+    schema: { type: string }
+  - name: p_qty
+    in: body
+    required: false
+    schema: { type: integer, default: 1 }
+  - name: p_unit_price
+    in: body
+    required: false
+    schema: { type: number }
+  - name: p_amount
+    in: body
+    required: true
+    schema: { type: number }
+  - name: p_reference_number
+    in: body
+    required: false
+    schema: { type: string }
+responses:
+  200:
+    description: Posted transaction record
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/FolioTransaction'
+security: [bearerAuth: []]
+```
+
+#### 7. `rpc_transfer_folio_transaction`
+```yaml
+summary: Transfer selected transactions between folios
+parameters:
+  - name: p_transaction_ids
+    in: body
+    required: true
+    schema:
+      type: array
+      items: { type: string, format: uuid }
+  - name: p_target_reservation_id
+    in: body
+    required: false
+    schema: { type: string, format: uuid }
+  - name: p_target_master_folio_id
+    in: body
+    required: false
+    schema: { type: string, format: uuid }
+responses:
+  200:
+    description: Transfer success
+    content:
+      application/json:
+        schema: { type: boolean }
+security: [bearerAuth: []]
+```
+
+#### 8. `rpc_void_folio_transaction`
+```yaml
+summary: Void a transaction with audit trail
+parameters:
+  - name: p_transaction_id
+    in: body
+    required: true
+    schema: { type: string, format: uuid }
+  - name: p_void_reason
+    in: body
+    required: true
+    schema: { type: string }
+responses:
+  200:
+    description: Void success
+    content:
+      application/json:
+        schema: { type: boolean }
+security: [bearerAuth: []]
+```
+
+#### 9. `rpc_split_group_reservation`
+```yaml
+summary: Split a multi-qty group reservation into individual lines
+parameters:
+  - name: p_reservation_id
+    in: body
+    required: true
+    schema: { type: string, format: uuid }
+responses:
+  200:
+    description: Generated child reservation IDs
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            child_ids:
+              type: array
+              items: { type: string, format: uuid }
+security: [bearerAuth: []]
+```
+
+#### 10. `rpc_process_checkout`
+```yaml
+summary: Check out a guest and settle folio
+parameters:
+  - name: p_reservation_id
+    in: body
+    required: true
+    schema: { type: string, format: uuid }
+responses:
+  200:
+    description: Checkout result
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            success: { type: boolean }
+            final_balance: { type: number }
+security: [bearerAuth: []]
+```
+
+### HTTP Response Codes Summary
+
+| Code | Meaning | Action |
+| :--- | :--- | :--- |
+| 200 | Success | Process response data |
+| 400 | Bad Request (validation error) | Check parameter types and required fields |
+| 401 | Unauthorized | JWT expired or invalid; prompt re-login |
+| 403 | Forbidden (RLS policy denied) | User lacks permission for this operation |
+| 404 | Resource not found | Check if referenced ID exists |
+| 500 | Server error (RPC failure) | Check Supabase logs; client fallback may trigger |
+
+---
+
 ## Database Indexes & Query Optimization
 
 ### Overview
@@ -630,3 +952,178 @@ Important: Do NOT open index.html directly via file:// protocol. ES6 modules req
 - [ ] No API keys, passwords, or tokens are committed to the git repository.
 - [ ] .gitignore includes patterns for .env, .env.local, and any local config files.
 - [ ] Supabase Storage bucket guest_documents has RLS policies restricting access to authenticated users only.
+
+---
+
+## Troubleshooting Guide
+
+### Common Issues & Solutions
+
+#### 1. Night Audit Blocked: "Open Cashier Shifts Exist"
+- **Symptom**: Pre-audit check fails with warning listing active cashiers.
+- **Cause**: One or more cashier sessions remain in `status = 'OPEN'` for the current business date.
+- **Solution**:
+  1. Identify open shifts via query:
+     ```sql
+     SELECT id, user_name, business_date FROM cashier_sessions
+     WHERE status = 'OPEN' AND business_date = CURRENT_DATE;
+     ```
+  2. Contact the listed cashiers to close their shifts via UI.
+  3. If cashier is unavailable, Admin can manually close via SQL (with audit log entry):
+     ```sql
+     UPDATE cashier_sessions
+     SET status = 'CLOSED', closed_at = NOW(),
+         declared_total_cash = system_expected_cash,
+         over_short = 0,
+         denominations_json = '{"admin_override": true}'::jsonb
+     WHERE id = '{shift_id}';
+     ```
+  4. Re-run Night Audit.
+
+#### 2. Room Conflict Error During Check-In
+- **Symptom**: "Room already occupied for selected dates" error when checking in guest.
+- **Cause**: Overlapping reservation exists for the same physical room and date range.
+- **Solution**:
+  1. Check conflicting reservations:
+     ```sql
+     SELECT r.id, r.guest_name, r.check_in_date, r.check_out_date, r.status
+     FROM reservations r
+     WHERE r.room_id = '{room_id}'
+       AND r.status IN ('GUARANTEED', '6PM_HOLD', 'ORAL_CONFIRM', 'CHECKED_IN')
+       AND r.check_in_date < '{new_checkout}'
+       AND r.check_out_date > '{new_checkin}';
+     ```
+  2. Resolve by either:
+     - Canceling/modifying the conflicting reservation.
+     - Assigning a different room to the new check-in.
+  3. Retry check-in.
+
+#### 3. Foreign Key Violation on Reservation Save
+- **Symptom**: Error `new row violates foreign key constraint "fk_reservations_guest_card"`.
+- **Cause**: Empty string `""`, `0`, or `undefined` passed for `guest_card_id` instead of `null`.
+- **Solution**:
+  1. Ensure frontend sanitizes empty values to `null` before insert:
+     ```javascript
+     guest_card_id: guestCardId || null,  // NOT guestCardId || ''
+     guest_profile_id: guestProfileId || null
+     ```
+  2. If data already corrupted, fix via SQL:
+     ```sql
+     UPDATE reservations
+     SET guest_card_id = NULL
+     WHERE guest_card_id = '00000000-0000-0000-0000-000000000000';
+     ```
+
+#### 4. Night Audit EOD Report Shows Zero Reconciliation Data
+- **Symptom**: Cashier Reconciliation Summary in EOD Flash Report shows all zeros.
+- **Cause**: Query filter mismatch — `folio_transactions.hotel_business_date` not populated or mismatched with `cashier_sessions.business_date`.
+- **Solution**:
+  1. Verify data exists:
+     ```sql
+     SELECT COUNT(*) FROM folio_transactions
+     WHERE hotel_business_date = '{target_date}';
+     ```
+  2. If count is 0, backfill missing data:
+     ```sql
+     UPDATE folio_transactions
+     SET hotel_business_date = transaction_date::DATE
+     WHERE hotel_business_date IS NULL;
+     ```
+  3. Re-run Night Audit.
+
+#### 5. Tape Chart Not Rendering Reservation Capsules
+- **Symptom**: Tape Chart grid loads but reservation capsules are invisible.
+- **Cause**: CSS positioning issue or missing `room_id` on reservations.
+- **Solution**:
+  1. Check browser console for JavaScript errors.
+  2. Verify reservations have `room_id` assigned:
+     ```sql
+     SELECT id, guest_name, room_id FROM reservations
+     WHERE check_in_date <= CURRENT_DATE
+       AND check_out_date > CURRENT_DATE
+       AND status IN ('GUARANTEED', 'CHECKED_IN')
+       AND room_id IS NULL;
+     ```
+  3. Assign rooms via Frontdesk UI or SQL.
+  4. Refresh page.
+
+#### 6. Cashier Shift Over/Short Always Shows Large Variance
+- **Symptom**: Every shift close shows significant negative over/short.
+- **Cause**: Transactions posted without `cashier_session_id`, so they're excluded from `system_expected_cash` calculation but physically present in drawer.
+- **Solution**:
+  1. Check orphan transactions:
+     ```sql
+     SELECT COUNT(*) FROM folio_transactions
+     WHERE cashier_session_id IS NULL
+       AND hotel_business_date = CURRENT_DATE;
+     ```
+  2. If count > 0, link them to active session:
+     ```sql
+     UPDATE folio_transactions
+     SET cashier_session_id = '{active_session_id}'
+     WHERE cashier_session_id IS NULL
+       AND hotel_business_date = CURRENT_DATE;
+     ```
+  3. Update `rpc_post_folio_transaction` to always bind `cashier_session_id` from `window.currentCashierSessionId`.
+
+#### 7. Supabase Query Performance Degradation
+- **Symptom**: Dashboard or reports take >10 seconds to load.
+- **Cause**: Missing indexes on frequently queried columns.
+- **Solution**:
+  1. Check slow queries via Supabase Dashboard > Database > Query Performance.
+  2. Verify indexes exist:
+     ```sql
+     SELECT indexname, indexdef FROM pg_indexes
+     WHERE tablename IN ('folio_transactions', 'reservations', 'cashier_sessions');
+     ```
+  3. Create missing indexes (refer to "Database Indexes & Query Optimization" section).
+  4. Run `ANALYZE` on affected tables to update query planner statistics.
+
+#### 8. Guest Document Upload Fails
+- **Symptom**: ID card image upload returns 400 or 413 error.
+- **Cause**: File exceeds Supabase Storage size limit (default 50MB) or bucket RLS policy denies access.
+- **Solution**:
+  1. Ensure client-side compression is active (JPEG 0.7 quality, max 800px width).
+  2. Check bucket RLS policy:
+     ```sql
+     SELECT * FROM pg_policies WHERE tablename = 'objects' AND schemaname = 'storage';
+     ```
+  3. Verify bucket `guest_documents` exists and allows authenticated uploads.
+
+#### 9. Business Date Desynchronization
+- **Symptom**: UI shows different dates across modules after midnight.
+- **Cause**: Day Change Detector polling missed or `window.currentHotelDate` not refreshed.
+- **Solution**:
+  1. Manually trigger reload: `window.location.reload()`.
+  2. Verify `system_settings.current_hotel_date` is correct:
+     ```sql
+     SELECT setting_value FROM system_settings WHERE setting_key = 'current_hotel_date';
+     ```
+  3. If Night Audit failed to advance date, re-run Night Audit or manually update (Admin only).
+
+#### 10. Void Transaction Still Affects Revenue Totals
+- **Symptom**: Voided transactions appear in daily revenue reports.
+- **Cause**: Report query does not filter `is_void = false`.
+- **Solution**:
+  1. Update report query to exclude voids:
+     ```javascript
+     .eq('is_void', false)
+     ```
+  2. For audit trail display (Section 4 of Cashier Report), query voids separately:
+     ```javascript
+     .eq('is_void', true)
+     ```
+
+### Escalation Path
+
+If issues persist after following solutions above:
+1. Check Supabase Dashboard > Logs for detailed error messages.
+2. Review browser console for client-side errors.
+3. Verify RLS policies via `pg_policies` table.
+4. Contact Supabase Support if database-level issues suspected.
+
+For application bugs, create GitHub Issue with:
+- Steps to reproduce
+- Expected vs actual behavior
+- Browser console logs
+- Supabase query logs (if accessible)
