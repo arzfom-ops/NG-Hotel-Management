@@ -318,6 +318,35 @@ All server-side business logic and atomic database operations are exposed via Po
 
 ---
 
+## Database Indexes & Query Optimization
+
+### Overview
+Database indexes are critical for maintaining query performance as transaction volume grows. The following indexes have been created on the Supabase PostgreSQL instance to support the most frequent and performance-sensitive queries in the application.
+
+### Index Catalog
+
+| Index Name | Table | Columns | Type | Purpose |
+|---|---|---|---|---|
+| idx_folio_tx_hotel_bdate | folio_transactions | hotel_business_date | B-Tree | Accelerates daily revenue aggregation and EOD Flash Report queries filtered by business date. |
+| idx_folio_tx_session_created | folio_transactions | cashier_session_id, created_at DESC | B-Tree Composite | Speeds up per-shift transaction fetching during cashier close and shift report generation. |
+| idx_cashier_sessions_status_bdate | cashier_sessions | business_date, status | B-Tree Composite | Enables instant lookup for pre-audit checks (e.g., "Are there any OPEN shifts today?"). |
+| idx_reservations_dates_status | reservations | check_in_date, check_out_date, status | B-Tree Composite | Optimizes Tape Chart and Room Forecast queries that filter reservations by date range and active status. |
+| idx_reservations_room_dates | reservations | room_id, check_in_date, check_out_date | B-Tree Composite | Accelerates physical room conflict detection (checkRoomConflict) during reservation save and check-in. |
+| idx_folio_tx_reservation | folio_transactions | reservation_id | B-Tree | Speeds up folio balance calculations for individual guest accounts. |
+| idx_folio_tx_master | folio_transactions | master_folio_id | B-Tree | Optimizes Master Folio aggregation for B2B corporate billing. |
+| idx_guest_card_name | guest_card_files | full_name | B-Tree (GIN trigram recommended) | Accelerates GCF quick lookup and autocomplete search by guest name. |
+
+### Performance Notes
+- Without idx_folio_tx_hotel_bdate, the Night Audit EOD report would perform a full table scan on folio_transactions, which becomes prohibitively slow beyond ~50,000 records.
+- The composite index on cashier_sessions (business_date, status) ensures the pre-audit blocking check completes in O(log n) time regardless of total session history.
+- For guest name search at scale (>10,000 GCF records), consider upgrading idx_guest_card_name to a GIN trigram index: CREATE INDEX idx_guest_card_name_trgm ON guest_card_files USING gin (full_name gin_trgm_ops);
+
+### Maintenance
+- Indexes should be reviewed quarterly as data volume grows.
+- Run ANALYZE on heavily modified tables (folio_transactions, reservations) weekly to keep PostgreSQL query planner statistics current: ANALYZE folio_transactions; ANALYZE reservations;
+
+---
+
 ## API Integration Patterns
 
 The application communicates directly with Supabase via `@supabase/supabase-js` instantiated in `js/config/supabase.js`.
@@ -385,3 +414,55 @@ try {
 - **Local Development Constraints**:
   - Can be served using any static HTTP file server (e.g., `python3 -m http.server 8000` or Live Server).
   - Environment variables for Supabase URL and Publishable Key are declared in `js/config/supabase.js`.
+
+---
+
+## Environment Configuration & Secrets Management
+
+### Required Environment Variables
+
+The application requires the following environment variables to connect to the Supabase backend:
+
+| Variable Name | Description | Example Value | Required |
+|---|---|---|---|
+| SUPABASE_URL | The unique API URL for your Supabase project. Found in Supabase Dashboard > Settings > API. | https://abcdefgh.supabase.co | Yes |
+| SUPABASE_ANON_KEY | The public anonymous access key for client-side Supabase JS SDK. Safe to expose in browser. | eyJhbGciOiJIUzI1NiIs... | Yes |
+
+Note: The application does NOT use SUPABASE_SERVICE_ROLE_KEY on the client side. The service role key should only be used in server-side contexts (Edge Functions, cron jobs) and must never be exposed in frontend code.
+
+### Vercel Configuration
+
+1. Navigate to Vercel Dashboard > Your Project > Settings > Environment Variables.
+2. Add SUPABASE_URL and SUPABASE_ANON_KEY as Production environment variables.
+3. If using Preview deployments, add the same variables to Preview environment.
+4. Redeploy the project after adding variables for changes to take effect.
+
+Current Implementation Note:
+In the current codebase, Supabase credentials are declared directly in js/config/supabase.js. For production security, these should be migrated to Vercel environment variables and injected at build time or via a serverless API proxy. However, since this is a pure static SPA with no build step, the current approach relies on:
+- Supabase Row Level Security (RLS) to protect data at the database level.
+- The anon key being intentionally public (designed for client-side use).
+- RLS policies ensuring users can only access data they are authorized to see.
+
+### Local Development Setup
+
+Since the application uses pure ES6 modules with CDN dependencies and no npm/build step:
+
+1. Clone the repository.
+2. Open js/config/supabase.js and ensure SUPABASE_URL and SUPABASE_ANON_KEY point to your Supabase project.
+3. Serve the project using any static HTTP server:
+   - Python: python3 -m http.server 8000
+   - Node.js (npx): npx serve .
+   - VS Code: Live Server extension
+4. Open http://localhost:8000 in your browser.
+
+Important: Do NOT open index.html directly via file:// protocol. ES6 modules require HTTP(S) context to resolve imports correctly.
+
+### Security Checklist
+
+- [ ] Supabase RLS is enabled on all tables containing guest data and financial transactions.
+- [ ] SUPABASE_SERVICE_ROLE_KEY is NOT present in any frontend JavaScript file.
+- [ ] Supabase Auth is configured with email/password provider and appropriate redirect URLs.
+- [ ] Vercel deployment uses HTTPS (automatic on Vercel).
+- [ ] No API keys, passwords, or tokens are committed to the git repository.
+- [ ] .gitignore includes patterns for .env, .env.local, and any local config files.
+- [ ] Supabase Storage bucket guest_documents has RLS policies restricting access to authenticated users only.

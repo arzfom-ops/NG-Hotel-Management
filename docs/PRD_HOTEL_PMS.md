@@ -241,3 +241,47 @@ flowchart TD
 5. **Master / Personal Folio Isolation**: Charges transferred from Personal Folio to Master Folio are marked with `master_folio_id` and excluded from personal folio total charges/balances.
 6. **Physical Room Conflict Guard**: Physical room numbers cannot be assigned to overlapping reservations for identical date ranges; pre-save and pre-checkin functions (`checkRoomConflict`) block conflicting assignments.
 7. **Cashier Session Binding**: Every folio transaction posted by an active cashier inherits `cashier_session_id` to ensure precise per-shift reconciliation and audit traceability.
+
+---
+
+## Non-Functional Requirements
+
+### 1. Performance
+- Dashboard Frontdesk harus load dalam waktu < 3 detik pada koneksi broadband standar (10 Mbps).
+- Laporan EOD Flash Report dan Cashier Reconciliation harus ter-render dalam < 5 detik untuk database dengan hingga 100.000 transaksi.
+- Query Night Audit pre-check harus selesai dalam < 2 detik.
+- Tape Chart 14-hari dengan 50+ kamar fisik harus render tanpa lag visual yang signifikan.
+- Image compression untuk dokumen tamu (ID card) harus selesai di client-side dalam < 1 detik (JPEG quality 0.7, max width 800px).
+
+### 2. Scalability
+- Sistem harus mendukung properti hotel dengan hingga 200 kamar fisik.
+- Mendukung hingga 50 concurrent users (Front Desk, Housekeeping, Admin) tanpa degradasi performa yang signifikan.
+- Database harus mampu menampung minimal 5 tahun riwayat transaksi operasional (estimasi ~500.000 baris folio_transactions) dengan query tetap responsif berkat indexing yang tepat.
+
+### 3. Security
+- Semua komunikasi client-server harus melalui HTTPS (dipastikan oleh Vercel/Supabase hosting).
+- Supabase Row Level Security (RLS) harus aktif pada semua tabel yang mengandung data tamu dan transaksi finansial.
+- Session timeout: User harus re-authenticate setelah 30 menit tidak ada aktivitas (idle).
+- Password policy: Minimal 8 karakter dengan kombinasi huruf dan angka (dikelola oleh Supabase Auth).
+- Secret management: Supabase URL dan Anon Key tidak boleh di-hardcode di repository public. Gunakan environment variables di Vercel.
+- Void transactions memerlukan audit trail wajib (reason, user, timestamp) dan tidak boleh dihapus secara fisik (soft delete only).
+
+### 4. Availability & Backup
+- Target uptime: 99.5% selama jam operasional hotel (24/7).
+- Database backup: Automated daily backup via Supabase dashboard dengan retensi minimal 7 hari.
+- Recovery Point Objective (RPO): Maksimum 24 jam (data yang hilang saat disaster = 1 hari operasional).
+- Recovery Time Objective (RTO): Maksimum 4 jam untuk restore penuh.
+
+### 5. Browser Compatibility
+- Google Chrome 90+ (Primary target, recommended).
+- Mozilla Firefox 88+.
+- Apple Safari 14+ (macOS & iPadOS).
+- Microsoft Edge 90+.
+- Tidak mendukung Internet Explorer.
+- Responsive layout untuk tablet (iPad landscape/portrait) untuk penggunaan Housekeeping mobile.
+
+### 6. Data Integrity
+- Semua transaksi finansial harus atomic (menggunakan RPC stored procedures untuk mencegah partial writes).
+- Foreign key constraints aktif pada semua relasi antar tabel.
+- Void operations bersifat non-destructive (is_void flag, bukan DELETE).
+- Night Audit date rollover harus idempotent (aman jika dijalankan ulang secara tidak sengaja).
