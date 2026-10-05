@@ -715,13 +715,21 @@ export async function handleDepositSettlement(settlementType) {
         const description = settlementType === 'refund' ? 'Refund Deposit' : 'Cancellation Fee';
 
         // Insert balancing CHARGE transaction to bring balance to 0
+        let activeBusinessDate = window.currentHotelDate;
+        if (!activeBusinessDate && typeof window.getHotelBusinessDate === 'function') {
+            activeBusinessDate = await window.getHotelBusinessDate();
+        }
+        if (!activeBusinessDate) {
+            activeBusinessDate = formatDateISO(new Date());
+        }
+
         const payload = {
             reservation_id: resId,
             transaction_type: 'CHARGE',
             description: description,
             amount: depositAmt,
             transaction_date: new Date().toISOString(),
-            hotel_business_date: window.currentHotelDate || new Date().toISOString().split('T')[0],
+            hotel_business_date: activeBusinessDate,
             cashier_session_id: localStorage.getItem('activeShiftId') || null
         };
 

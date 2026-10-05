@@ -2756,6 +2756,13 @@ export async function handleSaveReservation(event) {
 
                 // Auto-post deposits to Parent folio
                 if (pendingNewReservationDeposits && pendingNewReservationDeposits.length > 0) {
+                    let activeBusinessDate = window.currentHotelDate;
+                    if (!activeBusinessDate && typeof window.getHotelBusinessDate === 'function') {
+                        activeBusinessDate = await window.getHotelBusinessDate();
+                    }
+                    if (!activeBusinessDate) {
+                        activeBusinessDate = formatDateISO(new Date());
+                    }
                     const txPayloads = pendingNewReservationDeposits.map(d => ({
                         reservation_id: savedReservationId,
                         transaction_type: 'PAYMENT',
@@ -2763,7 +2770,7 @@ export async function handleSaveReservation(event) {
                         amount: d.amount,
                         payment_method_id: d.payment_method_id,
                         transaction_date: d.transaction_date || new Date().toISOString(),
-                        hotel_business_date: window.currentHotelDate || new Date().toISOString().split('T')[0],
+                        hotel_business_date: activeBusinessDate,
                         cashier_session_id: localStorage.getItem('activeShiftId') || null
                     }));
                     await supabaseClient.from('folio_transactions').insert(txPayloads);
@@ -2850,6 +2857,13 @@ export async function handleSaveReservation(event) {
                 }
 
                 if (pendingNewReservationDeposits && pendingNewReservationDeposits.length > 0) {
+                    let activeBusinessDate = window.currentHotelDate;
+                    if (!activeBusinessDate && typeof window.getHotelBusinessDate === 'function') {
+                        activeBusinessDate = await window.getHotelBusinessDate();
+                    }
+                    if (!activeBusinessDate) {
+                        activeBusinessDate = formatDateISO(new Date());
+                    }
                     const txPayloads = pendingNewReservationDeposits.map(d => ({
                         reservation_id: savedReservationId,
                         transaction_type: 'PAYMENT',
@@ -2857,7 +2871,7 @@ export async function handleSaveReservation(event) {
                         amount: d.amount,
                         payment_method_id: d.payment_method_id,
                         transaction_date: d.transaction_date || new Date().toISOString(),
-                        hotel_business_date: window.currentHotelDate || new Date().toISOString().split('T')[0],
+                        hotel_business_date: activeBusinessDate,
                         cashier_session_id: localStorage.getItem('activeShiftId') || null
                     }));
                     await supabaseClient.from('folio_transactions').insert(txPayloads);

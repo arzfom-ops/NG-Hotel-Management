@@ -1567,6 +1567,14 @@ export async function handleSaveFolioTransaction(e) {
     }
 
     try {
+        let activeBusinessDate = window.currentHotelDate;
+        if (!activeBusinessDate && typeof window.getHotelBusinessDate === 'function') {
+            activeBusinessDate = await window.getHotelBusinessDate();
+        }
+        if (!activeBusinessDate) {
+            activeBusinessDate = formatDateISO(new Date());
+        }
+
         let rpcSuccess = false;
         try {
             const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_post_folio_transaction', {
@@ -1578,7 +1586,9 @@ export async function handleSaveFolioTransaction(e) {
                 p_qty: txType === 'PAYMENT' ? 1 : qty,
                 p_unit_price: txType === 'PAYMENT' ? amount : unitPrice,
                 p_amount: amount,
-                p_reference_number: referenceNumber
+                p_reference_number: referenceNumber,
+                p_hotel_business_date: activeBusinessDate,
+                hotel_business_date: activeBusinessDate
             });
             if (!rpcErr && rpcData && rpcData.success !== false) {
                 rpcSuccess = true;
@@ -1606,7 +1616,7 @@ export async function handleSaveFolioTransaction(e) {
                 credit: txType === 'PAYMENT' ? amount : 0,
                 reference_number: referenceNumber,
                 transaction_date: new Date().toISOString(),
-                hotel_business_date: window.currentHotelDate || new Date().toISOString().split('T')[0],
+                hotel_business_date: activeBusinessDate,
                 cashier_session_id: localStorage.getItem('activeShiftId') || null,
                 created_by: currentUser
             };
