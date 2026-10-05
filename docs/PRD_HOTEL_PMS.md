@@ -6,6 +6,34 @@ The Hotel Property Management System (PMS) is a comprehensive, web-based single-
 
 ---
 
+## Glossary of Terms
+
+| Term | Definition |
+|---|---|
+| **Allotment** | Pre-allocated block of rooms reserved for a specific travel agent, corporate client, or group, typically under a contract rate. |
+| **B2B (Business-to-Business)** | Corporate or travel agent accounts billed via Master Folio rather than individual guest folios. |
+| **B2C (Business-to-Consumer)** | Individual guest reservations billed directly to personal folios. |
+| **Blind Drop** | Cashier shift close procedure where the cashier counts physical cash without seeing the system-expected total, preventing disclosure bias. |
+| **Business Date** | The operational date used by the hotel system (stored in `system_settings.current_hotel_date`), which may differ from the calendar date until Night Audit rollover. |
+| **City Ledger / AR (Accounts Receivable)** | Outstanding invoices for corporate guests or groups billed to Master Folios, collected after checkout. |
+| **EOD (End of Day)** | Night Audit settlement process that posts daily charges, advances business date, and generates financial reports. |
+| **FIT (Free Independent Traveler)** | Individual guest not part of a group booking; pays standard rack rate or contracted individual rate. |
+| **Folio** | Financial ledger for a guest stay, recording all charges, payments, and transfers. |
+| **GCF (Guest Card File)** | Master database of guest profiles containing identity, contact, and stay history information. |
+| **Master Folio** | Consolidated billing account for B2B groups or corporate clients, aggregating charges from multiple guest folios. |
+| **NSG (Non-Stay Guest)** | Walk-in or external customer using hotel services (restaurant, laundry) without an active room reservation. |
+| **Night Audit** | End-of-day reconciliation process that verifies transactions, posts room charges, and advances the business date. |
+| **Opening Float** | Initial cash amount declared in the cashier drawer at the start of a shift. |
+| **Over/Short** | Variance between declared physical cash and system-expected cash during cashier shift close. Positive = surplus; negative = shortage. |
+| **Paymaster Room / Virtual Room** | Non-physical room used for Master Folio billing aggregation; excluded from occupancy metrics and housekeeping tasks. |
+| **RC (Registration Card)** | Printed document signed by guest at check-in containing stay details, rate, and identity confirmation. |
+| **Remittance** | Cash amount dropped for bank deposit after deducting petty cash retained for next shift float. |
+| **Rooming List** | Detailed list of guests within a group booking, showing names, room assignments, and stay dates. |
+| **Tape Chart** | Visual timeline grid displaying room reservations across dates, used for quick availability overview and drag-to-book operations. |
+| **Void** | Cancellation of a posted transaction that retains the original record (soft delete) with mandatory audit trail (reason, user, timestamp). |
+
+---
+
 ## User Roles & Permissions
 
 The application uses local storage session defaults (`localStorage.getItem('cashierName')` or `window.currentUser.name`) with client-side context resolution to govern system actions. Roles are structured into three operational levels:

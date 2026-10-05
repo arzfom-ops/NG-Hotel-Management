@@ -152,6 +152,170 @@ erDiagram
 
 ---
 
+## System Architecture
+
+### High-Level Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph Client["Browser (Client-Side)"]
+        HTML["index.html<br/>(SPA Shell)"]
+        APP["js/app.js<br/>(Entry Point & Window Bindings)"]
+        MODULES["ES6 Modules<br/>frontdesk.js, reservation.js,<br/>folio.js, cashier.js,<br/>night_audit.js, operations.js,<br/>guestProfiles.js, settings.js"]
+        SERVICES["Services Layer<br/>guestService.js"]
+        UTILS["Utils<br/>formatters.js"]
+        CONFIG["Config<br/>supabase.js"]
+    end
+
+    subgraph CDN["External CDN Dependencies"]
+        TAILWIND["Tailwind CSS"]
+        PHOSPHOR["Phosphor Icons"]
+        SUPABASE_SDK["@supabase/supabase-js v2"]
+    end
+
+    subgraph Vercel["Vercel Static Hosting"]
+        STATIC["Static Files<br/>(HTML, JS, CSS, Assets)"]
+        ENV["Environment Variables<br/>SUPABASE_URL, SUPABASE_ANON_KEY"]
+    end
+
+    subgraph Supabase["Supabase Backend"]
+        AUTH["Supabase Auth<br/>(Email/Password)"]
+        POSTGREST["PostgREST API<br/>(Auto-generated CRUD)"]
+        DB[("PostgreSQL Database<br/>(Tables, Views, Indexes)")]
+        RPC["Stored Procedures / RPC<br/>(fn_execute_night_audit,<br/>rpc_post_folio_transaction, etc.)"]
+        STORAGE["Supabase Storage<br/>(guest_documents bucket)"]
+        REALTIME["Supabase Realtime<br/>(WebSocket subscriptions)"]
+        RLS["Row Level Security<br/>(Data isolation policies)"]
+    end
+
+    HTML --> APP
+    APP --> MODULES
+    MODULES --> SERVICES
+    MODULES --> UTILS
+    MODULES --> CONFIG
+    HTML --> TAILWIND
+    HTML --> PHOSPHOR
+    CONFIG --> SUPABASE_SDK
+    Vercel --> HTML
+    CONFIG -.-> ENV
+    CONFIG -->|HTTPS + Anon Key| POSTGREST
+    CONFIG -->|HTTPS + Anon Key| AUTH
+    CONFIG -->|HTTPS + Anon Key| STORAGE
+    CONFIG -->|HTTPS + Anon Key| REALTIME
+    POSTGREST --> DB
+    RPC --> DB
+    RLS --> DB
+    AUTH --> DB
+```
+
+### Architecture Components
+
+#### 1. Frontend Layer (Browser-Side)
+- **Technology**: Pure Vanilla JavaScript with ES6 Modules, no build step or bundler.
+- **Entry Point**: `js/app.js` imports all feature modules and binds exported functions to `window` object for compatibility with inline HTML event handlers (`onclick`, `onchange`).
+- **State Management**: Minimal global state via `window.currentHotelDate`, `window.currentUser`, and `localStorage` for session persistence.
+- **UI Framework**: Tailwind CSS (utility-first) loaded via CDN; Phosphor Icons for iconography.
+- **SPA Navigation**: View toggling via `switchView()` function that shows/hides section containers in `index.html`.
+
+#### 2. Hosting Layer (Vercel)
+- **Deployment Model**: Static site hosting with automatic HTTPS.
+- **Build Process**: None (zero-build architecture). Files served as-is from repository root.
+- **Environment Variables**: `SUPABASE_URL` and `SUPABASE_ANON_KEY` injected via Vercel dashboard (currently hardcoded in `js/config/supabase.js` for simplicity, relying on Supabase RLS for security).
+- **CDN Caching**: Vercel Edge Network caches static assets globally.
+
+#### 3. Backend Layer (Supabase)
+- **Database**: PostgreSQL 15+ with automatic backups, point-in-time recovery.
+- **API**: PostgREST auto-generates RESTful endpoints from database schema; supports filtering, pagination, and embedded relations via query parameters.
+- **RPC Functions**: Custom PostgreSQL stored procedures for complex atomic operations (Night Audit, Folio Posting, Checkout, Cashier Shift).
+- **Authentication**: Supabase Auth with email/password provider; JWT tokens stored in browser session.
+- **Storage**: Dedicated bucket `guest_documents` for compressed guest ID card uploads (JPEG, max 800px width, 0.7 quality).
+- **Realtime**: WebSocket subscriptions for live updates (optional, used sparingly to avoid connection overhead).
+- **Security**: Row Level Security (RLS) policies enforce data isolation per user/role at database level.
+
+### Data Flow Patterns
+
+#### Pattern 1: Standard CRUD Operation
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Frontend Module
+    participant SDK as Supabase JS SDK
+    participant API as PostgREST
+    participant DB as PostgreSQL
+
+    User->>UI: Click "Save Reservation"
+    UI->>SDK: supabase.from('reservations').insert(payload)
+    SDK->>API: POST /rest/v1/reservations
+    API->>DB: INSERT with RLS check
+    DB-->>API: Return inserted row
+    API-->>SDK: JSON response
+    SDK-->>UI: { data, error }
+    UI-->>User: Show success toast / refresh table
+```
+
+#### Pattern 2: RPC Atomic Operation
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Frontend Module
+    participant SDK as Supabase JS SDK
+    participant RPC as Stored Procedure
+    participant DB as PostgreSQL
+
+    User->>UI: Click "Execute Night Audit"
+    UI->>SDK: supabase.rpc('fn_execute_night_audit', {p_user_name})
+    SDK->>RPC: Execute function
+    RPC->>DB: Multiple atomic operations<br/>(post charges, advance date, insert history)
+    DB-->>RPC: Transaction result
+    RPC-->>SDK: JSONB response
+    SDK-->>UI: { success, new_business_date, metrics }
+    UI-->>User: Display EOD Flash Report
+```
+
+#### Pattern 3: Client-Side Fallback
+
+```mermaid
+flowchart TD
+    A[Attempt RPC Call] --> B{RPC Success?}
+    B -->|Yes| C[Return RPC Result]
+    B -->|No / Error| D[Log Warning]
+    D --> E[Execute Direct Table Insert/Select]
+    E --> F{Direct Query Success?}
+    F -->|Yes| G[Return Direct Result]
+    F -->|No| H[Show Error Toast to User]
+```
+
+### Security Architecture
+
+```mermaid
+flowchart LR
+    subgraph Client
+        BROWSER[Browser Session]
+        JWT[JWT Token from Auth]
+    end
+
+    subgraph Supabase
+        RLS[Row Level Security]
+        AUTH[Auth Context<br/>auth.uid, auth.role]
+        DB[Database Tables]
+    end
+
+    BROWSER -->|HTTPS + JWT| RLS
+    JWT --> AUTH
+    AUTH -->|Evaluate Policies| RLS
+    RLS -->|Allow / Deny| DB
+```
+
+#### Key Security Principles
+- **Zero Trust at Database Level**: All data access filtered through RLS policies, regardless of client-side logic.
+- **Anon Key is Public by Design**: Supabase anon key is safe to expose in browser; security enforced via RLS, not key secrecy.
+- **Service Role Key Never in Client**: `SUPABASE_SERVICE_ROLE_KEY` (bypasses RLS) is only used in server-side contexts (Edge Functions, cron jobs), never in frontend code.
+- **Audit Trail Enforcement**: Void operations use soft-delete pattern; financial transactions cannot be hard-deleted.
+
+---
+
 ## Column Dictionary
 
 ### 1. `folio_transactions`
