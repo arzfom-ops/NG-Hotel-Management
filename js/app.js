@@ -237,7 +237,12 @@ import {
     renderDailyRevenueReport,
     loadDailyRevenueReport,
     handleDRRDateChange,
-    handlePrintDRR
+    handlePrintDRR,
+    fetchDailyReports,
+    openDailyReportsModal,
+    closeDailyReportsModal,
+    refreshDailyReports,
+    printDailyReports
 } from './modules/reports.js';
 
 import {
@@ -877,6 +882,11 @@ if (typeof window !== 'undefined') {
     window.loadDailyRevenueReport = loadDailyRevenueReport;
     window.handleDRRDateChange = handleDRRDateChange;
     window.handlePrintDRR = handlePrintDRR;
+    window.fetchDailyReports = fetchDailyReports;
+    window.openDailyReportsModal = openDailyReportsModal;
+    window.closeDailyReportsModal = closeDailyReportsModal;
+    window.refreshDailyReports = refreshDailyReports;
+    window.printDailyReports = printDailyReports;
 
     // Night Audit Module
     window.getCurrentBusinessDate = getCurrentBusinessDate;
