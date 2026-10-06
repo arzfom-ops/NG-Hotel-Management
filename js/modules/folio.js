@@ -1,5 +1,5 @@
 import { supabaseClient } from '../config/supabase.js';
-import { formatDateISO, formatStayDatesCompact, formatCurrency } from '../utils/formatters.js';
+import { formatDateISO, formatStayDatesCompact, formatCurrency, parseSafeDateOnly } from '../utils/formatters.js';
 
 // State Variables
 export let currentFolioReservation = null;
@@ -22,6 +22,29 @@ export function isNsgFolio(res) {
            res.is_nsg === true ||
            isPmRoom ||
            (!res.room_id && res.guest_type === 'Non-Staying Guest');
+}
+
+export function formatTransactionDisplayDate(tx, includeTime = true) {
+    if (!tx) return '-';
+    const rawBizDate = tx.hotel_business_date || (tx.transaction_date ? String(tx.transaction_date).split('T')[0] : null) || (tx.created_at ? String(tx.created_at).split('T')[0] : null);
+    if (!rawBizDate) return '-';
+
+    const safeDate = parseSafeDateOnly(rawBizDate);
+    const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+    const formattedDate = safeDate.toLocaleDateString('id-ID', dateOptions);
+
+    if (!includeTime) return formattedDate;
+
+    const rawTime = tx.created_at || tx.transaction_date;
+    if (!rawTime) return formattedDate;
+
+    const createdAt = new Date(rawTime);
+    if (isNaN(createdAt.getTime())) return formattedDate;
+
+    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+    const formattedTime = createdAt.toLocaleTimeString('id-ID', timeOptions).replace(':', '.');
+
+    return `${formattedDate}, ${formattedTime}`;
 }
 
 export function updateCheckoutButtonText(isNsg = false) {
@@ -539,7 +562,7 @@ export function renderFolioTransactions() {
                 }
             }
 
-            const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+            const dateStr = formatTransactionDisplayDate(tx, true);
             const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '';
 
             const typeBadgeClass = txType === 'PAID_OUT' ? 'bg-amber-100 text-amber-800 border-amber-200' :
@@ -787,7 +810,7 @@ export function renderMasterFolioTab(data) {
                 }
             }
 
-            const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+            const dateStr = formatTransactionDisplayDate(tx, true);
             const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '';
             const chargeDisplay = (txType === 'CHARGE' || catUpper.includes('ROOM')) ? `Rp ${total.toLocaleString('id-ID')}` : '-';
             const paymentDisplay = txType === 'PAYMENT' ? `Rp ${total.toLocaleString('id-ID')}` : '-';
@@ -1111,7 +1134,7 @@ export function renderMasterFolioTransactions() {
                 }
             }
 
-            const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+            const dateStr = formatTransactionDisplayDate(tx, true);
             const categoryBadge = tx.category ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase border border-slate-200">${tx.category}</span>` : '';
 
             const typeBadgeClass = txType === 'PAID_OUT' ? 'bg-amber-100 text-amber-800 border-amber-200' :
@@ -1572,6 +1595,7 @@ export async function handleSaveFolioTransaction(e) {
             activeBusinessDate = await window.getHotelBusinessDate();
         }
         if (!activeBusinessDate) {
+            console.warn('window.currentHotelDate tidak tersedia, fallback ke local date ISO YYYY-MM-DD');
             activeBusinessDate = formatDateISO(new Date());
         }
 
@@ -1600,7 +1624,7 @@ export async function handleSaveFolioTransaction(e) {
         }
 
         if (!rpcSuccess) {
-            const currentUser = localStorage.getItem('cashierName') || 'Staff';
+            const currentUser = window.currentUser?.name || localStorage.getItem('cashierName') || 'Staff';
             const payload = {
                 reservation_id: resId,
                 master_folio_id: masterId,
@@ -1617,7 +1641,7 @@ export async function handleSaveFolioTransaction(e) {
                 reference_number: referenceNumber,
                 transaction_date: new Date().toISOString(),
                 hotel_business_date: activeBusinessDate,
-                cashier_session_id: localStorage.getItem('activeShiftId') || null,
+                cashier_session_id: window.currentCashierSessionId || localStorage.getItem('activeShiftId') || null,
                 created_by: currentUser
             };
 
@@ -2389,7 +2413,7 @@ export function handlePrintFolio() {
             else if (txType === 'PAYMENT') totalPayments += total;
         }
 
-        const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        const dateStr = formatTransactionDisplayDate(tx, false);
         const chargeDisplay = (txType === 'CHARGE' || catUpper.includes('ROOM')) ? `Rp ${total.toLocaleString('id-ID')}` : '-';
         const paymentDisplay = txType === 'PAYMENT' ? `Rp ${total.toLocaleString('id-ID')}` : '-';
         const desc = isVoided ? `<span style="text-decoration: line-through; color: #94a3b8;">${tx.description || '-'} [VOID]</span>` : (tx.description || '-');
@@ -2660,7 +2684,7 @@ export async function handlePrintMasterFolio() {
             else if (txType === 'PAYMENT') totalPayments += total;
         }
 
-        const dateStr = tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        const dateStr = formatTransactionDisplayDate(tx, false);
         const chargeDisplay = (txType === 'CHARGE' || catUpper.includes('ROOM')) ? `Rp ${total.toLocaleString('id-ID')}` : '-';
         const paymentDisplay = txType === 'PAYMENT' ? `Rp ${total.toLocaleString('id-ID')}` : '-';
         const desc = isVoided ? `<span style="text-decoration: line-through; color: #94a3b8;">${tx.description || '-'} [VOID]</span>` : (tx.description || '-');
