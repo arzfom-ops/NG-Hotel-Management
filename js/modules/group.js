@@ -733,14 +733,14 @@ export let editingGroupId = null;
                     // Fetch payment transactions linked to this master folio
                     const { data: txs, error: txErr } = await supabaseClient
                         .from('folio_transactions')
-                        .select('amount, transaction_type, is_voided')
+                        .select('amount, transaction_type, is_void')
                         .eq('master_folio_id', masterFolio.id);
 
                     if (txErr) throw txErr;
 
                     if (txs && txs.length > 0) {
                         txs.forEach(t => {
-                            if (!t.is_voided) {
+                            if (!t.is_void) {
                                 const type = (t.transaction_type || '').toUpperCase();
                                 if (type === 'PAYMENT') {
                                     totalDeposit += Number(t.amount || 0);

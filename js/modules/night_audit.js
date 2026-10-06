@@ -265,7 +265,7 @@ export async function executeNightAudit(auditDateStr) {
  */
 
 function classifyTransactionHelper(tx) {
-    const isVoid = tx.is_void === true || tx.is_voided === true;
+    const isVoid = tx.is_void === true;
     if (isVoid) {
         return { categoryType: 'VOID', amount: parseFloat(tx.amount || tx.total || tx.charge || tx.credit || 0) };
     }
@@ -459,8 +459,8 @@ export async function openEodReportModal(reportData) {
     const businessDate = reportData.previous_business_date || reportData.business_date || currentPreAuditCheck?.current_hotel_date || '-';
     const executedAt = reportData.executed_at ? formatDateTimeDisplay(reportData.executed_at) : formatDateTimeDisplay(new Date().toISOString());
     const executedBy = reportData.executed_by || reportData.p_user_name || (window.currentUser?.name || 'System Admin');
-    const roomsOccupied = reportData.total_occupied ?? reportData.total_rooms_occupied ?? 0;
-    const roomRevenue = reportData.total_revenue ?? reportData.total_room_revenue ?? 0;
+    const roomsOccupied = reportData.total_occupied ?? 0;
+    const roomRevenue = reportData.total_revenue ?? 0;
     const taxService = reportData.total_tax_service ?? 0;
 
     const bDateEl = document.getElementById('eod-business-date');
@@ -594,8 +594,8 @@ export function printEodReport(data) {
     const businessDate = report.previous_business_date || report.business_date || '-';
     const executedAt = report.executed_at ? formatDateTimeDisplay(report.executed_at) : formatDateTimeDisplay(new Date().toISOString());
     const executedBy = report.executed_by || (window.currentUser?.name || 'System Admin');
-    const roomsOccupied = report.total_occupied ?? report.total_rooms_occupied ?? 0;
-    const roomRevenue = report.total_revenue ?? report.total_room_revenue ?? 0;
+    const roomsOccupied = report.total_occupied ?? 0;
+    const roomRevenue = report.total_revenue ?? 0;
     const taxService = report.total_tax_service ?? 0;
 
     const reconc = report.reconciliation || null;
@@ -791,8 +791,8 @@ export async function fetchNightAuditHistory() {
                 const bDate = item.business_date || '-';
                 const execAt = formatDateTimeDisplay(item.executed_at);
                 const execBy = item.executed_by || 'System Admin';
-                const occ = item.total_rooms_occupied ?? 0;
-                const rev = formatCurrency(item.total_room_revenue ?? 0);
+                const occ = item.total_occupied ?? 0;
+                const rev = formatCurrency(item.total_revenue ?? 0);
 
                 const rowJson = JSON.stringify(item).replace(/"/g, '&quot;');
 
@@ -829,8 +829,8 @@ export function openEodReportFromHistory(item) {
         previous_business_date: item.business_date,
         executed_at: item.executed_at,
         executed_by: item.executed_by,
-        total_occupied: item.total_rooms_occupied,
-        total_revenue: item.total_room_revenue,
+        total_occupied: item.total_occupied,
+        total_revenue: item.total_revenue,
         total_tax_service: item.total_tax_service
     });
 }

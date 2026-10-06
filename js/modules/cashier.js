@@ -28,6 +28,9 @@ export async function fetchCurrentCashierSession() {
             currentCashierSession = data[0];
             localStorage.setItem('activeShiftId', currentCashierSession.id);
             localStorage.setItem('cashierName', currentCashierSession.user_name);
+            if (typeof window !== 'undefined') {
+                window.currentCashierSessionId = currentCashierSession.id;
+            }
             return currentCashierSession;
         }
 
@@ -42,15 +45,24 @@ export async function fetchCurrentCashierSession() {
 
         if (!closedErr && closedData && closedData.length > 0) {
             currentCashierSession = closedData[0];
+            if (typeof window !== 'undefined') {
+                window.currentCashierSessionId = null;
+            }
             return currentCashierSession;
         }
 
         currentCashierSession = null;
         localStorage.removeItem('activeShiftId');
+        if (typeof window !== 'undefined') {
+            window.currentCashierSessionId = null;
+        }
         return null;
     } catch (err) {
         console.error('Error fetching cashier session:', err);
         currentCashierSession = null;
+        if (typeof window !== 'undefined') {
+            window.currentCashierSessionId = null;
+        }
         return null;
     }
 }
@@ -157,6 +169,9 @@ export async function handleOpenCashierShiftSubmit(e) {
         currentCashierSession = data;
         localStorage.setItem('activeShiftId', data.id);
         localStorage.setItem('cashierName', userName);
+        if (typeof window !== 'undefined') {
+            window.currentCashierSessionId = currentCashierSession.id;
+        }
 
         if (typeof window.updateShiftUI === 'function') window.updateShiftUI();
 
@@ -266,7 +281,7 @@ export function resetDenominationForm() {
  * Helper to classify transactions into Cash, Non-Cash, Paid Out, City Ledger, or Void
  */
 export function classifyTransaction(tx) {
-    const isVoid = tx.is_void === true || tx.is_voided === true;
+    const isVoid = tx.is_void === true;
     if (isVoid) {
         return { categoryType: 'VOID', amount: parseFloat(tx.amount || tx.total || tx.charge || tx.credit || 0) };
     }
@@ -384,7 +399,8 @@ export async function handleCloseCashierShiftSubmit(e) {
         const { data: txList, error: txErr } = await supabaseClient
             .from('folio_transactions')
             .select('*, payment_methods(id, name, type, method_type)')
-            .eq('cashier_session_id', session.id);
+            .eq('cashier_session_id', session.id)
+            .eq('is_void', false);
 
         if (txErr) throw txErr;
 
@@ -427,6 +443,9 @@ export async function handleCloseCashierShiftSubmit(e) {
 
         currentCashierSession = updatedSession;
         localStorage.removeItem('activeShiftId');
+        if (typeof window !== 'undefined') {
+            window.currentCashierSessionId = null;
+        }
 
         if (typeof window.updateShiftUI === 'function') window.updateShiftUI();
 

@@ -1487,7 +1487,7 @@ export function renderReservationDepositHistory(deposits) {
         tbody.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-slate-400">Belum ada deposit recorded.</td></tr>`;
     } else {
         tbody.innerHTML = deposits.map(d => {
-            const isVoided = d.is_voided === true;
+            const isVoided = d.is_void === true;
             const amt = Number(d.amount || 0);
             if (!isVoided) total += amt;
 

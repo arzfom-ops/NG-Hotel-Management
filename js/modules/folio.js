@@ -549,7 +549,7 @@ export function renderFolioTransactions() {
     } else {
         tbody.innerHTML = currentFolioTransactions.map(tx => {
             const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
-            const isVoided = tx.is_void === true || tx.is_voided === true;
+            const isVoided = tx.is_void === true;
             const isTransferredToMaster = !!(tx.master_folio_id);
 
             if (!isVoided && !isTransferredToMaster) {
@@ -798,7 +798,7 @@ export function renderMasterFolioTab(data) {
     } else if (tbody) {
         tbody.innerHTML = data.transactions.map(tx => {
             const { txType, catUpper, total } = mapFolioTransactionData(tx);
-            const isVoided = tx.is_voided === true;
+            const isVoided = tx.is_void === true;
 
             if (!isVoided) {
                 const isPaymentCategory = ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD', 'CASH', 'CREDIT_CARD', 'BANK_TRANSFER'].includes(catUpper) ||
@@ -1122,7 +1122,7 @@ export function renderMasterFolioTransactions() {
     } else {
         tbody.innerHTML = currentMasterTransactions.map(tx => {
             const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
-            const isVoided = tx.is_void === true || tx.is_voided === true;
+            const isVoided = tx.is_void === true;
 
             if (!isVoided) {
                 const isPaymentCategory = ['PAYMENT', 'DEPOSIT', 'PAYMENT_CASH', 'PAYMENT_CARD', 'CASH', 'CREDIT_CARD', 'BANK_TRANSFER'].includes(catUpper) ||
@@ -1636,7 +1636,6 @@ export async function handleSaveFolioTransaction(e) {
                 unit_price: (txType === 'PAYMENT' || txType === 'PAID_OUT') ? amount : (unitPrice || amount),
                 amount: amount,
                 total: amount,
-                charge: (txType === 'CHARGE' || txType === 'PAID_OUT') ? amount : 0,
                 credit: txType === 'PAYMENT' ? amount : 0,
                 reference_number: referenceNumber,
                 transaction_date: new Date().toISOString(),
@@ -1702,12 +1701,12 @@ export async function handleVoidTransaction(transactionId) {
             console.warn('rpc_void_folio_transaction call exception, falling back:', e);
         }
 
-        // Direct update ensures all columns (is_void, is_voided, void_reason, voided_by, voided_at) are saved
+        // Direct update ensures all columns (is_void, void_reason, voided_by, voided_at) are saved
+        const currentUser = window.currentUser?.name || localStorage.getItem('cashierName') || 'Staff';
         const { error } = await supabaseClient
             .from('folio_transactions')
             .update({
                 is_void: true,
-                is_voided: true,
                 void_reason: voidReason.trim(),
                 voided_by: currentUser,
                 voided_at: new Date().toISOString()
@@ -2406,7 +2405,7 @@ export function handlePrintFolio() {
 
     const rowsHtml = currentFolioTransactions.map(tx => {
         const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
-        const isVoided = tx.is_voided === true;
+        const isVoided = tx.is_void === true;
 
         if (!isVoided) {
             if (txType === 'CHARGE' || catUpper.includes('ROOM')) totalCharges += total;
@@ -2677,7 +2676,7 @@ export async function handlePrintMasterFolio() {
 
     const rowsHtml = (masterTxList || []).map(tx => {
         const { txType, catUpper, qty, unitPrice, total } = mapFolioTransactionData(tx);
-        const isVoided = tx.is_voided === true;
+        const isVoided = tx.is_void === true;
 
         if (!isVoided) {
             if (txType === 'CHARGE' || catUpper.includes('ROOM')) totalCharges += total;
