@@ -115,6 +115,9 @@
             <a href="#" onclick="switchView('night-audit')" id="nav-night-audit" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-sm font-semibold cursor-pointer">
                 <i class="ph ph-moon-stars text-xl"></i> Night Audit
             </a>
+            <button type="button" onclick="openDailyReportsModal()" id="nav-daily-reports" class="w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 text-sm font-semibold cursor-pointer">
+                <i class="ph ph-file-text text-xl"></i> Daily Reports
+            </button>
             <!-- Reports Section -->
             <div class="pt-2 space-y-1">
                 <div class="px-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reports</div>
@@ -180,6 +183,9 @@
             <a href="#" onclick="switchView('night-audit')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
                 <i class="ph ph-moon-stars text-xl"></i> Night Audit
             </a>
+            <button type="button" onclick="openDailyReportsModal()" class="w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 hover:shadow-sm border border-transparent hover:border-white/60 transition-all duration-200 text-sm font-semibold cursor-pointer">
+                <i class="ph ph-file-text text-xl"></i> Daily Reports
+            </button>
             <!-- Reports Section -->
             <div class="pt-2 space-y-1">
                 <div class="px-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reports</div>
@@ -4245,6 +4251,38 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Daily Reports Modal -->
+    <div id="modal-daily-reports" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-bold">Daily Financial Reports</h3>
+                <button onclick="closeDailyReportsModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+
+            <!-- Controls -->
+            <div class="p-4 bg-gray-50 border-b flex gap-4 items-center">
+                <label class="font-medium">Business Date:</label>
+                <input type="date" id="report-date-picker" class="border rounded px-2 py-1">
+                <button onclick="refreshDailyReports()" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Refresh</button>
+            </div>
+
+            <!-- Content Area (Scrollable) -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-6" id="daily-reports-content">
+                <!-- Sections will be injected here via JS -->
+                <div id="section-summary"></div>
+                <hr>
+                <div id="section-guest-balances"></div>
+                <hr>
+                <div id="section-checkout-list"></div>
+            </div>
+
+            <div class="p-4 border-t text-right">
+                <button onclick="printDailyReports()" class="mr-2 text-gray-600 underline">Print Report</button>
+                <button onclick="closeDailyReportsModal()" class="bg-gray-200 px-4 py-2 rounded">Close</button>
+            </div>
         </div>
     </div>
 
