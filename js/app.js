@@ -265,6 +265,7 @@ import {
 } from './modules/night_audit.js';
 
 import {
+    getActiveCashierSessionId,
     getActiveShift,
     updateShiftUI,
     openStartShiftModal,
@@ -907,6 +908,7 @@ if (typeof window !== 'undefined') {
     window.renderCashierReconciliationSummaryUI = renderCashierReconciliationSummaryUI;
 
     // Shift & Settlement Module
+    window.getActiveCashierSessionId = getActiveCashierSessionId;
     window.getActiveShift = getActiveShift;
     window.updateShiftUI = updateShiftUI;
     window.openStartShiftModal = openStartShiftModal;
@@ -1178,7 +1180,11 @@ export async function initApp() {
         initRealtimeSubscriptions();
 
         // Initialize Shift UI state & Logbooks
-        if (typeof window.updateShiftUI === 'function') window.updateShiftUI();
+        if (typeof window.getActiveCashierSessionId === 'function') {
+            await window.getActiveCashierSessionId();
+        } else if (typeof window.updateShiftUI === 'function') {
+            window.updateShiftUI();
+        }
         if (typeof window.fetchShiftLogbooks === 'function') window.fetchShiftLogbooks();
 
     } catch (err) {

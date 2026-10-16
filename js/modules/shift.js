@@ -18,7 +18,7 @@ export async function getActiveCashierSessionId() {
     if (sessionId) {
         const { data, error } = await supabaseClient
             .from('cashier_sessions')
-            .select('id')
+            .select('id, user_name')
             .eq('id', sessionId)
             .eq('status', 'OPEN')
             .maybeSingle();
@@ -27,6 +27,10 @@ export async function getActiveCashierSessionId() {
             window.currentCashierSessionId = data.id;
             localStorage.setItem(STORAGE_CASHIER_SESSION_ID, data.id);
             localStorage.setItem(STORAGE_SHIFT_ID, data.id);
+            if (data.user_name) {
+                localStorage.setItem(STORAGE_CASHIER_NAME, data.user_name);
+            }
+            updateShiftUI();
             return data.id;
         }
     }
@@ -42,7 +46,7 @@ export async function getActiveCashierSessionId() {
 
     const { data: openShift } = await supabaseClient
         .from('cashier_sessions')
-        .select('id')
+        .select('id, user_name')
         .eq('status', 'OPEN')
         .eq('business_date', businessDate)
         .order('opened_at', { ascending: false })
@@ -53,12 +57,17 @@ export async function getActiveCashierSessionId() {
         window.currentCashierSessionId = openShift.id;
         localStorage.setItem(STORAGE_CASHIER_SESSION_ID, openShift.id);
         localStorage.setItem(STORAGE_SHIFT_ID, openShift.id);
+        if (openShift.user_name) {
+            localStorage.setItem(STORAGE_CASHIER_NAME, openShift.user_name);
+        }
+        updateShiftUI();
         return openShift.id;
     }
 
     window.currentCashierSessionId = null;
     localStorage.removeItem(STORAGE_CASHIER_SESSION_ID);
     localStorage.removeItem(STORAGE_SHIFT_ID);
+    updateShiftUI();
     return null;
 }
 
@@ -193,30 +202,24 @@ export async function handleOpenShift(cashierName, shiftName, openingFloat) {
 /**
  * Handle Open Close Shift Modal
  */
-export function handleCloseShiftModal() {
-    const activeShift = getActiveShift();
-    if (!activeShift) {
+export async function handleCloseShiftModal() {
+    const sessionId = await getActiveCashierSessionId();
+    if (!sessionId) {
         alert('Tidak ada shift aktif yang berjalan.');
         return;
     }
 
-    const modal = document.getElementById('closeShiftModal');
-    if (modal) {
-        modal.classList.remove('hidden');
+    window.currentCashierSessionId = sessionId;
+    localStorage.setItem(STORAGE_CASHIER_SESSION_ID, sessionId);
+    localStorage.setItem(STORAGE_SHIFT_ID, sessionId);
 
-        const cashierDisplay = document.getElementById('close-shift-cashier-display');
-        const shiftDisplay = document.getElementById('close-shift-name-display');
-
-        if (cashierDisplay) cashierDisplay.textContent = activeShift.cashierName;
-        if (shiftDisplay) shiftDisplay.textContent = activeShift.shiftName;
-
-        const actualCashInput = document.getElementById('close-shift-actual-cash');
-        const cashDropInput = document.getElementById('close-shift-cash-drop');
-        const notesInput = document.getElementById('close-shift-notes');
-
-        if (actualCashInput) actualCashInput.value = '';
-        if (cashDropInput) cashDropInput.value = '0';
-        if (notesInput) notesInput.value = '';
+    if (typeof window.openDenominationModal === 'function') {
+        window.openDenominationModal(sessionId);
+    } else {
+        const modal = document.getElementById('modal-close-cashier-shift') || document.getElementById('closeShiftModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
     }
 }
 
@@ -241,18 +244,19 @@ export async function executeCloseShift(actualCash, cash_drop, notes) {
             notes = document.getElementById('close-shift-notes')?.value;
         }
 
-        const activeShift = getActiveShift();
-        if (!activeShift) {
+        const sessionId = await getActiveCashierSessionId();
+        if (!sessionId) {
             alert('Tidak ada shift aktif.');
             return { success: false, message: 'Tidak ada shift aktif.' };
         }
 
+        const activeShift = getActiveShift();
         const actualCashVal = Number(actualCash) || 0;
         const cashDropVal = Number(cash_drop) || 0;
         const notesStr = notes || '';
 
         const { data, error } = await supabaseClient.rpc('rpc_close_cashier_shift', {
-            p_shift_id: activeShift.activeShiftId,
+            p_shift_id: sessionId,
             p_actual_cash: actualCashVal,
             p_cash_drop: cashDropVal,
             p_notes: notesStr

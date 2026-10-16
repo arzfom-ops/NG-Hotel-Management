@@ -365,6 +365,16 @@ export function calculateDenominationsTotal() {
 export async function handleCloseCashierShiftSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
 
+    const activeSessionId = await getActiveCashierSessionId();
+    if (!activeSessionId) {
+        alert('Tidak ada shift aktif yang siap ditutup.');
+        return;
+    }
+
+    if (!currentCashierSession || currentCashierSession.id !== activeSessionId || currentCashierSession.status !== 'OPEN') {
+        await fetchCurrentCashierSession();
+    }
+
     if (!currentCashierSession || currentCashierSession.status !== 'OPEN') {
         alert('Tidak ada shift aktif yang siap ditutup.');
         return;
