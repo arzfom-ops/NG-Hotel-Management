@@ -1,5 +1,6 @@
 import { supabaseClient } from '../config/supabase.js';
 import { formatDateISO, formatStayDatesCompact, formatCurrency, parseSafeDateOnly } from '../utils/formatters.js';
+import { getActiveCashierSessionId } from './shift.js';
 
 // State Variables
 export let currentFolioReservation = null;
@@ -1482,6 +1483,13 @@ export function calculateFolioTotal() {
 
 export async function handleSaveFolioTransaction(e) {
     if (e && e.preventDefault) e.preventDefault();
+
+    const activeSessionId = await getActiveCashierSessionId();
+    if (!activeSessionId) {
+        alert("Tidak dapat memproses transaksi: Tidak ada sesi shift kasir yang aktif. Silakan buka shift kasir terlebih dahulu.");
+        return;
+    }
+
     const txModal = document.getElementById('folioTransactionModal');
     const isMasterMode = txModal && txModal.dataset.isMasterMode === "true";
 
@@ -1611,6 +1619,7 @@ export async function handleSaveFolioTransaction(e) {
                 p_unit_price: txType === 'PAYMENT' ? amount : unitPrice,
                 p_amount: amount,
                 p_reference_number: referenceNumber,
+                p_cashier_session_id: activeSessionId,
                 p_hotel_business_date: activeBusinessDate,
                 hotel_business_date: activeBusinessDate
             });
@@ -1640,7 +1649,7 @@ export async function handleSaveFolioTransaction(e) {
                 reference_number: referenceNumber,
                 transaction_date: new Date().toISOString(),
                 hotel_business_date: activeBusinessDate,
-                cashier_session_id: window.currentCashierSessionId || localStorage.getItem('activeShiftId') || null,
+                cashier_session_id: activeSessionId,
                 created_by: currentUser
             };
 

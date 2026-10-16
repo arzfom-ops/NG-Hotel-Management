@@ -1,5 +1,8 @@
 import { supabaseClient } from '../config/supabase.js';
 import { formatCurrency, formatRupiah } from '../utils/formatters.js';
+import { getActiveCashierSessionId } from './shift.js';
+
+export { getActiveCashierSessionId };
 
 // State Variables
 export let currentCashierSession = null;
@@ -27,6 +30,7 @@ export async function fetchCurrentCashierSession() {
         if (data && data.length > 0) {
             currentCashierSession = data[0];
             localStorage.setItem('activeShiftId', currentCashierSession.id);
+            localStorage.setItem('activeCashierSessionId', currentCashierSession.id);
             localStorage.setItem('cashierName', currentCashierSession.user_name);
             if (typeof window !== 'undefined') {
                 window.currentCashierSessionId = currentCashierSession.id;
@@ -53,6 +57,7 @@ export async function fetchCurrentCashierSession() {
 
         currentCashierSession = null;
         localStorage.removeItem('activeShiftId');
+        localStorage.removeItem('activeCashierSessionId');
         if (typeof window !== 'undefined') {
             window.currentCashierSessionId = null;
         }
@@ -168,6 +173,7 @@ export async function handleOpenCashierShiftSubmit(e) {
 
         currentCashierSession = data;
         localStorage.setItem('activeShiftId', data.id);
+        localStorage.setItem('activeCashierSessionId', data.id);
         localStorage.setItem('cashierName', userName);
         if (typeof window !== 'undefined') {
             window.currentCashierSessionId = currentCashierSession.id;
@@ -443,6 +449,7 @@ export async function handleCloseCashierShiftSubmit(e) {
 
         currentCashierSession = updatedSession;
         localStorage.removeItem('activeShiftId');
+        localStorage.removeItem('activeCashierSessionId');
         if (typeof window !== 'undefined') {
             window.currentCashierSessionId = null;
         }
