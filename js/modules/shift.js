@@ -11,62 +11,67 @@ const STORAGE_SHIFT_NAME = 'shiftName';
  * Export function to get and validate active cashier session ID
  */
 export async function getActiveCashierSessionId() {
-    // Cek memory/localStorage terlebih dahulu
-    let sessionId = window.currentCashierSessionId || localStorage.getItem(STORAGE_CASHIER_SESSION_ID) || localStorage.getItem(STORAGE_SHIFT_ID);
+    // 1. Cek memori global
+    if (window.currentCashierSessionId) {
+        return window.currentCashierSessionId;
+    }
 
-    // Validasi ke Supabase untuk memastikan sesi benar-benar ada dan berstatus OPEN
-    if (sessionId) {
-        const { data, error } = await supabaseClient
+    // 2. Cek localStorage dengan berbagai kemungkinan nama key
+    const storedId = localStorage.getItem('activeCashierSessionId') ||
+                     localStorage.getItem('activeShiftId') ||
+                     localStorage.getItem('currentShiftId');
+
+    if (storedId) {
+        // Validasi cepat apakah ID ini memang berstatus OPEN di database
+        const { data } = await supabaseClient
             .from('cashier_sessions')
             .select('id, user_name')
-            .eq('id', sessionId)
+            .eq('id', storedId)
             .eq('status', 'OPEN')
             .maybeSingle();
 
-        if (data && !error) {
+        if (data?.id) {
             window.currentCashierSessionId = data.id;
-            localStorage.setItem(STORAGE_CASHIER_SESSION_ID, data.id);
-            localStorage.setItem(STORAGE_SHIFT_ID, data.id);
+            localStorage.setItem('activeCashierSessionId', data.id);
+            localStorage.setItem('activeShiftId', data.id);
             if (data.user_name) {
-                localStorage.setItem(STORAGE_CASHIER_NAME, data.user_name);
+                localStorage.setItem('cashierName', data.user_name);
             }
             updateShiftUI();
             return data.id;
         }
     }
 
-    // Fallback: cari sesi OPEN untuk tanggal bisnis berjalan
-    let businessDate = window.currentHotelDate;
-    if (!businessDate && typeof window.getHotelBusinessDate === 'function') {
-        businessDate = await window.getHotelBusinessDate();
-    }
-    if (!businessDate) {
-        businessDate = new Date().toISOString().split('T')[0];
-    }
-
-    const { data: openShift } = await supabaseClient
+    // 3. Fallback: Ambil sesi shift yang sedang OPEN langsung dari database
+    // JANGAN gunakan filter tanggal bisnis atau user_id yang kaku agar tidak gagal cocok
+    const { data: openShift, error } = await supabaseClient
         .from('cashier_sessions')
         .select('id, user_name')
         .eq('status', 'OPEN')
-        .eq('business_date', businessDate)
-        .order('opened_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-    if (openShift) {
+    if (error) {
+        console.error("Gagal memeriksa sesi kasir aktif:", error);
+        return null;
+    }
+
+    if (openShift?.id) {
+        // Pulihkan state ke memori dan localStorage
         window.currentCashierSessionId = openShift.id;
-        localStorage.setItem(STORAGE_CASHIER_SESSION_ID, openShift.id);
-        localStorage.setItem(STORAGE_SHIFT_ID, openShift.id);
+        localStorage.setItem('activeCashierSessionId', openShift.id);
+        localStorage.setItem('activeShiftId', openShift.id);
         if (openShift.user_name) {
-            localStorage.setItem(STORAGE_CASHIER_NAME, openShift.user_name);
+            localStorage.setItem('cashierName', openShift.user_name);
         }
         updateShiftUI();
         return openShift.id;
     }
 
     window.currentCashierSessionId = null;
-    localStorage.removeItem(STORAGE_CASHIER_SESSION_ID);
-    localStorage.removeItem(STORAGE_SHIFT_ID);
+    localStorage.removeItem('activeCashierSessionId');
+    localStorage.removeItem('activeShiftId');
     updateShiftUI();
     return null;
 }
