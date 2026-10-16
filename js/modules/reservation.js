@@ -1,5 +1,6 @@
 import { supabaseClient } from '../config/supabase.js';
 import { formatDateISO, addDays, formatStayDatesCompact, showToast } from '../utils/formatters.js';
+import { getActiveCashierSessionId } from './shift.js';
 import { searchGuestCards, getGuestCardById, saveGuestCard, applyGuestCardToReservation } from '../services/guestService.js';
 import { fetchMasterCities } from './guestProfiles.js';
 
@@ -2763,6 +2764,7 @@ export async function handleSaveReservation(event) {
                     if (!activeBusinessDate) {
                         activeBusinessDate = formatDateISO(new Date());
                     }
+                    const activeCashierSessionId = await getActiveCashierSessionId();
                     const txPayloads = pendingNewReservationDeposits.map(d => ({
                         reservation_id: savedReservationId,
                         transaction_type: 'PAYMENT',
@@ -2771,7 +2773,7 @@ export async function handleSaveReservation(event) {
                         payment_method_id: d.payment_method_id,
                         transaction_date: d.transaction_date || new Date().toISOString(),
                         hotel_business_date: activeBusinessDate,
-                        cashier_session_id: localStorage.getItem('activeShiftId') || null
+                        cashier_session_id: activeCashierSessionId || null
                     }));
                     await supabaseClient.from('folio_transactions').insert(txPayloads);
                 }
@@ -2864,6 +2866,7 @@ export async function handleSaveReservation(event) {
                     if (!activeBusinessDate) {
                         activeBusinessDate = formatDateISO(new Date());
                     }
+                    const activeCashierSessionId = await getActiveCashierSessionId();
                     const txPayloads = pendingNewReservationDeposits.map(d => ({
                         reservation_id: savedReservationId,
                         transaction_type: 'PAYMENT',
@@ -2872,7 +2875,7 @@ export async function handleSaveReservation(event) {
                         payment_method_id: d.payment_method_id,
                         transaction_date: d.transaction_date || new Date().toISOString(),
                         hotel_business_date: activeBusinessDate,
-                        cashier_session_id: localStorage.getItem('activeShiftId') || null
+                        cashier_session_id: activeCashierSessionId || null
                     }));
                     await supabaseClient.from('folio_transactions').insert(txPayloads);
                 }
