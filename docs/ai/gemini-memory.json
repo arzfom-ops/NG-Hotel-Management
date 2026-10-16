@@ -1,0 +1,142 @@
+{
+  "project_name": "Hotel Property Management System (PMS)",
+  "version": "1.0.0",
+  "architecture": {
+    "type": "Single Page Application (SPA)",
+    "frontend": "Pure ES6 Vanilla JavaScript Modules, HTML5, Tailwind CSS (CDN), Phosphor Icons (CDN)",
+    "backend": "Supabase (PostgreSQL 15+, PostgREST API, Stored Procedures/RPC, Storage, Auth)",
+    "hosting": "Vercel Static Site (Zero-build pipeline)",
+    "entry_point": "js/app.js",
+    "global_window_bindings": "All module exported functions called by inline UI event handlers are imported and bound to `window` in `js/app.js`."
+  },
+  "modules": {
+    "app.js": {
+      "path": "js/app.js",
+      "description": "Application entry point, initializes Supabase client, binds exported module functions to `window`, manages view toggling (`switchView`), and sets up midnight business date polling."
+    },
+    "frontdesk.js": {
+      "path": "js/modules/frontdesk.js",
+      "description": "Frontdesk dashboard, DataGrid table rendering, 14-day Tape Chart matrix, room forecast availability, drag-and-drop room assignments, and unassigned reservations drawer."
+    },
+    "reservation.js": {
+      "path": "js/modules/reservation.js",
+      "description": "Reservation lifecycle management, quick/advanced search, room category lookup, ID document compression/webcam capture upload to Supabase Storage (`guest_documents`), group quantity handling, and physical room conflict checking."
+    },
+    "folio.js": {
+      "path": "js/modules/folio.js",
+      "description": "Guest and Master Folio accounting, charge and payment posting, bill transfers between folios (`rpc_transfer_folio_transaction`), void transaction audit trails, routing rules, and checkout validation."
+    },
+    "cashier.js": {
+      "path": "js/modules/cashier.js",
+      "description": "Cashier shift management (OPEN, CLOSED), blind drop cash count modal, over/short variance calculation, 4-section cashier shift summary printable report, and denomination calculations."
+    },
+    "night_audit.js": {
+      "path": "js/modules/night_audit.js",
+      "description": "End-of-day Night Audit execution, pre-audit validation checklist (`fn_pre_night_audit_check`), EOD Flash Report generation, auto room charge posting, and business date rollover."
+    },
+    "group.js": {
+      "path": "js/modules/group.js",
+      "description": "B2B Group booking split management (`rpc_split_group_reservation`), group master folios, corporate profile linking, group deposit management, and rooming list handling."
+    },
+    "guestProfiles.js": {
+      "path": "js/modules/guestProfiles.js",
+      "description": "Guest Card Files (GCF) master database CRUD, profile autocomplete search, stay history tracking, and duplicate profile handling."
+    },
+    "operations.js": {
+      "path": "js/modules/operations.js",
+      "description": "Housekeeping status management (Clean, Dirty, Inspected, Out of Order) and room operational controls."
+    },
+    "reports.js": {
+      "path": "js/modules/reports.js",
+      "description": "Financial and operational reporting suite, Daily Revenue Report (DRR), market segment analytics, and occupancy statistics."
+    },
+    "settings.js": {
+      "path": "js/modules/settings.js",
+      "description": "Property management configuration, room types, physical rooms, rate structures, tax & service rules, meal plans, extra charge catalog, and market segments."
+    },
+    "shift.js": {
+      "path": "js/modules/shift.js",
+      "description": "Cashier shift logbooks and session persistence utilities."
+    },
+    "guestService.js": {
+      "path": "js/services/guestService.js",
+      "description": "Abstraction service layer for GCF lookup, search, and reservation profile linking."
+    },
+    "formatters.js": {
+      "path": "js/utils/formatters.js",
+      "description": "Utility formatters for Indonesian Rupiah (IDR) currency formatting, date manipulation, and string sanitization."
+    },
+    "supabase.js": {
+      "path": "js/config/supabase.js",
+      "description": "Supabase client initialization using `@supabase/supabase-js` v2."
+    }
+  },
+  "database_schema": {
+    "tables": [
+      "system_settings",
+      "guest_card_files",
+      "corporate_profiles",
+      "room_types",
+      "rooms",
+      "group_bookings",
+      "reservations",
+      "master_folios",
+      "cashier_sessions",
+      "folio_transactions",
+      "night_audit_history",
+      "shift_logbooks"
+    ],
+    "core_relationships": {
+      "guest_card_files_to_reservations": "reservations.guest_card_id -> guest_card_files.id (explicit relationship name: `guest_card_files!fk_reservations_guest_card`)",
+      "multi_room_reservation_split": "Parent reservation splits into child reservations linked via `parent_reservation_id` and `group_booking_id`.",
+      "folio_transactions_links": "Linked to `reservations.id` or `master_folios.id`, and `cashier_sessions.id`."
+    }
+  },
+  "rpc_functions": {
+    "rpc_post_folio_transaction": "Posts CHARGE or PAYMENT to a folio, inheriting current hotel business date and active cashier session ID.",
+    "rpc_transfer_folio_transaction": "Transfers selected transactions between guest folios or to master folios using atomic reversal offset entries. Expects `p_transaction_ids` array of UUID strings.",
+    "rpc_void_folio_transaction": "Soft-deletes a transaction by setting `is_void = true`, `void_reason`, `voided_by`, and `voided_at`.",
+    "rpc_open_cashier_shift": "Opens a new cashier shift session with opening float.",
+    "rpc_close_cashier_shift": "Closes an active cashier shift with declared cash and calculates over/short variance.",
+    "rpc_split_group_reservation": "Splits a parent reservation (`qty > 1`) into individual child reservations (`qty = 1`).",
+    "rpc_process_checkout": "Validates zero balance, sets reservation status to `CHECKED_OUT`, and updates room status to `Dirty`.",
+    "rpc_get_available_physical_rooms": "Queries available physical rooms for given date range and room type.",
+    "fn_pre_night_audit_check": "Validates pre-audit readiness (checks open cashier shifts, pending arrivals, pending departures).",
+    "fn_execute_night_audit": "Posts daily room charges, advances `system_settings.current_hotel_date`, and logs `night_audit_history`."
+  },
+  "key_design_decisions": {
+    "blind_drop_method": {
+      "description": "During shift close, system expected cash is hidden from the cashier. Closing triggers Denomination Calculator modal where cashier enters physical cash counts. System expected cash and over/short variance are computed upon submission.",
+      "formula": {
+        "system_net_cash": "Total Cash Payments - Total Paid Out",
+        "system_expected_cash": "Opening Float + System Net Cash",
+        "remittance_amount": "Total Declared Cash - Petty Cash Retained",
+        "over_short": "Total Declared Cash - System Expected Cash"
+      }
+    },
+    "business_date_sovereignty": {
+      "description": "All operational and financial transactions anchor to `current_hotel_date` from `system_settings`, NOT local client machine time."
+    },
+    "void_audit_trail": {
+      "description": "Hard-deleting financial records is strictly prohibited. Voiding sets `is_void = true` with mandatory void reason and user details, retaining record for audit trails."
+    },
+    "checkout_balance_enforcement": {
+      "description": "Checkout (`rpc_process_checkout`) requires `balance == 0`. Outstanding balances must be settled or transferred to a Master/AR folio first."
+    },
+    "client_side_fallback": {
+      "description": "Modules wrap Supabase RPC stored procedure calls in try/catch blocks with direct table query fallbacks if RPC endpoints are unavailable or return schema errors."
+    },
+    "paymaster_and_nsg": {
+      "description": "Paymaster/Virtual rooms use room numbers prefixed with 'PM-' (case-insensitive) and `is_virtual = true`. Non-stay guests use `guest_type = 'Non-Staying Guest'`."
+    },
+    "cashier_session_persistence": {
+      "description": "Active shift state is persisted in `localStorage` (`activeShiftId`, `cashierName`, `shiftName`). All folio postings inherit active `cashier_session_id`."
+    }
+  },
+  "developer_guidelines": {
+    "inline_event_handlers": "When creating or modifying UI components called via HTML `onclick` or `onchange`, export the function in its module and bind it to `window` in `js/app.js`.",
+    "foreign_key_sanitization": "Ensure foreign key references like `guest_card_id` and `guest_profile_id` are passed as `null` rather than empty strings `\"\"` or `0` to prevent PostgREST foreign key errors.",
+    "postgrest_explicit_joins": "Use explicit relationship syntax when querying embedded resources (e.g. `guest_card_files!fk_reservations_guest_card(...)`).",
+    "verification_procedure": "Always verify state changes using read-only inspect tools after editing files. Run automated Python Playwright/pytest verification scripts when testing UI and API behavior."
+  }
+}
