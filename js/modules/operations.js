@@ -1,5 +1,6 @@
 import { supabaseClient } from '../config/supabase.js';
 import { formatDateISO, formatStayDatesCompact, getStatusBadgeHTML } from '../utils/formatters.js';
+import { getActiveCashierSessionId } from './shift.js';
 
 // --- Housekeeping Management Logic ---
 export function getHousekeepingBgColor(status) {
@@ -723,6 +724,7 @@ export async function handleDepositSettlement(settlementType) {
             activeBusinessDate = formatDateISO(new Date());
         }
 
+        const activeCashierSessionId = await getActiveCashierSessionId();
         const payload = {
             reservation_id: resId,
             transaction_type: 'CHARGE',
@@ -730,7 +732,7 @@ export async function handleDepositSettlement(settlementType) {
             amount: depositAmt,
             transaction_date: new Date().toISOString(),
             hotel_business_date: activeBusinessDate,
-            cashier_session_id: localStorage.getItem('activeShiftId') || null
+            cashier_session_id: activeCashierSessionId || null
         };
 
         const { error: txErr } = await supabaseClient

@@ -11,22 +11,18 @@ const STORAGE_SHIFT_NAME = 'shiftName';
  * Export function to get and validate active cashier session ID
  */
 export async function getActiveCashierSessionId() {
-    // 1. Cek memori global
-    if (window.currentCashierSessionId) {
-        return window.currentCashierSessionId;
-    }
+    // 1. Cek memori global atau localStorage
+    const candidateId = window.currentCashierSessionId ||
+                        localStorage.getItem('activeCashierSessionId') ||
+                        localStorage.getItem('activeShiftId') ||
+                        localStorage.getItem('currentShiftId');
 
-    // 2. Cek localStorage dengan berbagai kemungkinan nama key
-    const storedId = localStorage.getItem('activeCashierSessionId') ||
-                     localStorage.getItem('activeShiftId') ||
-                     localStorage.getItem('currentShiftId');
-
-    if (storedId) {
+    if (candidateId) {
         // Validasi cepat apakah ID ini memang berstatus OPEN di database
         const { data } = await supabaseClient
             .from('cashier_sessions')
-            .select('id, user_name')
-            .eq('id', storedId)
+            .select('id, user_name, shift_name')
+            .eq('id', candidateId)
             .eq('status', 'OPEN')
             .maybeSingle();
 
@@ -37,16 +33,18 @@ export async function getActiveCashierSessionId() {
             if (data.user_name) {
                 localStorage.setItem('cashierName', data.user_name);
             }
+            if (data.shift_name) {
+                localStorage.setItem('shiftName', data.shift_name);
+            }
             updateShiftUI();
             return data.id;
         }
     }
 
-    // 3. Fallback: Ambil sesi shift yang sedang OPEN langsung dari database
-    // JANGAN gunakan filter tanggal bisnis atau user_id yang kaku agar tidak gagal cocok
+    // 2. Fallback: Ambil sesi shift yang sedang OPEN langsung dari database
     const { data: openShift, error } = await supabaseClient
         .from('cashier_sessions')
-        .select('id, user_name')
+        .select('id, user_name, shift_name')
         .eq('status', 'OPEN')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -65,10 +63,14 @@ export async function getActiveCashierSessionId() {
         if (openShift.user_name) {
             localStorage.setItem('cashierName', openShift.user_name);
         }
+        if (openShift.shift_name) {
+            localStorage.setItem('shiftName', openShift.shift_name);
+        }
         updateShiftUI();
         return openShift.id;
     }
 
+    // 3. Jika tidak ada sesi OPEN sama sekali, bersihkan state
     window.currentCashierSessionId = null;
     localStorage.removeItem('activeCashierSessionId');
     localStorage.removeItem('activeShiftId');
