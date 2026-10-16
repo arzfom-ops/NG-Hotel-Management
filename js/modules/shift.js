@@ -3,8 +3,64 @@ import { formatCurrency, formatRupiah } from '../utils/formatters.js';
 
 // LocalStorage Keys
 const STORAGE_SHIFT_ID = 'activeShiftId';
+const STORAGE_CASHIER_SESSION_ID = 'activeCashierSessionId';
 const STORAGE_CASHIER_NAME = 'cashierName';
 const STORAGE_SHIFT_NAME = 'shiftName';
+
+/**
+ * Export function to get and validate active cashier session ID
+ */
+export async function getActiveCashierSessionId() {
+    // Cek memory/localStorage terlebih dahulu
+    let sessionId = window.currentCashierSessionId || localStorage.getItem(STORAGE_CASHIER_SESSION_ID) || localStorage.getItem(STORAGE_SHIFT_ID);
+
+    // Validasi ke Supabase untuk memastikan sesi benar-benar ada dan berstatus OPEN
+    if (sessionId) {
+        const { data, error } = await supabaseClient
+            .from('cashier_sessions')
+            .select('id')
+            .eq('id', sessionId)
+            .eq('status', 'OPEN')
+            .maybeSingle();
+
+        if (data && !error) {
+            window.currentCashierSessionId = data.id;
+            localStorage.setItem(STORAGE_CASHIER_SESSION_ID, data.id);
+            localStorage.setItem(STORAGE_SHIFT_ID, data.id);
+            return data.id;
+        }
+    }
+
+    // Fallback: cari sesi OPEN untuk tanggal bisnis berjalan
+    let businessDate = window.currentHotelDate;
+    if (!businessDate && typeof window.getHotelBusinessDate === 'function') {
+        businessDate = await window.getHotelBusinessDate();
+    }
+    if (!businessDate) {
+        businessDate = new Date().toISOString().split('T')[0];
+    }
+
+    const { data: openShift } = await supabaseClient
+        .from('cashier_sessions')
+        .select('id')
+        .eq('status', 'OPEN')
+        .eq('business_date', businessDate)
+        .order('opened_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (openShift) {
+        window.currentCashierSessionId = openShift.id;
+        localStorage.setItem(STORAGE_CASHIER_SESSION_ID, openShift.id);
+        localStorage.setItem(STORAGE_SHIFT_ID, openShift.id);
+        return openShift.id;
+    }
+
+    window.currentCashierSessionId = null;
+    localStorage.removeItem(STORAGE_CASHIER_SESSION_ID);
+    localStorage.removeItem(STORAGE_SHIFT_ID);
+    return null;
+}
 
 /**
  * Get active shift details from localStorage
@@ -111,9 +167,12 @@ export async function handleOpenShift(cashierName, shiftName, openingFloat) {
         if (error) throw error;
 
         if (data && data.success) {
-            localStorage.setItem(STORAGE_SHIFT_ID, data.shift_id);
+            const activeSessionId = data.shift_id || data.id;
+            localStorage.setItem(STORAGE_SHIFT_ID, activeSessionId);
+            localStorage.setItem(STORAGE_CASHIER_SESSION_ID, activeSessionId);
             localStorage.setItem(STORAGE_CASHIER_NAME, cashierName);
             localStorage.setItem(STORAGE_SHIFT_NAME, shiftName);
+            window.currentCashierSessionId = activeSessionId;
 
             updateShiftUI();
             closeStartShiftModal();
@@ -204,8 +263,10 @@ export async function executeCloseShift(actualCash, cash_drop, notes) {
         if (data && data.success) {
             // Clear local storage shift data
             localStorage.removeItem(STORAGE_SHIFT_ID);
+            localStorage.removeItem(STORAGE_CASHIER_SESSION_ID);
             localStorage.removeItem(STORAGE_CASHIER_NAME);
             localStorage.removeItem(STORAGE_SHIFT_NAME);
+            window.currentCashierSessionId = null;
 
             updateShiftUI();
             closeCloseShiftModal();
