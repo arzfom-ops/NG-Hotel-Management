@@ -21,7 +21,7 @@ export async function getActiveCashierSessionId() {
         // Validasi cepat apakah ID ini memang berstatus OPEN di database
         const { data } = await supabaseClient
             .from('cashier_sessions')
-            .select('id, user_name, shift_name')
+            .select('id, user_name')
             .eq('id', candidateId)
             .eq('status', 'OPEN')
             .maybeSingle();
@@ -44,9 +44,9 @@ export async function getActiveCashierSessionId() {
     // 2. Fallback: Ambil sesi shift yang sedang OPEN langsung dari database
     const { data: openShift, error } = await supabaseClient
         .from('cashier_sessions')
-        .select('id, user_name, shift_name')
+        .select('id, user_name')
         .eq('status', 'OPEN')
-        .order('created_at', { ascending: false })
+        .order('opened_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -382,7 +382,7 @@ export async function fetchShiftLogbooks() {
         const { data, error } = await supabaseClient
             .from('shift_logbooks')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('opened_at', { ascending: false });
 
         if (error) throw error;
 

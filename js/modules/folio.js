@@ -1,3 +1,4 @@
+export const sanitizeUuid = (val) => (val && typeof val === "string" && val.trim() !== "" && val.trim() !== "null" && val.trim() !== "undefined" ? val.trim() : null);
 import { supabaseClient } from '../config/supabase.js';
 import { formatDateISO, formatStayDatesCompact, formatCurrency, parseSafeDateOnly } from '../utils/formatters.js';
 import { getActiveCashierSessionId } from './shift.js';
@@ -1610,18 +1611,18 @@ export async function handleSaveFolioTransaction(e) {
         let rpcSuccess = false;
         try {
             const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_post_folio_transaction', {
-                p_reservation_id: resId,
-                p_master_folio_id: masterId,
+                p_reservation_id: sanitizeUuid(resId),
+                p_master_folio_id: sanitizeUuid(masterId),
                 p_transaction_type: txType,
                 p_description: description,
                 p_category: category,
                 p_qty: txType === 'PAYMENT' ? 1 : qty,
                 p_unit_price: txType === 'PAYMENT' ? amount : unitPrice,
                 p_amount: amount,
-                p_reference_number: referenceNumber,
-                p_cashier_session_id: activeSessionId,
-                p_hotel_business_date: activeBusinessDate,
-                hotel_business_date: activeBusinessDate
+                p_payment_method_id: sanitizeUuid(paymentMethodId),
+                p_reference_number: referenceNumber || null,
+                p_cashier_session_id: sanitizeUuid(activeSessionId),
+                p_hotel_business_date: activeBusinessDate
             });
             if (!rpcErr && rpcData && rpcData.success !== false) {
                 rpcSuccess = true;
@@ -1635,22 +1636,26 @@ export async function handleSaveFolioTransaction(e) {
         if (!rpcSuccess) {
             const currentUser = window.currentUser?.name || localStorage.getItem('cashierName') || 'Staff';
             const payload = {
-                reservation_id: resId,
-                master_folio_id: masterId,
+                reservation_id: sanitizeUuid(resId),
+                master_folio_id: sanitizeUuid(masterId),
                 transaction_type: txType,
+                type: txType,
                 description: description,
                 category: category,
-                payment_method_id: paymentMethodId || null,
+                payment_method_id: sanitizeUuid(paymentMethodId),
                 qty: (txType === 'PAYMENT' || txType === 'PAID_OUT') ? 1 : (qty || 1),
                 unit_price: (txType === 'PAYMENT' || txType === 'PAID_OUT') ? amount : (unitPrice || amount),
                 amount: amount,
-                total: amount,
+                charge: txType === 'CHARGE' ? amount : 0,
                 credit: txType === 'PAYMENT' ? amount : 0,
-                reference_number: referenceNumber,
+                total: amount,
+                reference_number: referenceNumber || null,
                 transaction_date: new Date().toISOString(),
                 hotel_business_date: activeBusinessDate,
-                cashier_session_id: activeSessionId,
-                created_by: currentUser
+                cashier_session_id: sanitizeUuid(activeSessionId),
+                created_by: currentUser,
+                is_void: false,
+                is_voided: false
             };
 
             const { error } = await supabaseClient
@@ -1716,6 +1721,7 @@ export async function handleVoidTransaction(transactionId) {
             .from('folio_transactions')
             .update({
                 is_void: true,
+                is_voided: true,
                 void_reason: voidReason.trim(),
                 voided_by: currentUser,
                 voided_at: new Date().toISOString()

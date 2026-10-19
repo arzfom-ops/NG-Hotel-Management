@@ -287,7 +287,7 @@ export function resetDenominationForm() {
  * Helper to classify transactions into Cash, Non-Cash, Paid Out, City Ledger, or Void
  */
 export function classifyTransaction(tx) {
-    const isVoid = tx.is_void === true;
+    const isVoid = tx.is_void === true || tx.is_voided === true;
     if (isVoid) {
         return { categoryType: 'VOID', amount: parseFloat(tx.amount || tx.total || tx.charge || tx.credit || 0) };
     }
@@ -416,7 +416,7 @@ export async function handleCloseCashierShiftSubmit(e) {
             .from('folio_transactions')
             .select('*, payment_methods(id, name, type, method_type)')
             .eq('cashier_session_id', session.id)
-            .eq('is_void', false);
+            ; // Filter voided in JS classifyTransaction
 
         if (txErr) throw txErr;
 
