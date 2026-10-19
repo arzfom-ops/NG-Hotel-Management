@@ -863,10 +863,10 @@ export async function handleRoomTypeChange(assignedRoomId = null) {
 
     try {
         const { data, error } = await supabaseClient.rpc('rpc_get_available_physical_rooms', {
-            p_room_type_id: selectedRoomTypeId || null,
-            p_check_in: checkInVal || null,
-            p_check_out: checkOutVal || null,
-            p_current_res_id: currentResId || null
+            p_room_type_id: sanitizeUuid(selectedRoomTypeId),
+            p_check_in: checkInVal ? formatDateISO(checkInVal) : null,
+            p_check_out: checkOutVal ? formatDateISO(checkOutVal) : null,
+            p_current_res_id: sanitizeUuid(currentResId)
         });
 
         if (!error && Array.isArray(data)) {
@@ -1024,16 +1024,10 @@ export function updateTotalPreview() {
 export let webcamStream = null;
 export let pendingNewReservationDeposits = [];
 
+export const sanitizeUuid = (val) => (val && typeof val === 'string' && val.trim() !== '' && val.trim() !== 'null' && val.trim() !== 'undefined' && val.trim() !== '0' ? val.trim() : null);
+
 export function sanitizeId(id) {
-    if (!id) return null;
-    if (typeof id === 'string') {
-        const trimmed = id.trim();
-        if (trimmed === '' || trimmed === '0' || trimmed === 'undefined' || trimmed === 'null') {
-            return null;
-        }
-        return trimmed;
-    }
-    return null;
+    return sanitizeUuid(id);
 }
 
 export async function openWebcamModal() {
@@ -1697,7 +1691,7 @@ export async function handleCheckInReservation() {
 
         const { error } = await supabaseClient
             .from('reservations')
-            .update({ status: 'Checkin' })
+            .update({ status: 'CHECKED_IN' })
             .eq('id', resId);
 
         if (error) throw error;
@@ -1736,7 +1730,7 @@ export async function splitGroupReservation(reservationId) {
     try {
         // 1. Attempt RPC call rpc_split_group_reservation
         const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_split_group_reservation', {
-            p_reservation_id: reservationId
+            p_reservation_id: sanitizeUuid(reservationId)
         });
 
         if (!rpcErr) {
@@ -1817,22 +1811,23 @@ export async function splitGroupReservation(reservationId) {
             const childPayload = {
                 reservation_number: childResNumber,
                 booking_reference: baseRef,
-                group_booking_id: groupBookingId || null,
-                group_id: groupBookingId || null,
-                parent_reservation_id: null, // CRITICAL: null to avoid FK constraint errors!
-                guest_profile_id: childProfileId,
+                group_booking_id: sanitizeUuid(groupBookingId),
+                group_id: sanitizeUuid(groupBookingId),
+                parent_reservation_id: null,
+                guest_profile_id: null,
+                guest_card_id: sanitizeUuid(childProfileId),
                 booker_name: baseGuestName,
-                room_type_id: res.room_type_id,
+                room_type_id: sanitizeUuid(res.room_type_id),
                 room_id: null,
                 room_rate: res.room_rate,
                 qty: 1,
-                status: res.status || 'GUARANTEED',
+                status: 'GUARANTEED',
                 check_in_date: res.check_in_date,
                 check_out_date: res.check_out_date,
                 nights: res.nights,
                 guest_type: 'Staying Guest',
                 reservation_source: res.reservation_source || 'Direct',
-                corporate_id: res.corporate_id || null
+                corporate_id: sanitizeUuid(res.corporate_id)
             };
 
             const { data: childResData, error: childInsertErr } = await supabaseClient
@@ -1919,9 +1914,9 @@ export async function openGroupRoomingListModal(reservationId) {
         let physicalRooms = [];
         try {
             const { data: pRooms, error: pErr } = await supabaseClient.rpc('rpc_get_available_physical_rooms', {
-                p_room_type_id: res.room_type_id || null,
-                p_check_in: res.check_in_date,
-                p_check_out: res.check_out_date,
+                p_room_type_id: sanitizeUuid(res.room_type_id),
+                p_check_in: res.check_in_date ? formatDateISO(res.check_in_date) : null,
+                p_check_out: res.check_out_date ? formatDateISO(res.check_out_date) : null,
                 p_current_res_id: null
             });
             if (!pErr && pRooms) {
@@ -2348,7 +2343,7 @@ export async function handleCheckIn(reservationId, roomId) {
 
         const { error } = await supabaseClient
             .from('reservations')
-            .update({ status: 'Checkin' })
+            .update({ status: 'CHECKED_IN' })
             .eq('id', reservationId);
 
         if (error) throw error;
@@ -2538,8 +2533,8 @@ export async function handleSaveReservation(event) {
         const selectedStatus = document.getElementById('res-status') ? document.getElementById('res-status').value : 'GUARANTEED';
 
         const reservationPayload = {
-            guest_profile_id: sanitizeId(guestProfileId),
-            guest_card_id: sanitizeId(guestCardId),
+            guest_profile_id: null,
+            guest_card_id: sanitizeUuid(guestCardId),
             guest_name: guestNameVal || null,
             booker_name: bookerNameVal || null,
             guest_type: guestType,
@@ -2551,17 +2546,19 @@ export async function handleSaveReservation(event) {
             etd: etd,
             adult: adult,
             child: child,
-            room_type_id: roomTypeId,
-            room_id: roomId,
-            rate_plan_id: ratePlanId,
+            room_type_id: sanitizeUuid(roomTypeId),
+            room_id: sanitizeUuid(roomId),
+            rate_plan_id: sanitizeUuid(ratePlanId),
             room_rate: roomRate,
             qty: qty,
             extrabed_qty: extrabedQty,
-            meal_plan_id: mealPlanId,
-            segment_id: segmentId,
+            meal_plan_id: sanitizeUuid(mealPlanId),
+            segment_id: sanitizeUuid(segmentId),
             reservation_source: reservationSource,
             voucher_number: voucherNumber,
-            corporate_id: corporateId,
+            corporate_id: sanitizeUuid(corporateId),
+            group_booking_id: sanitizeUuid(groupBookingId),
+            parent_reservation_id: sanitizeUuid(parentReservationId),
             comment: comment,
             routing_type: 'NONE',
             status: selectedStatus

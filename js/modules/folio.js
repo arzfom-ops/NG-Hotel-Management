@@ -2313,7 +2313,7 @@ export async function handleProcessCheckout() {
         let rpcSuccess = false;
         try {
             const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('rpc_process_checkout', {
-                p_reservation_id: currentFolioReservation.id
+                p_reservation_id: sanitizeUuid(currentFolioReservation.id)
             });
             if (!rpcErr && rpcData && rpcData.success !== false) {
                 rpcSuccess = true;

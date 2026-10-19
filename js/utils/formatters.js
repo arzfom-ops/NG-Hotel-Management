@@ -63,14 +63,20 @@ export function getStatusBadgeHTML(status) {
     if (upper === 'VD' || upper === 'DIRTY' || upper === 'VACANT DIRTY') {
         return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 border border-amber-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>${raw || 'VD'}</span>`;
     }
-    if (upper === 'OCC' || upper === 'OC' || upper === 'OD' || upper === 'OCCUPIED' || upper === 'OCCUPIED CLEAN' || upper === 'OCCUPIED DIRTY' || upper === 'CHECKIN' || upper === 'CHECKED IN') {
-        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-700 border border-blue-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>${raw || 'OCC'}</span>`;
+    if (upper === 'CHECKED_IN' || upper === 'CHECKIN' || upper === 'CHECKED IN' || upper === 'OCC' || upper === 'OC' || upper === 'OD' || upper === 'OCCUPIED' || upper === 'OCCUPIED CLEAN' || upper === 'OCCUPIED DIRTY') {
+        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-700 border border-blue-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>${raw || 'CHECKED_IN'}</span>`;
+    }
+    if (upper === 'CHECKED_OUT' || upper === 'CHECKOUT' || upper === 'CHECKED OUT') {
+        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/15 text-slate-700 border border-slate-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse"></span>${raw || 'CHECKED_OUT'}</span>`;
+    }
+    if (upper === 'TENTATIVE') {
+        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>${raw || 'TENTATIVE'}</span>`;
+    }
+    if (upper === 'GUARANTEED' || upper === '6PM_HOLD' || upper === 'ORAL_CONFIRM' || upper === 'RESERVED' || upper === 'CONFIRMED' || upper === 'RESERVATION') {
+        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>${raw || 'GUARANTEED'}</span>`;
     }
     if (upper === 'OOO' || upper === 'OUT OF ORDER' || upper === 'OOS' || upper === 'OUT OF SERVICE' || upper === 'CANCELLED' || upper === 'CANCEL') {
-        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 border border-rose-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>${raw || 'OOO'}</span>`;
-    }
-    if (upper === 'RESERVED' || upper === 'CONFIRMED' || upper === 'RESERVATION') {
-        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-700 border border-purple-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>${raw || 'Reserved'}</span>`;
+        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-700 border border-rose-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>${raw || 'CANCELLED'}</span>`;
     }
     return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/15 text-slate-700 border border-slate-500/30 backdrop-blur-md shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse"></span>${raw}</span>`;
 }
