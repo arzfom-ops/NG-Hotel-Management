@@ -132,7 +132,7 @@ export async function fetchFrontdeskDashboard() {
                 guest_type,
                 guest_card_files!fk_reservations_guest_card (full_name, first_name, last_name),
                 room_types (name),
-                rooms (room_number)
+                rooms (room_number, is_virtual)
             `)
             .neq('status', 'Cancelled')
             .neq('status', 'Checkout')
@@ -144,10 +144,12 @@ export async function fetchFrontdeskDashboard() {
 
         // Filter out Non-Staying Guests and PM/Paymaster rooms from operational dashboard
         const validResList = resList.filter(r => {
-            const roomNo = r.rooms ? (Array.isArray(r.rooms) ? r.rooms[0]?.room_number : r.rooms.room_number) : null;
+            const roomObj = Array.isArray(r.rooms) ? r.rooms[0] : r.rooms;
+            const roomNo = roomObj ? roomObj.room_number : null;
             const isPmRoom = roomNo && String(roomNo).toLowerCase().startsWith('pm-');
+            const isVirtual = roomObj ? roomObj.is_virtual : false;
             const isNsg = r.guest_type === 'Non-Staying Guest';
-            return !isNsg && !isPmRoom;
+            return !isNsg && !isPmRoom && !isVirtual;
         });
 
         dashboardData.arrival = validResList.filter(r => r.check_in_date === selectedDateISO && (r.status === 'Reserved' || r.status === 'GUARANTEED' || r.status === '6PM_HOLD' || r.status === 'ORAL_CONFIRM' || r.status === 'TENTATIVE'));
@@ -672,7 +674,6 @@ export async function renderTapeChart() {
                 reservation_source,
                 guest_card_files!fk_reservations_guest_card (full_name, first_name, last_name)
             `)
-            .not('room_id', 'is', null)
             .neq('status', 'Cancelled')
             .neq('status', 'Checkout')
             .neq('status', 'CHECKED_OUT')
@@ -794,7 +795,7 @@ export async function renderTapeChart() {
                     }
 
                     if (widthPx > 0) {
-                        const status = (res.status || 'Reserved').toLowerCase();
+                        const statusUpper = (res.status || 'GUARANTEED').toUpperCase();
                         const source = res.reservation_source || 'Direct';
                         const gCard = Array.isArray(res.guest_card_files) ? res.guest_card_files[0] : res.guest_card_files;
                         const displayName = res.guest_name ||
@@ -803,9 +804,11 @@ export async function renderTapeChart() {
                                             res.booker_name ||
                                             'Guest';
 
-                        let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300 hover:bg-sky-300'; // Reserved
-                        if (status === 'checkin') {
-                            capsuleBgClass = 'bg-emerald-200 text-emerald-900 border-emerald-300 hover:bg-emerald-300'; // Checkin
+                        let capsuleBgClass = 'bg-sky-200 text-sky-900 border-sky-300 hover:bg-sky-300'; // GUARANTEED / Reserved
+                        if (statusUpper === 'CHECKED_IN' || statusUpper === 'CHECKIN') {
+                            capsuleBgClass = 'bg-emerald-200 text-emerald-900 border-emerald-300 hover:bg-emerald-300'; // Checked in
+                        } else if (statusUpper === 'TENTATIVE') {
+                            capsuleBgClass = 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'; // Tentative
                         }
 
                         tableHTML += `
@@ -886,6 +889,42 @@ export async function renderTapeChart() {
                 </table>
             </div>
         `;
+
+        const unassignedList = (reservations || []).filter(r => !r.room_id);
+        if (unassignedList.length > 0) {
+            tableHTML += `
+                <div class="mt-4 p-4 bg-slate-50/90 border border-slate-200 rounded-xl shadow-2xs">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="ph ph-tray text-amber-600 text-lg"></i>
+                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Unassigned Reservations (${unassignedList.length})</h4>
+                        </div>
+                        <span class="text-xs text-slate-500 font-medium">Reservasi aktif yang belum memiliki alokasi nomor kamar fisik</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            `;
+            unassignedList.forEach(uRes => {
+                const gCard = Array.isArray(uRes.guest_card_files) ? uRes.guest_card_files[0] : uRes.guest_card_files;
+                const displayName = uRes.guest_name || gCard?.full_name || `${gCard?.first_name || ''} ${gCard?.last_name || ''}`.trim() || uRes.booker_name || 'Guest';
+                const statusBadge = getStatusBadgeHTML(uRes.status);
+                tableHTML += `
+                    <div onclick="openEditReservation('${uRes.id}')" class="p-3 bg-white border border-amber-200/80 rounded-lg shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-bold text-xs text-slate-800 truncate">${displayName}</span>
+                            ${statusBadge}
+                        </div>
+                        <div class="text-[11px] text-slate-500 flex items-center justify-between mt-1">
+                            <span><i class="ph ph-calendar text-xs mr-1"></i>${uRes.check_in_date} s/d ${uRes.check_out_date}</span>
+                            <span class="font-medium text-amber-700 hover:underline">Assign <i class="ph ph-arrow-right"></i></span>
+                        </div>
+                    </div>
+                `;
+            });
+            tableHTML += `
+                    </div>
+                </div>
+            `;
+        }
 
         container.innerHTML = tableHTML;
     } catch (err) {
@@ -1116,9 +1155,12 @@ export async function renderRoomForecast() {
             // Exclude TENTATIVE, CANCELLED, NO_SHOW, CHECKED_OUT, etc.
             const statusUpper = (r.status || '').toUpperCase().trim();
             const isValidStatus = statusUpper === 'GUARANTEED' ||
+                                  statusUpper === '6PM_HOLD' ||
+                                  statusUpper === 'ORAL_CONFIRM' ||
                                   statusUpper === 'CHECKED_IN' ||
                                   statusUpper === 'CHECKIN' ||
-                                  statusUpper === 'CHECKED IN';
+                                  statusUpper === 'CHECKED IN' ||
+                                  statusUpper === 'RESERVED';
             return isValidStatus;
         });
 

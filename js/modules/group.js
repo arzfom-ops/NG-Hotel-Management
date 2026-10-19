@@ -1,3 +1,4 @@
+const sanitizeUuid = (val) => (val && typeof val === "string" && val.trim() !== "" && val.trim() !== "null" && val.trim() !== "undefined" && val.trim() !== "0" ? val.trim() : null);
 import { supabaseClient } from '../config/supabase.js';
 import { formatDateISO, formatStayDatesCompact, showToast } from '../utils/formatters.js';
 
@@ -361,20 +362,24 @@ export let editingGroupId = null;
                                 nights: origRes.nights || 1,
                                 adult: origRes.adult || 1,
                                 child: origRes.child || 0,
-                                room_type_id: origRes.room_type_id,
+                                room_type_id: sanitizeUuid(origRes.room_type_id),
                                 room_id: null,
-                                rate_plan_id: origRes.rate_plan_id || null,
+                                rate_plan_id: sanitizeUuid(origRes.rate_plan_id),
                                 room_rate: origRes.room_rate || 0,
                                 qty: 1,
                                 extrabed_qty: origRes.extrabed_qty || 0,
-                                meal_plan_id: origRes.meal_plan_id || null,
-                                segment_id: origRes.segment_id || null,
+                                meal_plan_id: sanitizeUuid(origRes.meal_plan_id),
+                                segment_id: sanitizeUuid(origRes.segment_id),
                                 reservation_source: origRes.reservation_source || 'Direct',
                                 voucher_number: origRes.voucher_number || null,
-                                corporate_id: origRes.corporate_id || null,
+                                corporate_id: sanitizeUuid(origRes.corporate_id),
+                                group_booking_id: sanitizeUuid(origRes.group_booking_id || origRes.group_id),
+                                group_id: sanitizeUuid(origRes.group_id || origRes.group_booking_id),
+                                parent_reservation_id: null,
                                 booker_name: origRes.booker_name || guestName,
-                                guest_profile_id: guestProfileId,
-                                status: origRes.status || 'Reserved',
+                                guest_profile_id: null,
+                                guest_card_id: sanitizeUuid(guestProfileId),
+                                status: 'GUARANTEED',
                                 guest_type: origRes.guest_type || 'Staying Guest'
                             };
 
@@ -466,17 +471,18 @@ export let editingGroupId = null;
                         check_in_date: activeGroupSplitData.checkInDate,
                         check_out_date: activeGroupSplitData.checkOutDate,
                         nights: nights,
-                        room_type_id: rtId,
-                        room_id: roomId,
+                        room_type_id: sanitizeUuid(rtId),
+                        room_id: sanitizeUuid(roomId),
                         room_rate: roomRate,
                         qty: 1,
                         status: 'GUARANTEED',
-                        guest_profile_id: guestProfileId,
+                        guest_profile_id: null,
+                        guest_card_id: sanitizeUuid(guestProfileId),
                         booker_name: activeGroupSplitData.group.group_name,
-                        group_id: activeGroupSplitData.group.id,
-                        group_booking_id: activeGroupSplitData.group.id,
+                        group_id: sanitizeUuid(activeGroupSplitData.group.id),
+                        group_booking_id: sanitizeUuid(activeGroupSplitData.group.id),
                         parent_reservation_id: null,
-                        corporate_id: activeGroupSplitData.group.corporate_id || null,
+                        corporate_id: sanitizeUuid(activeGroupSplitData.group.corporate_id),
                         reservation_source: 'Walk-in',
                         guest_type: 'Staying Guest'
                     };
