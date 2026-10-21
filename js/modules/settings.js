@@ -635,7 +635,7 @@ export let outletsCache = [];
 
                 // Fetch OCR.space API Key from system_settings
                 await getOcrSpaceApiKey();
-                const ocrKeyInput = document.getElementById('ocr-space-api-key');
+                const ocrKeyInput = (document.getElementById('setting-ocr-api-key') || document.getElementById('ocr-space-api-key'));
                 if (ocrKeyInput) {
                     ocrKeyInput.value = cachedOcrApiKey || '';
                 }
@@ -670,7 +670,7 @@ export let outletsCache = [];
             const prefix = document.getElementById('invoice-prefix').value.trim();
             const footerNotes = document.getElementById('invoice-footer-notes').value.trim();
             const rcTerms = document.getElementById('invoice-rc-terms').value.trim();
-            const ocrApiKey = (document.getElementById('ocr-space-api-key')?.value || '').trim();
+            const ocrApiKey = ((document.getElementById('setting-ocr-api-key') || document.getElementById('ocr-space-api-key'))?.value || '').trim();
 
             if (!prefix) {
                 alert('Silakan isi Invoice Prefix.');

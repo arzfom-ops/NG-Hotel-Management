@@ -2392,8 +2392,14 @@ export async function handleSaveReservation(event) {
         const idCardVal = document.getElementById('res-id-card').value.trim();
         const phoneVal = document.getElementById('res-phone').value.trim();
         const emailVal = document.getElementById('res-email').value.trim();
-        const birthDateVal = document.getElementById('res-birth-date').value || null;
-        const addressVal = document.getElementById('res-address').value.trim();
+        const birthPlaceVal = document.getElementById('res-birth-place')?.value.trim() || null;
+        const birthDateVal = document.getElementById('res-birth-date')?.value || null;
+        const genderVal = document.getElementById('res-gender')?.value || null;
+        const addressVal = document.getElementById('res-address')?.value.trim() || null;
+        const rtRwVal = document.getElementById('res-rt-rw')?.value.trim() || null;
+        const villageVal = document.getElementById('res-village')?.value.trim() || null;
+        const subDistrictVal = document.getElementById('res-sub-district')?.value.trim() || null;
+        const provinceVal = document.getElementById('res-province')?.value.trim() || null;
         const countryVal = document.getElementById('res-country')?.value || 'Indonesia';
 
         let cityVal = null;
@@ -2457,9 +2463,15 @@ export async function handleSaveReservation(event) {
                         phone: phoneVal || null,
                         email: emailVal || null,
                         birthdate: birthDateVal,
-                        address: addressVal || null,
+                        birth_place: birthPlaceVal,
+                        gender: genderVal,
+                        address: addressVal,
+                        rt_rw: rtRwVal,
+                        village: villageVal,
+                        sub_district: subDistrictVal,
+                        province: provinceVal,
                         country: countryVal || 'Indonesia',
-                        city: cityVal || null,
+                        city: cityVal,
                         nationality: nationalityVal || 'Indonesia'
                     })
                     .eq('id', guestProfileId);
@@ -2493,6 +2505,12 @@ export async function handleSaveReservation(event) {
                     country: countryVal,
                     city: cityVal,
                     birthdate: birthDateVal,
+                    birth_place: birthPlaceVal,
+                    gender: genderVal,
+                    rt_rw: rtRwVal,
+                    village: villageVal,
+                    sub_district: subDistrictVal,
+                    province: provinceVal,
                     discount_pct: discountPctVal,
                     comments: document.getElementById('res-comment')?.value || null
                 });
