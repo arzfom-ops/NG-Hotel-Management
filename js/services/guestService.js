@@ -151,6 +151,12 @@ export async function saveGuestCard(guestData) {
         address: guestData.address || null,
         city: guestData.city || null,
         birthdate: guestData.birthdate || guestData.birth_date || null,
+        birth_place: guestData.birth_place || guestData.birthplace || null,
+        gender: guestData.gender || null,
+        rt_rw: guestData.rt_rw || guestData.rtrw || null,
+        village: guestData.village || guestData.kelurahan || null,
+        sub_district: guestData.sub_district || guestData.subdistrict || guestData.kecamatan || null,
+        province: guestData.province || guestData.provinsi || null,
         discount_pct: parseFloat(guestData.discount_pct || guestData.special_discount || guestData.discount || 0),
         comments: guestData.notes || guestData.comments || guestData.comment || null
     };
