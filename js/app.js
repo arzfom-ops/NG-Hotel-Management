@@ -76,6 +76,8 @@ import {
     captureWebcamPhoto,
     handleDocUpload,
     clearDocPreview,
+    scanDocumentOcr,
+    parseOcrText,
     getCompressedDocBlob,
     openEditReservation,
     toggleAddDepositForm,
@@ -350,6 +352,7 @@ import {
     handleSavePaymentMethod,
     deletePaymentMethod,
     fetchInvoiceSetting,
+    getOcrSpaceApiKey,
     handleSaveInvoiceSetting,
     fetchSegmentCodes,
     openSegmentCodeModal,
@@ -739,6 +742,8 @@ if (typeof window !== 'undefined') {
     window.captureWebcamPhoto = captureWebcamPhoto;
     window.handleDocUpload = handleDocUpload;
     window.clearDocPreview = clearDocPreview;
+    window.scanDocumentOcr = scanDocumentOcr;
+    window.parseOcrText = parseOcrText;
     window.getCompressedDocBlob = getCompressedDocBlob;
     window.toggleAddDepositForm = toggleAddDepositForm;
     window.fetchAndRenderReservationDepositHistory = fetchAndRenderReservationDepositHistory;
@@ -1006,6 +1011,7 @@ if (typeof window !== 'undefined') {
     window.handleSavePaymentMethod = handleSavePaymentMethod;
     window.deletePaymentMethod = deletePaymentMethod;
     window.fetchInvoiceSetting = fetchInvoiceSetting;
+    window.getOcrSpaceApiKey = getOcrSpaceApiKey;
     window.handleSaveInvoiceSetting = handleSaveInvoiceSetting;
     window.fetchSegmentCodes = fetchSegmentCodes;
     window.openSegmentCodeModal = openSegmentCodeModal;

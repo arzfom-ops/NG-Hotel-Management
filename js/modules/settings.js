@@ -1,3 +1,4 @@
+export let cachedOcrApiKey = '';
 import { supabaseClient } from '../config/supabase.js';
 import { getStatusBadgeHTML } from '../utils/formatters.js';
 
@@ -613,19 +614,54 @@ export let outletsCache = [];
 
                 if (data && data.length > 0) {
                     const item = data[0];
-                    document.getElementById('invoice-setting-id').value = item.id || '';
-                    document.getElementById('invoice-prefix').value = item.prefix || item.invoice_prefix || '';
-                    document.getElementById('invoice-footer-notes').value = item.footer_notes || item.terms || item.notes || '';
-                    document.getElementById('invoice-rc-terms').value = item.rc_terms || '';
+                    const idEl = document.getElementById('invoice-setting-id');
+                    if (idEl) idEl.value = item.id || '';
+                    const prefEl = document.getElementById('invoice-prefix');
+                    if (prefEl) prefEl.value = item.prefix || item.invoice_prefix || '';
+                    const footEl = document.getElementById('invoice-footer-notes');
+                    if (footEl) footEl.value = item.footer_notes || item.terms || item.notes || '';
+                    const rcEl = document.getElementById('invoice-rc-terms');
+                    if (rcEl) rcEl.value = item.rc_terms || '';
                 } else {
-                    document.getElementById('invoice-setting-id').value = '';
-                    document.getElementById('invoice-prefix').value = '';
-                    document.getElementById('invoice-footer-notes').value = '';
-                    document.getElementById('invoice-rc-terms').value = '';
+                    const idEl = document.getElementById('invoice-setting-id');
+                    if (idEl) idEl.value = '';
+                    const prefEl = document.getElementById('invoice-prefix');
+                    if (prefEl) prefEl.value = '';
+                    const footEl = document.getElementById('invoice-footer-notes');
+                    if (footEl) footEl.value = '';
+                    const rcEl = document.getElementById('invoice-rc-terms');
+                    if (rcEl) rcEl.value = '';
+                }
+
+                // Fetch OCR.space API Key from system_settings
+                await getOcrSpaceApiKey();
+                const ocrKeyInput = document.getElementById('ocr-space-api-key');
+                if (ocrKeyInput) {
+                    ocrKeyInput.value = cachedOcrApiKey || '';
                 }
             } catch (err) {
                 console.error('Error fetching invoice settings:', err);
             }
+        }
+
+        export async function getOcrSpaceApiKey() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('system_settings')
+                    .select('setting_value')
+                    .eq('setting_key', 'ocr_space_api_key')
+                    .maybeSingle();
+
+                if (!error && data && data.setting_value) {
+                    cachedOcrApiKey = data.setting_value.trim();
+                }
+            } catch (e) {
+                console.error('Error fetching ocr_space_api_key:', e);
+            }
+            if (typeof window !== 'undefined') {
+                window.cachedOcrApiKey = cachedOcrApiKey;
+            }
+            return cachedOcrApiKey;
         }
 
         export async function handleSaveInvoiceSetting(event) {
@@ -634,6 +670,7 @@ export let outletsCache = [];
             const prefix = document.getElementById('invoice-prefix').value.trim();
             const footerNotes = document.getElementById('invoice-footer-notes').value.trim();
             const rcTerms = document.getElementById('invoice-rc-terms').value.trim();
+            const ocrApiKey = (document.getElementById('ocr-space-api-key')?.value || '').trim();
 
             if (!prefix) {
                 alert('Silakan isi Invoice Prefix.');
@@ -654,14 +691,31 @@ export let outletsCache = [];
                     const { data, error } = await supabaseClient.from('invoice_settings').insert([payload]).select();
                     if (error) throw error;
                     if (data && data.length > 0) {
-                        document.getElementById('invoice-setting-id').value = data[0].id;
+                        const idEl = document.getElementById('invoice-setting-id');
+                        if (idEl) idEl.value = data[0].id;
                     }
                 }
-                alert('Invoice settings berhasil disimpan!');
+
+                // Upsert ocr_space_api_key in system_settings
+                if (ocrApiKey !== undefined) {
+                    const { error: ocrErr } = await supabaseClient
+                        .from('system_settings')
+                        .upsert(
+                            { setting_key: 'ocr_space_api_key', setting_value: ocrApiKey },
+                            { onConflict: 'setting_key' }
+                        );
+                    if (ocrErr) console.error('Error upserting ocr_space_api_key:', ocrErr);
+                    else {
+                        cachedOcrApiKey = ocrApiKey;
+                        if (typeof window !== 'undefined') window.cachedOcrApiKey = ocrApiKey;
+                    }
+                }
+
+                alert('Invoice & System settings berhasil disimpan!');
                 fetchInvoiceSetting();
             } catch (err) {
                 console.error('Error saving invoice settings:', err);
-                alert('Gagal menyimpan invoice settings: ' + err.message);
+                alert('Gagal menyimpan settings: ' + err.message);
             }
         }
 
