@@ -2920,3 +2920,302 @@ export async function handleSaveReservation(event) {
         }
     }
 }
+export function parseOcrText(parsedText) {
+    if (!parsedText || typeof parsedText !== 'string') return {};
+    const text = parsedText;
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const result = {};
+
+    // Check for Passport / MRZ pattern
+    const mrzLines = lines.filter(l => l.includes('<') || l.startsWith('P<') || /[A-Z0-9<]{30,}/.test(l));
+    const isPassport = /PASSPORT|PASPOR/i.test(text) || mrzLines.length >= 1;
+
+    if (isPassport) {
+        result.type = 'PASSPORT';
+
+        // 1. Passport Number (8-9 alphanumeric chars)
+        const passNumMatch = text.match(/\b([A-Z][0-9]{7,8})\b/);
+        if (passNumMatch) {
+            result.identityNumber = passNumMatch[1];
+        } else {
+            for (const line of mrzLines) {
+                const m = line.replace(/</g, '').match(/^([A-Z0-9]{8,9})/);
+                if (m) {
+                    result.identityNumber = m[1];
+                    break;
+                }
+            }
+        }
+
+        // 2. Name & Country Code from MRZ Line 1 e.g. P<IDNDOE<<JANE
+        for (const line of mrzLines) {
+            if (line.includes('P<')) {
+                const mrzClean = line.substring(line.indexOf('P<') + 2);
+                const countryCode = mrzClean.substring(0, 3);
+                result.countryCode = countryCode;
+                let namePart = mrzClean.substring(3).replace(/</g, ' ').trim();
+                namePart = namePart.replace(/\s+/g, ' ');
+                if (namePart) {
+                    result.guestName = namePart;
+                }
+                break;
+            }
+        }
+
+        if (!result.guestName) {
+            const nameMatch = text.match(/(?:Nama|Name|Full Name)\s*[:\.-]?\s*([A-Za-z\s]+)/i);
+            if (nameMatch) {
+                result.guestName = nameMatch[1].trim();
+            }
+        }
+
+        return result;
+    }
+
+    // Indonesian KTP Parsing
+    result.type = 'KTP';
+
+    // 1. NIK: 16 digits
+    const nikMatch = text.match(/\b\d{16}\b/);
+    if (nikMatch) {
+        result.identityNumber = nikMatch[0];
+    }
+
+    // 2. Nama Lengkap
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const m = line.match(/Nama\s*[:\.-]?\s*(.*)/i);
+        if (m) {
+            let val = m[1].replace(/^[\s:\.-]+/, '').trim();
+            if (val) {
+                result.guestName = val;
+            } else if (i + 1 < lines.length) {
+                result.guestName = lines[i + 1].replace(/^[\s:\.-]+/, '').trim();
+            }
+            break;
+        }
+    }
+
+    // 3. Alamat
+    const alamatLines = [];
+    let capturingAlamat = false;
+    for (const line of lines) {
+        if (/Alamat\s*[:\.-]?/i.test(line)) {
+            capturingAlamat = true;
+            const m = line.match(/Alamat\s*[:\.-]?\s*(.*)/i);
+            const val = m ? m[1].replace(/^[\s:\.-]+/, '').trim() : '';
+            if (val) alamatLines.push(val);
+            continue;
+        }
+        if (capturingAlamat) {
+            if (/Agama|Status|Pekerjaan|Kewarganegaraan|Jenis Kelamin|Gol\.? Darah/i.test(line)) {
+                break;
+            }
+            const cleanLine = line.replace(/^(RT\/RW|Kel\/Desa|Kecamatan)\s*[:\.-]?\s*/i, '').replace(/^[\s:\.-]+/, '').trim();
+            if (cleanLine) alamatLines.push(cleanLine);
+        }
+    }
+
+    if (alamatLines.length > 0) {
+        result.address = alamatLines.join(' ');
+    }
+
+    // 4. Kota/Kabupaten
+    for (const line of lines) {
+        const kotaM = line.match(/^((?:KOTA|KABUPATEN)\s+[A-Z\s]+)/i);
+        if (kotaM) {
+            result.city = kotaM[1].trim();
+            break;
+        }
+    }
+
+    // 5. Kewarganegaraan
+    if (/\bWNI\b|INDONESIA/i.test(text)) {
+        result.nationality = 'Indonesia';
+    }
+
+    return result;
+}
+
+export function getCompressedDocBase64() {
+    return new Promise((resolve) => {
+        const preview = document.getElementById('res-doc-preview');
+        if (!preview || preview.classList.contains('hidden') || !preview.src || preview.src === '' || preview.src === window.location.href) {
+            resolve(null);
+            return;
+        }
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            let width = img.naturalWidth || img.width;
+            let height = img.naturalHeight || img.height;
+
+            if (!width || !height) {
+                resolve(null);
+                return;
+            }
+
+            const maxWidth = 800;
+            if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const base64Data = canvas.toDataURL('image/jpeg', 0.7);
+            resolve(base64Data);
+        };
+        img.onerror = (err) => {
+            console.error('Error loading preview image for base64 compression:', err);
+            resolve(null);
+        };
+        img.src = preview.src;
+    });
+}
+
+export async function scanDocumentOcr() {
+    const scanBtn = document.getElementById('btn-scan-doc');
+    const originalBtnHTML = scanBtn ? scanBtn.innerHTML : '';
+
+    try {
+        let apiKey = window.cachedOcrApiKey || '';
+        if (!apiKey && typeof window.getOcrSpaceApiKey === 'function') {
+            apiKey = await window.getOcrSpaceApiKey();
+        }
+
+        if (!apiKey) {
+            alert('API Key OCR.space belum dikonfigurasi. Silakan atur di menu Pengaturan Sistem (Admin).');
+            return;
+        }
+
+        const base64Image = await getCompressedDocBase64();
+        if (!base64Image) {
+            showToast('Silakan upload atau ambil foto dokumen (KTP / Paspor) terlebih dahulu.', 'warning');
+            return;
+        }
+
+        if (scanBtn) {
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = '<i class="ph ph-spinner animate-spin mr-1.5 text-sm"></i> Scanning...';
+        }
+
+        showToast('Memproses pemindaian dokumen via OCR.space...', 'info');
+
+        const formData = new FormData();
+        formData.append('apikey', apiKey);
+        formData.append('base64Image', base64Image);
+        formData.append('OCREngine', '2');
+        formData.append('scale', 'true');
+        formData.append('detectOrientation', 'true');
+
+        const response = await fetch('https://api.ocr.space/parse/image', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('HTTP Error ' + response.status + ': ' + response.statusText);
+        }
+
+        const data = await response.json();
+
+        if (data.IsErroredOnHTTP || !data.ParsedResults || data.ParsedResults.length === 0) {
+            const errDetails = data.ErrorMessage ? data.ErrorMessage.join(', ') : 'Gagal membaca teks dari gambar';
+            throw new Error(errDetails);
+        }
+
+        const parsedText = data.ParsedResults[0].ParsedText || '';
+        if (!parsedText.trim()) {
+            showToast('Hasil OCR kosong atau foto tidak cukup jelas. Silakan coba unggah ulang foto yang lebih terang.', 'warning');
+            return;
+        }
+
+        const extracted = parseOcrText(parsedText);
+        let filledCount = 0;
+
+        if (extracted.guestName) {
+            const nameEl = document.getElementById('res-guest-name');
+            if (nameEl) {
+                nameEl.value = extracted.guestName;
+                filledCount++;
+            }
+            const bookerEl = document.getElementById('res-booker-name');
+            if (bookerEl && !bookerEl.value) {
+                bookerEl.value = extracted.guestName;
+            }
+        }
+
+        if (extracted.identityNumber) {
+            const idEl = document.getElementById('res-id-card');
+            if (idEl) {
+                idEl.value = extracted.identityNumber;
+                filledCount++;
+            }
+        }
+
+        if (extracted.identityType || extracted.type) {
+            const typeEl = document.getElementById('res-identity-type');
+            if (typeEl) {
+                if (extracted.type === 'PASSPORT') {
+                    typeEl.value = 'Passport';
+                } else if (extracted.type === 'KTP') {
+                    typeEl.value = 'KTP';
+                }
+            }
+        }
+
+        if (extracted.address) {
+            const addrEl = document.getElementById('res-address');
+            if (addrEl) {
+                addrEl.value = extracted.address;
+                filledCount++;
+            }
+        }
+
+        if (extracted.city) {
+            const citySelect = document.getElementById('res-city-select');
+            const cityManual = document.getElementById('res-city-manual');
+            if (citySelect && cityManual) {
+                citySelect.value = 'Lainnya';
+                cityManual.classList.remove('hidden');
+                cityManual.value = extracted.city;
+                filledCount++;
+            }
+        }
+
+        if (extracted.nationality || extracted.type === 'KTP') {
+            const natEl = document.getElementById('res-nationality');
+            if (natEl) {
+                natEl.value = 'Indonesia';
+            }
+            const countryEl = document.getElementById('res-country');
+            if (countryEl) {
+                countryEl.value = 'Indonesia';
+                if (typeof window.handleResCountryChange === 'function') {
+                    window.handleResCountryChange();
+                }
+            }
+        }
+
+        if (filledCount > 0) {
+            showToast('Data dokumen berhasil dipindai. Silakan periksa kembali data sebelum menyimpan.', 'success');
+        } else {
+            showToast('Teks berhasil dibaca tetapi tidak ditemukan kolom yang sesuai. Silakan isi data secara manual.', 'warning');
+        }
+
+    } catch (err) {
+        console.error('OCR Error:', err);
+        showToast('Gagal memindai dokumen: ' + (err.message || err), 'error');
+    } finally {
+        if (scanBtn) {
+            scanBtn.disabled = false;
+            scanBtn.innerHTML = originalBtnHTML;
+        }
+    }
+}
