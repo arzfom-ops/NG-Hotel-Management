@@ -77,6 +77,8 @@ import {
     handleDocUpload,
     clearDocPreview,
     scanDocumentOcr,
+    parseKTPData,
+    processOCRImage,
     parseOcrText,
     getCompressedDocBlob,
     openEditReservation,
@@ -743,6 +745,8 @@ if (typeof window !== 'undefined') {
     window.handleDocUpload = handleDocUpload;
     window.clearDocPreview = clearDocPreview;
     window.scanDocumentOcr = scanDocumentOcr;
+    window.parseKTPData = parseKTPData;
+    window.processOCRImage = processOCRImage;
     window.parseOcrText = parseOcrText;
     window.getCompressedDocBlob = getCompressedDocBlob;
     window.toggleAddDepositForm = toggleAddDepositForm;
