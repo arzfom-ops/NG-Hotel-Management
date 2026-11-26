@@ -70,6 +70,7 @@ export function blobToBase64(blob) {
  */
 export function parseKtpText(rawText) {
     const data = {
+        document_type: 'KTP',
         id_card_no: '',
         full_name: '',
         birth_place: '',
@@ -90,6 +91,11 @@ export function parseKtpText(rawText) {
         }
 
         const lines = rawText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+
+        // 0. document_type: deteksi penanda paspor (teks atau MRZ)
+        if (/PASSPORT|PASPOR/i.test(rawText) || lines.some(line => /^P<[A-Z]{3}/.test(line))) {
+            data.document_type = 'PASSPORT';
+        }
 
         // 1. id_card_no: Regex 16 digit angka (\b\d{16}\b)
         const nikMatch = rawText.match(/\b\d{16}\b/);

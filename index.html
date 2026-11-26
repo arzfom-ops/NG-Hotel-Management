@@ -1581,10 +1581,20 @@
                             </div>
                         </div>
 
-                        <!-- NIK -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">NIK</label>
-                            <input type="text" id="res-id-card-no" placeholder="Nomor Induk Kependudukan (NIK)" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
+                        <!-- Tipe Identitas & NIK -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Tipe Identitas</label>
+                                <select id="res-identity-type" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 transition-all duration-200 outline-none shadow-2xs">
+                                    <option value="KTP">KTP</option>
+                                    <option value="PASSPORT">Paspor</option>
+                                    <option value="SIM">SIM</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-slate-700 mb-1">NIK / No. Identitas</label>
+                                <input type="text" id="res-id-card-no" placeholder="Nomor Induk Kependudukan (NIK)" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
+                            </div>
                         </div>
 
                         <!-- Nama Lengkap -->
@@ -1662,7 +1672,7 @@
                         <!-- Kewarganegaraan -->
                         <div>
                             <label class="block text-xs font-medium text-slate-700 mb-1">Kewarganegaraan</label>
-                            <input type="text" id="res-nationality" value="WNI / Indonesia" placeholder="Kewarganegaraan" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
+                            <input type="text" id="res-nationality" value="Indonesia" placeholder="Kewarganegaraan" class="w-full bg-white/60 hover:bg-white/90 focus:bg-white border border-slate-200/80 focus:border-primary/60 focus:ring-4 focus:ring-primary/15 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200 outline-none shadow-2xs">
                         </div>
 
                         <!-- Phone & Email -->

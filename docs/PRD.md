@@ -210,7 +210,8 @@ Form dirancang mengikuti struktur KTP Indonesia, **tanpa** field agama, status p
 | 3 | Card Type | `res-card-type` | — | Individual / Corporate / Travel Agent |
 | 4 | Title | `res-title` | — | Mr./Mrs./Ms./Dr. |
 | 5 | Foto ID / Paspor | `res-upload-doc`, `webcamModal`, `res-doc-preview` | — | Upload, kamera, scan OCR, clear |
-| 6 | NIK | `res-id-card-no` | — | 16 digit |
+| 6 | Tipe Identitas | `res-identity-type` | — | `KTP` (default) / `PASSPORT` (label Paspor) / `SIM`; di-set otomatis oleh OCR |
+| 6a | NIK / No. Identitas | `res-id-card-no` | — | 16 digit untuk KTP |
 | 7 | Nama Lengkap | `res-guest-name` | ✓ | Autocomplete GCF |
 | 8 | Tempat Lahir | `res-birth-place` | — | |
 | 9 | Tanggal Lahir | `res-birth-date` | — | `type=date` |
@@ -221,7 +222,7 @@ Form dirancang mengikuti struktur KTP Indonesia, **tanpa** field agama, status p
 | 14 | Kecamatan | `res-sub-district` | — | |
 | 15 | Kabupaten/Kota | `res-city` | — | |
 | 16 | Provinsi | `res-province` | — | |
-| 17 | Kewarganegaraan | `res-nationality` | — | Default teks `WNI / Indonesia` |
+| 17 | Kewarganegaraan | `res-nationality` | — | Default teks `Indonesia` |
 | 18 | Phone Number | `res-phone` | ✓ | |
 | 19 | Email Address | `res-email` | — | |
 
@@ -497,7 +498,7 @@ Dokumen ini menggambarkan **perilaku yang dirancang**. Kondisi implementasi aktu
 3. ~~Kota tamu tidak tersimpan karena mismatch `#res-city` vs `#res-city-select`.~~ **Sudah diperbaiki** — kota/provinsi memakai input teks.
 4. ~~OCR berjalan ganda per klik dan gender tidak cocok dengan opsi select.~~ **Sudah diperbaiki** — satu listener, gender `Laki-laki`/`Perempuan`.
 5. ~~Data KTP tidak ditampilkan saat edit reservasi.~~ **Sudah diperbaiki** — seluruh field KTP di-populate saat edit.
-5a. Data KTP hanya tersimpan bila profil GCF dibuat/diperbarui ("Save to GCF"); belum otomatis untuk reservasi tanpa GCF.
+5a. ~~Data KTP hanya tersimpan bila profil GCF dibuat/diperbarui.~~ **Sudah diperbaiki** — jika ada data identitas dan tamu belum tertaut ke GCF, profil dibuat/di-upsert otomatis berdasarkan `id_card_no` lalu ditautkan ke reservasi.
 6. Tidak ada autentikasi/otorisasi per peran di sisi UI.
 7. Belum ada mekanisme enkripsi untuk API key OCR.
 

@@ -2285,6 +2285,24 @@ export async function handleCheckIn(reservationId, roomId) {
     }
 }
 
+async function findGuestCardIdByIdCard(idCardNo) {
+    const value = (idCardNo || '').trim();
+    if (!value) return null;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('guest_card_files')
+            .select('id')
+            .eq('id_card_no', value)
+            .limit(1);
+        if (error) throw error;
+        return data?.[0]?.id || null;
+    } catch (err) {
+        console.warn('Error looking up guest card by identity number:', err);
+        return null;
+    }
+}
+
 export async function handleSaveReservation(event) {
     event.preventDefault();
 
@@ -2387,14 +2405,20 @@ export async function handleSaveReservation(event) {
             }
         }
 
-        // Save to GCF if checkbox is checked & handle GCF profile creation/update
+        // Simpan ke GCF bila checkbox dicentang, atau otomatis bila ada data identitas
+        // dan tamu belum terhubung ke profil (agar hasil scan KTP tidak pernah terbuang).
         const saveToGcfChecked = document.getElementById('res-save-to-gcf')?.checked;
         const discountPctVal = parseFloat(document.getElementById('res-discount-pct')?.value) || 0;
+        const hasKtpData = Boolean(idCardVal || birthPlaceVal || birthDateVal || rtRwVal || villageVal || subDistrictVal || provinceVal);
+        const shouldSaveGcf = Boolean(saveToGcfChecked || (!guestCardId && hasKtpData));
 
-        if (saveToGcfChecked) {
+        if (shouldSaveGcf) {
             try {
-                // Jika saveToGcfChecked dicentang dan nama diubah, id dikirim undefined agar membuat record GCF baru
-                const targetGcfId = isNameChanged ? undefined : (guestCardId || undefined);
+                // Nama berubah = profil baru, kecuali NIK sudah terdaftar (maka perbarui profil itu).
+                let targetGcfId = isNameChanged ? undefined : (guestCardId || undefined);
+                if (!targetGcfId && idCardVal) {
+                    targetGcfId = (await findGuestCardIdByIdCard(idCardVal)) || undefined;
+                }
                 const gcfData = await saveGuestCard({
                     id: targetGcfId,
                     card_type: cardTypeVal,
@@ -2893,6 +2917,9 @@ export async function processOCRImage() {
         let filledCount = 0;
 
         if (setReservationField('res-id-card-no', ktpData.id_card_no)) filledCount++;
+        if (ktpData.document_type === 'PASSPORT') {
+            if (setReservationField('res-identity-type', 'PASSPORT')) filledCount++;
+        }
         if (setReservationField('res-guest-name', ktpData.full_name)) {
             filledCount++;
             const bookerEl = document.getElementById('res-booker-name');

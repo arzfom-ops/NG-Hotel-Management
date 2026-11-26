@@ -559,7 +559,7 @@ erDiagram
 | Hidden | `edit-reservation-id`, `edit-reservation-number`, `res-guest-profile-id`, `res-guest-card-id` |
 | Tab | `res-tab-btn-details`, `res-tab-btn-routing`, `res-tab-container-details`, `res-tab-container-routing` |
 | Guest | `res-guest-type`, `res-booker-name`, `res-card-type`, `res-title`, `res-guest-name`, `res-guest-suggestions` |
-| Identitas KTP | `res-id-card-no`, `res-birth-place`, `res-birth-date`, `res-gender`, `res-address`, `res-rt-rw`, `res-village`, `res-sub-district`, `res-city`, `res-province`, `res-nationality` |
+| Identitas KTP | `res-identity-type` (`KTP`/`PASSPORT`/`SIM`), `res-id-card-no`, `res-birth-place`, `res-birth-date`, `res-gender`, `res-address`, `res-rt-rw`, `res-village`, `res-sub-district`, `res-city`, `res-province`, `res-nationality` |
 | Kontak | `res-phone`, `res-email` |
 | Dokumen | `res-upload-doc`, `res-doc-preview`, `btn-scan-ocr`, `webcamModal`, `webcam-video`, `webcam-canvas`, `btn-capture-webcam` |
 | Stay | `res-check-in`, `res-check-out`, `res-nights`, `res-eta`, `res-etd`, `res-adult`, `res-child` |
@@ -569,8 +569,7 @@ erDiagram
 | Footer | `resModalCreateFooter`, `resModalEditFooter`, `resSubmitBtn`, `resUpdateBtn`, `resCheckInBtn`, `resCancelBookingBtn`, `resPrintRegCardBtn`, `resGroupSplitBtn`, `resOpenFolioBtn` |
 | Routing | `res-routing-available`, `res-routing-routed` |
 
-**ID yang dicari JS tetapi TIDAK ada di HTML** (sisa gap, lihat audit):
-`res-identity-type` (opsional/null-safe; pilihan KTP/Paspor belum tersedia di UI).
+**ID yang dicari JS tetapi TIDAK ada di HTML:** tidak ada lagi untuk modal reservasi. Daftar lengkap sisa gap ada di `docs/AUDIT_REPORT.md`.
 
 ### 8.3 Settings (`#admin-settings-view`) — ID penting
 

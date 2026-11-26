@@ -199,7 +199,7 @@ Detail lengkap: `docs/TECH_SPEC.md` §8.
 
 ### 3.3 ID yang saat ini tidak sinkron (jangan tambah ketergantungan)
 
-`res-identity-type` (opsional/null-safe). Gunakan input teks `res-city` dan `res-province`; jangan menghidupkan kembali `res-country`, `res-city-select`, atau `res-city-manual`.
+Tidak ada lagi untuk modal reservasi. Gunakan `res-identity-type` (KTP/Paspor/SIM), input teks `res-city` dan `res-province`; jangan menghidupkan kembali `res-country`, `res-city-select`, atau `res-city-manual`.
 
 Bila memperbaiki: pilih satu arah — **tambahkan elemen** atau **ubah JS agar memakai ID yang ada**. Jangan membiarkan keduanya setengah jalan.
 
@@ -368,7 +368,7 @@ EOF
 | Prioritas | Pekerjaan |
 | --- | --- |
 | P0 | **Selesai** — SyntaxError `reservation.js`, ID NIK (`res-id-card-no`), serta simpan/edit reservasi dan autofill KTP |
-| P1 | **Selesai sebagian** — OCR dikonsolidasi ke `ocrService.js`, listener ganda dihapus, gender dinormalisasi, autofill edit lengkap. **Sisa:** simpan KTP tanpa syarat GCF |
+| P1 | **P1-1 s/d P1-5 selesai** — OCR dikonsolidasi ke `ocrService.js`, listener ganda dihapus, gender dinormalisasi, autofill edit lengkap, KTP tersimpan otomatis ke GCF (upsert via `id_card_no`), selector tipe identitas, kewarganegaraan `Indonesia` |
 | P2 | Autentikasi/role, RLS audit, enkripsi OCR key, proxy OCR |
 | P3 | Konstanta status terpusat, CI `node --check`, pemisahan modal dari `index.html` |
 
