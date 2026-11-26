@@ -1,3 +1,12 @@
+> **STATUS: LEGACY / SUPERSEDED (2026-11-26).**
+> Dokumen ini dipertahankan sebagai arsip panduan operasional berbahasa Indonesia.
+> Dokumen kanonik yang sudah disinkronkan dengan kode aktual:
+> - `docs/PRD.md` — fitur, peran, alur UI/UX (termasuk form KTP & OCR.space)
+> - `docs/TECH_SPEC.md` — arsitektur & skema Supabase
+> - `docs/AUDIT_REPORT.md` — kondisi implementasi & daftar bug
+>
+> Bagian di bawah ini belum memuat modul GCF, housekeeping, NSG, corporate, laporan DRR, shift logbook, serta fitur KTP + OCR.space.
+
 # Dokumentasi Komprehensif Hotel Property Management System (PMS)
 
 Dokumen ini merupakan panduan komprehensif yang mengonsolidasikan spesifikasi teknis, arsitektur sistem, skema database, kontrak API RPC Supabase, serta panduan operasional pengguna (User Operational Manual) untuk **Hotel Property Management System (PMS)**.

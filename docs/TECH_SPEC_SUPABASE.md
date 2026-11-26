@@ -1,3 +1,11 @@
+> **STATUS: LEGACY / SUPERSEDED (2026-11-26).**
+> Dokumen ini dipertahankan sebagai arsip. Dokumen kanonik:
+> - `docs/TECH_SPEC.md` — tech stack, struktur folder, skema lengkap 35 tabel + 14 RPC, konvensi ID
+> - `docs/PRD.md` — perilaku produk
+> - `docs/AUDIT_REPORT.md` — temuan & prioritas
+>
+> Skema di bawah ini belum memuat kolom KTP (`birth_place`, `rt_rw`, `village`, `sub_district`, `province`), `system_settings.ocr_space_api_key`, dan beberapa tabel modul (GCF, housekeeping, NSG, corporate, laporan).
+
 # Technical Specification & Database Schema - Supabase Hotel PMS
 
 ## Database Schema Overview & Entity Relationship Diagram
