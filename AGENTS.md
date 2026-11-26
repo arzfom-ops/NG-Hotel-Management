@@ -17,7 +17,7 @@ Jika kode dan dokumen berbeda, **kode adalah kebenaran**; perbarui dokumen, jang
 
 ## 0. Status repositori yang harus diketahui
 
-> **Aplikasi saat ini TIDAK DAPAT DIJALANKAN.** `js/modules/reservation.js` memiliki SyntaxError pada baris ±3245 (`text.split(/` + newline) dan karakter `\b` yang berubah menjadi `0x08` pada baris 3251, 3296, 3327, 3379. Karena `js/app.js` meng-import modul itu, seluruh graph ES module gagal.
+> **Status P0 sudah diperbaiki.** SyntaxError `reservation.js` (regex terpotong + `\b` menjadi `0x08`) telah dihapus bersama seluruh OCR duplikat, dan ID form KTP sudah disinkronkan. Regresi bisa muncul lagi karena tidak ada CI; **selalu** jalankan pemeriksaan sintaks di bawah sebelum dan sesudah perubahan.
 
 Selalu jalankan pemeriksaan sintaks sebelum dan sesudah perubahan:
 
@@ -79,7 +79,7 @@ Saat ini ada duplikasi yang **tidak boleh diperbanyak**:
 
 | Logika | Lokasi yang ada | Target konsolidasi |
 | --- | --- | --- |
-| OCR + parsing KTP | `js/services/ocrService.js` (belum dipakai), `reservation.js:2941 parseOcrText`, `reservation.js:3242 parseKTPData`, `reservation.js:3100 scanDocumentOcr`, `reservation.js:3386 processOCRImage` | `ocrService.js` |
+| OCR + parsing KTP | Sudah dikonsolidasi: `ocrService.js` (`callOcrSpace`, `parseKtpText`, `blobToBase64`); `reservation.js` hanya mengorkestrasi `processOCRImage` | `ocrService.js` |
 | Kompresi gambar | `getCompressedDocBlob` + `getCompressedDocBase64` | satu helper di `utils/` atau `services/` |
 | Sanitasi UUID | `folio.js` (`sanitizeUuid`), `group.js` (`sanitizeUuid`), `reservation.js` (`sanitizeId`) | satu util bersama |
 | Gender tamu | kolom `gender` (reservation/guestService) vs `sex` (GCF editor) | putuskan satu kolom |
@@ -199,7 +199,7 @@ Detail lengkap: `docs/TECH_SPEC.md` §8.
 
 ### 3.3 ID yang saat ini tidak sinkron (jangan tambah ketergantungan)
 
-`res-id-card`, `res-identity-type`, `res-country`, `res-city-select`, `res-city-manual`, `res-city-select-container`, `btn-scan-doc`.
+`res-identity-type` (opsional/null-safe). Gunakan input teks `res-city` dan `res-province`; jangan menghidupkan kembali `res-country`, `res-city-select`, atau `res-city-manual`.
 
 Bila memperbaiki: pilih satu arah — **tambahkan elemen** atau **ubah JS agar memakai ID yang ada**. Jangan membiarkan keduanya setengah jalan.
 
@@ -367,8 +367,8 @@ EOF
 
 | Prioritas | Pekerjaan |
 | --- | --- |
-| P0 | Perbaiki SyntaxError `reservation.js` (regex + `\b`), samakan ID NIK, pulihkan simpan/edit reservasi |
-| P1 | Konsolidasi OCR ke `ocrService.js`, hapus listener ganda, normalisasi gender, lengkapi autofill edit, simpan KTP tanpa syarat GCF |
+| P0 | **Selesai** — SyntaxError `reservation.js`, ID NIK (`res-id-card-no`), serta simpan/edit reservasi dan autofill KTP |
+| P1 | **Selesai sebagian** — OCR dikonsolidasi ke `ocrService.js`, listener ganda dihapus, gender dinormalisasi, autofill edit lengkap. **Sisa:** simpan KTP tanpa syarat GCF |
 | P2 | Autentikasi/role, RLS audit, enkripsi OCR key, proxy OCR |
 | P3 | Konstanta status terpusat, CI `node --check`, pemisahan modal dari `index.html` |
 

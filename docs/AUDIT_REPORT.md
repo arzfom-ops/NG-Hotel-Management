@@ -9,6 +9,8 @@
 | Batas audit | Tidak ada koneksi langsung ke Supabase. Skema tabel/kolom **diinferensi** dari query di kode dan dokumen SQL/dokumentasi lama. Setiap kolom yang tidak bisa dipastikan diberi catatan asumsi. |
 | Aturan sesi | Hanya file dokumentasi yang diubah. Tidak ada kode aplikasi yang disentuh. |
 
+> **Catatan status (2026-11-26, setelah audit).** Temuan P0 (P0-1 SyntaxError, P0-2 `#res-id-card`, P0-3 city/country) dan P1-1/P1-2/P1-3 sudah diperbaiki: OCR dikonsolidasi ke `js/services/ocrService.js`, listener ganda dihapus, gender dinormalisasi, dan seluruh field KTP di-populate saat edit. Isi laporan di bawah dipertahankan sebagai rekaman kondisi saat audit. Masih terbuka: P0-4 (`#res-identity-type` belum ada di UI), P1-4 (simpan KTP tanpa GCF), P1-5 (`#res-nationality` default `WNI / Indonesia`), serta P1-6 s/d P1-10.
+
 ---
 
 ## 1. Ringkasan Eksekutif

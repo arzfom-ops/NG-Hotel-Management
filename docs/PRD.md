@@ -492,11 +492,12 @@ Semua laporan dapat dicetak melalui `window.print()` pada jendela cetak terpisah
 
 Dokumen ini menggambarkan **perilaku yang dirancang**. Kondisi implementasi aktual (termasuk bug blocking) dicatat di `docs/AUDIT_REPORT.md`. Gap utama yang memengaruhi PRD:
 
-1. **Aplikasi tidak dapat dijalankan** sampai SyntaxError di `reservation.js` diperbaiki.
-2. Simpan/edit reservasi gagal karena `#res-id-card` tidak ada.
-3. Kota tamu tidak tersimpan (mismatch `#res-city` vs `#res-city-select`).
-4. OCR berjalan ganda per klik dan hasil gender tidak cocok dengan opsi select.
-5. Data KTP tidak ditampilkan saat edit reservasi.
+1. ~~Aplikasi tidak dapat dijalankan karena SyntaxError di `reservation.js`.~~ **Sudah diperbaiki.**
+2. ~~Simpan/edit reservasi gagal karena `#res-id-card` tidak ada.~~ **Sudah diperbaiki** — JS memakai `#res-id-card-no`.
+3. ~~Kota tamu tidak tersimpan karena mismatch `#res-city` vs `#res-city-select`.~~ **Sudah diperbaiki** — kota/provinsi memakai input teks.
+4. ~~OCR berjalan ganda per klik dan gender tidak cocok dengan opsi select.~~ **Sudah diperbaiki** — satu listener, gender `Laki-laki`/`Perempuan`.
+5. ~~Data KTP tidak ditampilkan saat edit reservasi.~~ **Sudah diperbaiki** — seluruh field KTP di-populate saat edit.
+5a. Data KTP hanya tersimpan bila profil GCF dibuat/diperbarui ("Save to GCF"); belum otomatis untuk reservasi tanpa GCF.
 6. Tidak ada autentikasi/otorisasi per peran di sisi UI.
 7. Belum ada mekanisme enkripsi untuk API key OCR.
 

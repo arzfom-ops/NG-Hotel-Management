@@ -43,7 +43,7 @@ NG-Hotel-Management/
 │   │   └── formatters.js       # Tanggal, currency, badge status, toast
 │   ├── services/               # Lapisan API/bisnis yang dipisah dari UI
 │   │   ├── guestService.js     # GCF: search (RPC + fallback), get, save, apply to form
-│   │   └── ocrService.js       # OCR.space + parser KTP (BELUM DIPAKAI)
+│   │   └── ocrService.js       # OCR.space + parser KTP (dipakai reservation.js)
 │   └── modules/                # Fitur per domain
 │       ├── frontdesk.js        # Dashboard, DataGrid, Tape Chart, Forecast, realtime
 │       ├── reservation.js      # Modal reservasi, OCR, dokumen, deposit, check-in
@@ -88,7 +88,7 @@ NG-Hotel-Management/
 | `js/modules/guestProfiles.js` | 1014 | GCF master list & tab, editor 3 tab, kontak, contract rate, merge, histori | `guest_card_files`, `guest_contacts`, `contract_rates`, `reservations`, `master_cities` | — (via `guestService`) |
 | `js/modules/settings.js` | 1776 | 10 tab konfigurasi + OCR API key | `bed_types`, `room_types`, `rooms`, `meal_plans`, `meal_plan_breakdowns`, `outlets`, `departments`, `rate_plans`, `rate_plan_prices`, `segment_codes`, `main_group_segments`, `tax_and_service`, `extra_charges`, `payment_methods`, `invoice_settings`, `system_settings` | — |
 | `js/services/guestService.js` | 289 | Kontrak data GCF: search, get detail, save (insert/update), apply ke form | `guest_card_files`, `guest_card_contacts`*, `guest_card_contract_rates`* | `rpc_search_guest_cards` |
-| `js/services/ocrService.js` | 194 | `callOcrSpace()`, `parseKtpText()` | — | — |
+| `js/services/ocrService.js` | 194 | `callOcrSpace()`, `parseKtpText()`, `blobToBase64()` — satu-satunya sumber logika OCR | — | — |
 | `test_guest_lifecycle.py` | 21 KB | E2E: reservasi → check-in → folio → payment → checkout | `reservations`, `folio_transactions` | beberapa |
 
 \* `guest_card_contacts` dan `guest_card_contract_rates` hanya dibaca di `guestService.js` dalam blok `try/catch` yang menelan error — kemungkinan tabel legacy/opsional.
@@ -125,12 +125,12 @@ flowchart TD
     CSH --> SHF
     OPS --> SHF
     FD --> OPS
-    APP -.->|tidak di-import| OCR[services/ocrService.js]
+    RES -->|callOcrSpace / parseKtpText| OCR[services/ocrService.js]
 ```
 
 Catatan penting:
-- `reservation.js` ↔ `guestProfiles.js` saling impor (`fetchMasterCities` ↔ `roomTypesCache`). Ini bekerja karena ES module hoisting, tetapi menambah risiko siklus.
-- `ocrService.js` **tidak** berada di graph (dead code).
+- `guestProfiles.js` → `reservation.js` hanya satu arah (impor `roomTypesCache`); `reservation.js` tidak lagi mengimpor `guestProfiles.js`.
+- `ocrService.js` adalah satu-satunya sumber logika OCR dan diimpor oleh `reservation.js`.
 - Kegagalan parse satu modul (`reservation.js`) memutus seluruh graph.
 
 ### 3.2 Mekanisme binding `window`
@@ -287,7 +287,7 @@ Kolom dengan tanda `*` = dipakai sebagai fallback alias, keberadaannya belum pas
 | `id_card_type` | text | `KTP` / `Passport` |
 | `id_card_no` | text | NIK 16 digit / nomor paspor |
 | `birth_place` | text | **Kolom KTP baru** |
-| `birthdate` | date | **Kolom KTP** (tanggal lahir) |
+| `birth_date` | date | **Kolom KTP** (tanggal lahir) — nama kolom sesuai migrasi SQL; kode masih membaca alias `birthdate` |
 | `gender` | text | **Kolom KTP baru** — `Laki-laki` / `Perempuan` |
 | `sex` | text | Ditulis GCF editor (duplikat fungsi `gender`) |
 | `address` | text | Alamat jalan |
@@ -569,8 +569,8 @@ erDiagram
 | Footer | `resModalCreateFooter`, `resModalEditFooter`, `resSubmitBtn`, `resUpdateBtn`, `resCheckInBtn`, `resCancelBookingBtn`, `resPrintRegCardBtn`, `resGroupSplitBtn`, `resOpenFolioBtn` |
 | Routing | `res-routing-available`, `res-routing-routed` |
 
-**ID yang dicari JS tetapi TIDAK ada di HTML** (penyebab bug P0, lihat audit):
-`res-id-card`, `res-identity-type`, `res-country`, `res-city-select`, `res-city-manual`, `res-city-select-container`, `btn-scan-doc`.
+**ID yang dicari JS tetapi TIDAK ada di HTML** (sisa gap, lihat audit):
+`res-identity-type` (opsional/null-safe; pilihan KTP/Paspor belum tersedia di UI).
 
 ### 8.3 Settings (`#admin-settings-view`) — ID penting
 
