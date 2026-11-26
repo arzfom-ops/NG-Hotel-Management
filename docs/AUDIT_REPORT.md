@@ -9,6 +9,8 @@
 | Batas audit | Tidak ada koneksi langsung ke Supabase. Skema tabel/kolom **diinferensi** dari query di kode dan dokumen SQL/dokumentasi lama. Setiap kolom yang tidak bisa dipastikan diberi catatan asumsi. |
 | Aturan sesi | Hanya file dokumentasi yang diubah. Tidak ada kode aplikasi yang disentuh. |
 
+> **Catatan status (2026-11-26, setelah audit).** Seluruh temuan **P0 (P0-1 s/d P0-4)** dan **P1-1 s/d P1-5** sudah diperbaiki: OCR dikonsolidasi ke `js/services/ocrService.js`, listener ganda dihapus, gender dinormalisasi, seluruh field KTP di-populate saat edit, data KTP otomatis disimpan ke `guest_card_files` (upsert berdasarkan `id_card_no`), selector tipe identitas (KTP/Paspor/SIM) tersedia, dan default kewarganegaraan dinormalisasi ke `Indonesia`. Isi laporan di bawah dipertahankan sebagai rekaman kondisi saat audit. Masih terbuka: P1-6 s/d P1-10.
+
 ---
 
 ## 1. Ringkasan Eksekutif
@@ -128,6 +130,8 @@ Konsekuensi:
 
 JS memakai fallback `?.value || 'KTP'`, jadi tidak crash, tetapi pilihan identitas (KTP/Paspor) tidak pernah bisa diubah dari UI. OCR pun tidak bisa men-set tipe identitas.
 
+**Status: selesai.** `index.html` kini punya `<select id="res-identity-type">` (opsi `KTP`, `PASSPORT`/Paspor, `SIM`) di samping `#res-id-card-no`. Nilainya dibaca saat simpan, di-populate saat `openEditReservation`/autofill GCF, dan di-set otomatis oleh `processOCRImage()` lewat `document_type` dari `parseKtpText()`.
+
 ---
 
 ## 5. Temuan Tinggi (P1)
@@ -137,8 +141,8 @@ JS memakai fallback `?.value || 'KTP'`, jadi tidak crash, tetapi pilihan identit
 | P1-1 | OCR dipanggil 2× per klik (inline `onclick` + `addEventListener`) | `index.html:1572` + `reservation.js:3542–3553` | Kuota OCR.space terbuang; race condition UI |
 | P1-2 | OCR menulis `LAKI-LAKI`/`PEREMPUAN` ke `<select>` yang opsinya `Laki-laki`/`Perempuan` | `reservation.js:3477–3480` vs `index.html:1622–1625` | `select.value` jadi kosong → gender hilang |
 | P1-3 | Field KTP tidak di-populate saat `openEditReservation` (birth place, gender, RT/RW, kel/desa, kecamatan, provinsi, kota) | `reservation.js:1180–1275` | Data tersimpan tetapi tampak hilang saat edit → berisiko tertimpa `null` |
-| P1-4 | KTP hanya tersimpan ke `guest_card_files` jika sedang edit GCF atau checkbox "Save to GCF" dicentang | `reservation.js:2484–2525` | Reservasi tamu baru tanpa GCF → seluruh data KTP dibuang |
-| P1-5 | `#res-nationality` punya `value="WNI / Indonesia"` dan nilainya disimpan apa adanya | `index.html:1665`, `reservation.js:2417` | Kolom nationality berisi string tidak baku |
+| P1-4 | KTP hanya tersimpan ke `guest_card_files` jika sedang edit GCF atau checkbox "Save to GCF" dicentang | `reservation.js:2484–2525` | Reservasi tamu baru tanpa GCF → seluruh data KTP dibuang. **Status: selesai** — `handleSaveReservation` otomatis membuat/memperbarui profil bila ada data identitas dan tamu belum tertaut, lalu menautkan `guest_card_id` |
+| P1-5 | `#res-nationality` punya `value="WNI / Indonesia"` dan nilainya disimpan apa adanya | `index.html:1665`, `reservation.js:2417` | Kolom nationality berisi string tidak baku. **Status: selesai** — default UI kini `Indonesia` |
 | P1-6 | Dua fungsi gender: `gender` (reservasi/guestService) vs `sex` (GCF editor) | `guestService.js:155`, `guestProfiles.js:651` | Data gender terpecah dua kolom, saling menimpa |
 | P1-7 | `shift_logbooks` diurutkan dengan `opened_at` | `shift.js:385` | Jika kolom tidak ada → query error → logbook kosong |
 | P1-8 | `closeRoomingListModal` didefinisikan di dua modul (`reservation.js` & `group.js`); `app.js` hanya memakai versi `group.js` | `reservation.js`, `group.js`, `app.js` | Penutupan modal rooming list dari jalur reservasi berpotensi salah target |

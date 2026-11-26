@@ -150,7 +150,7 @@ export async function saveGuestCard(guestData) {
         country: guestData.country || 'Indonesia',
         address: guestData.address || null,
         city: guestData.city || null,
-        birthdate: guestData.birthdate || guestData.birth_date || null,
+        birth_date: guestData.birth_date || guestData.birthdate || null,
         birth_place: guestData.birth_place || guestData.birthplace || null,
         gender: guestData.gender || null,
         rt_rw: guestData.rt_rw || guestData.rtrw || null,
@@ -204,16 +204,20 @@ export async function applyGuestCardToReservation(guestId) {
         const bookerInput = document.getElementById('res-booker-name');
         const emailInput = document.getElementById('res-email');
         const phoneInput = document.getElementById('res-phone');
-        const idCardInput = document.getElementById('res-id-card');
+        const idCardInput = document.getElementById('res-id-card-no');
         const profileIdInput = document.getElementById('res-guest-profile-id');
         const cardIdInput = document.getElementById('res-guest-card-id');
         const cardTypeSelect = document.getElementById('res-card-type');
         const titleSelect = document.getElementById('res-title');
         const identityTypeSelect = document.getElementById('res-identity-type');
         const addressInput = document.getElementById('res-address');
-        const countrySelect = document.getElementById('res-country');
-        const citySelect = document.getElementById('res-city-select');
-        const cityManual = document.getElementById('res-city-manual');
+        const cityInput = document.getElementById('res-city');
+        const provinceInput = document.getElementById('res-province');
+        const birthPlaceInput = document.getElementById('res-birth-place');
+        const genderSelect = document.getElementById('res-gender');
+        const rtRwInput = document.getElementById('res-rt-rw');
+        const villageInput = document.getElementById('res-village');
+        const subDistrictInput = document.getElementById('res-sub-district');
         const nationalityInput = document.getElementById('res-nationality');
         const birthDateInput = document.getElementById('res-birth-date');
         const commentInput = document.getElementById('res-comment');
@@ -232,34 +236,15 @@ export async function applyGuestCardToReservation(guestId) {
         if (phoneInput) phoneInput.value = guest.phone || guest.mobile_no || guest.phone_number || '';
         if (idCardInput) idCardInput.value = guest.id_card_no || guest.id_card || '';
         if (addressInput) addressInput.value = guest.address || '';
-
-        const guestCountry = guest.country || guest.country_code || 'Indonesia';
-        if (countrySelect) countrySelect.value = guestCountry;
-
-        if (typeof window.populateResCityDropdown === 'function') {
-            await window.populateResCityDropdown(guest.city || '');
-        }
-        if (typeof window.handleResCountryChange === 'function') {
-            window.handleResCountryChange();
-        }
-
-        if (guestCountry === 'Indonesia') {
-            const cities = (window.masterCitiesCache || []);
-            if (guest.city && !cities.map(c => c.toLowerCase()).includes(guest.city.toLowerCase())) {
-                if (citySelect) citySelect.value = 'Lainnya...';
-                if (cityManual) {
-                    cityManual.classList.remove('hidden');
-                    cityManual.value = guest.city;
-                }
-            } else if (citySelect) {
-                citySelect.value = guest.city || '';
-            }
-        } else {
-            if (cityManual) cityManual.value = guest.city || '';
-        }
-
+        if (cityInput) cityInput.value = guest.city || '';
+        if (provinceInput) provinceInput.value = guest.province || guest.provinsi || '';
+        if (birthPlaceInput) birthPlaceInput.value = guest.birth_place || guest.birthplace || '';
+        if (genderSelect) genderSelect.value = guest.gender || guest.sex || 'Laki-laki';
+        if (rtRwInput) rtRwInput.value = guest.rt_rw || guest.rtrw || '';
+        if (villageInput) villageInput.value = guest.village || guest.kelurahan || '';
+        if (subDistrictInput) subDistrictInput.value = guest.sub_district || guest.subdistrict || guest.kecamatan || '';
         if (nationalityInput) nationalityInput.value = guest.nationality || guest.nationality_code || 'Indonesia';
-        if (birthDateInput && (guest.birthdate || guest.birth_date)) birthDateInput.value = guest.birthdate || guest.birth_date;
+        if (birthDateInput && (guest.birth_date || guest.birthdate)) birthDateInput.value = guest.birth_date || guest.birthdate;
 
         const discountVal = guest.discount_pct || guest.special_discount || guest.discount || 0;
         if (discountInput) discountInput.value = discountVal;

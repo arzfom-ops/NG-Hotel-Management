@@ -2,73 +2,7 @@ import { supabaseClient } from '../config/supabase.js';
 import { formatDateISO, addDays, formatStayDatesCompact, showToast } from '../utils/formatters.js';
 import { getActiveCashierSessionId } from './shift.js';
 import { searchGuestCards, getGuestCardById, saveGuestCard, applyGuestCardToReservation } from '../services/guestService.js';
-import { fetchMasterCities } from './guestProfiles.js';
-
-/**
- * Populate Reservation City Dropdown Options
- */
-export async function populateResCityDropdown(selectedCity = '') {
-    const citySelect = document.getElementById('res-city-select');
-    if (!citySelect) return;
-
-    const cities = await fetchMasterCities();
-    let optionsHtml = '<option value="">-- Pilih Kota --</option>';
-    let found = false;
-
-    cities.forEach(cityName => {
-        const isSelected = selectedCity && selectedCity.toLowerCase() === cityName.toLowerCase();
-        if (isSelected) found = true;
-        optionsHtml += `<option value="${cityName}" ${isSelected ? 'selected' : ''}>${cityName}</option>`;
-    });
-
-    optionsHtml += `<option value="Lainnya..." ${selectedCity && !found && selectedCity !== 'Lainnya...' ? 'selected' : ''}>Lainnya...</option>`;
-    citySelect.innerHTML = optionsHtml;
-}
-
-/**
- * Event handler for Reservation Country Change
- */
-export function handleResCountryChange() {
-    const countrySelect = document.getElementById('res-country');
-    const citySelectContainer = document.getElementById('res-city-select-container');
-    const cityManualInput = document.getElementById('res-city-manual');
-    const citySelect = document.getElementById('res-city-select');
-
-    if (!countrySelect) return;
-
-    const selectedCountry = countrySelect.value || 'Indonesia';
-
-    if (selectedCountry === 'Indonesia') {
-        if (citySelectContainer) citySelectContainer.classList.remove('hidden');
-        if (cityManualInput) {
-            cityManualInput.classList.add('hidden');
-            cityManualInput.value = '';
-        }
-        populateResCityDropdown(citySelect ? citySelect.value : '');
-    } else {
-        // Luar Negeri: Input Text biasa (Free Text)
-        if (citySelectContainer) citySelectContainer.classList.add('hidden');
-        if (cityManualInput) cityManualInput.classList.remove('hidden');
-    }
-}
-
-/**
- * Event handler for Reservation City Select Change ("Lainnya..." option toggle)
- */
-export function handleResCitySelectChange() {
-    const citySelect = document.getElementById('res-city-select');
-    const cityManualInput = document.getElementById('res-city-manual');
-
-    if (!citySelect || !cityManualInput) return;
-
-    if (citySelect.value === 'Lainnya...') {
-        cityManualInput.classList.remove('hidden');
-        cityManualInput.focus();
-    } else {
-        cityManualInput.classList.add('hidden');
-        cityManualInput.value = '';
-    }
-}
+import { callOcrSpace, parseKtpText, blobToBase64 } from '../services/ocrService.js';
 
 // Global/Module Caches & State
 export let guestSearchDebounceTimer = null;
@@ -413,36 +347,15 @@ export async function handleGuestSearchInput(query) {
 export async function selectGuestProfile(id, name, idCard, phone, email, birthDate, address, city, nationality, cardType, title, identityType, country) {
     if (document.getElementById('res-guest-profile-id')) document.getElementById('res-guest-profile-id').value = id;
     if (document.getElementById('res-guest-name')) document.getElementById('res-guest-name').value = name;
-    if (document.getElementById('res-id-card')) document.getElementById('res-id-card').value = idCard || '';
+    const idCardInput = document.getElementById('res-id-card-no');
+    if (idCardInput) idCardInput.value = idCard || '';
     if (document.getElementById('res-phone')) document.getElementById('res-phone').value = phone || '';
     if (document.getElementById('res-email')) document.getElementById('res-email').value = email || '';
     if (document.getElementById('res-birth-date')) document.getElementById('res-birth-date').value = birthDate || '';
     if (document.getElementById('res-address')) document.getElementById('res-address').value = address || '';
 
-    const countrySelect = document.getElementById('res-country');
-    const citySelect = document.getElementById('res-city-select');
-    const cityManual = document.getElementById('res-city-manual');
-
-    const countryVal = country || 'Indonesia';
-    if (countrySelect) countrySelect.value = countryVal;
-
-    await populateResCityDropdown(city || '');
-    handleResCountryChange();
-
-    if (countryVal === 'Indonesia') {
-        const cities = await fetchMasterCities();
-        if (city && !cities.map(c => c.toLowerCase()).includes(city.toLowerCase())) {
-            if (citySelect) citySelect.value = 'Lainnya...';
-            if (cityManual) {
-                cityManual.classList.remove('hidden');
-                cityManual.value = city;
-            }
-        } else if (citySelect) {
-            citySelect.value = city || '';
-        }
-    } else {
-        if (cityManual) cityManual.value = city || '';
-    }
+    const cityInput = document.getElementById('res-city');
+    if (cityInput) cityInput.value = city || '';
 
     if (document.getElementById('res-nationality')) document.getElementById('res-nationality').value = nationality || 'Indonesia';
     if (document.getElementById('res-card-type')) document.getElementById('res-card-type').value = cardType || 'Individual';
@@ -463,14 +376,18 @@ export function clearSelectedGuest() {
     if (document.getElementById('res-booker-name')) document.getElementById('res-booker-name').value = '';
     if (document.getElementById('res-guest-name')) document.getElementById('res-guest-name').value = '';
     if (document.getElementById('res-identity-type')) document.getElementById('res-identity-type').value = 'KTP';
-    if (document.getElementById('res-id-card')) document.getElementById('res-id-card').value = '';
+    if (document.getElementById('res-id-card-no')) document.getElementById('res-id-card-no').value = '';
     if (document.getElementById('res-phone')) document.getElementById('res-phone').value = '';
     if (document.getElementById('res-email')) document.getElementById('res-email').value = '';
+    if (document.getElementById('res-birth-place')) document.getElementById('res-birth-place').value = '';
     if (document.getElementById('res-birth-date')) document.getElementById('res-birth-date').value = '';
+    if (document.getElementById('res-gender')) document.getElementById('res-gender').value = 'Laki-laki';
     if (document.getElementById('res-address')) document.getElementById('res-address').value = '';
-    if (document.getElementById('res-country')) document.getElementById('res-country').value = 'Indonesia';
-    populateResCityDropdown('');
-    handleResCountryChange();
+    if (document.getElementById('res-rt-rw')) document.getElementById('res-rt-rw').value = '';
+    if (document.getElementById('res-village')) document.getElementById('res-village').value = '';
+    if (document.getElementById('res-sub-district')) document.getElementById('res-sub-district').value = '';
+    if (document.getElementById('res-city')) document.getElementById('res-city').value = '';
+    if (document.getElementById('res-province')) document.getElementById('res-province').value = '';
     if (document.getElementById('res-nationality')) document.getElementById('res-nationality').value = 'Indonesia';
     if (document.getElementById('res-discount-pct')) document.getElementById('res-discount-pct').value = '0';
     if (document.getElementById('res-save-to-gcf')) document.getElementById('res-save-to-gcf').checked = false;
@@ -602,7 +519,7 @@ export async function selectGuestFromLookup(guestId) {
     const guestNameInput = document.getElementById('res-guest-name');
     const phoneInput = document.getElementById('res-phone');
     const emailInput = document.getElementById('res-email');
-    const idCardInput = document.getElementById('res-id-card');
+    const idCardInput = document.getElementById('res-id-card-no');
     const discountInput = document.getElementById('res-discount-pct');
     const cardIdInput = document.getElementById('res-guest-card-id');
     const profileIdInput = document.getElementById('res-guest-profile-id');
@@ -611,6 +528,12 @@ export async function selectGuestFromLookup(guestId) {
     const identityTypeSelect = document.getElementById('res-identity-type');
     const addressInput = document.getElementById('res-address');
     const cityInput = document.getElementById('res-city');
+    const provinceInput = document.getElementById('res-province');
+    const birthPlaceInput = document.getElementById('res-birth-place');
+    const genderSelect = document.getElementById('res-gender');
+    const rtRwInput = document.getElementById('res-rt-rw');
+    const villageInput = document.getElementById('res-village');
+    const subDistrictInput = document.getElementById('res-sub-district');
     const nationalityInput = document.getElementById('res-nationality');
     const birthDateInput = document.getElementById('res-birth-date');
 
@@ -634,8 +557,14 @@ export async function selectGuestFromLookup(guestId) {
     if (profileIdInput && !profileIdInput.value) profileIdInput.value = guest.id || guestId;
     if (addressInput) addressInput.value = guest.address || '';
     if (cityInput) cityInput.value = guest.city || '';
+    if (provinceInput) provinceInput.value = guest.province || guest.provinsi || '';
+    if (birthPlaceInput) birthPlaceInput.value = guest.birth_place || guest.birthplace || '';
+    if (genderSelect) genderSelect.value = guest.gender || guest.sex || 'Laki-laki';
+    if (rtRwInput) rtRwInput.value = guest.rt_rw || guest.rtrw || '';
+    if (villageInput) villageInput.value = guest.village || guest.kelurahan || '';
+    if (subDistrictInput) subDistrictInput.value = guest.sub_district || guest.subdistrict || guest.kecamatan || '';
     if (nationalityInput) nationalityInput.value = guest.nationality || guest.nationality_code || 'Indonesia';
-    if (birthDateInput && (guest.birthdate || guest.birth_date)) birthDateInput.value = guest.birthdate || guest.birth_date;
+    if (birthDateInput && (guest.birth_date || guest.birthdate)) birthDateInput.value = guest.birth_date || guest.birthdate;
 
     closeGuestLookupModal();
     showToast(`Profil ${nameVal} berhasil dimuat`, 'success');
@@ -1235,38 +1164,27 @@ export async function openEditReservation(id) {
         if (document.getElementById('res-identity-type')) {
             document.getElementById('res-identity-type').value = gcfObj?.id_card_type || gcfObj?.identity_type || guestCard?.id_card_type || guestCard?.identity_type || 'KTP';
         }
-        document.getElementById('res-id-card').value = gcfObj?.id_card_no || guestCard?.id_card_no || '';
+        const idCardInput = document.getElementById('res-id-card-no');
+        if (idCardInput) idCardInput.value = gcfObj?.id_card_no || guestCard?.id_card_no || '';
         document.getElementById('res-phone').value = gcfObj?.phone || gcfObj?.mobile_no || guestCard?.phone || guestCard?.mobile_no || guestCard?.phone_number || '';
         document.getElementById('res-email').value = gcfObj?.email || guestCard?.email || '';
-        document.getElementById('res-birth-date').value = gcfObj?.birthdate || gcfObj?.birth_date || guestCard?.birthdate || guestCard?.birth_date || '';
+        document.getElementById('res-birth-date').value = gcfObj?.birth_date || gcfObj?.birthdate || guestCard?.birth_date || guestCard?.birthdate || '';
         document.getElementById('res-address').value = gcfObj?.address || guestCard?.address || '';
 
-        const resCountry = gcfObj?.country || guestCard?.country || guestCard?.country_code || res?.country || 'Indonesia';
-        const resCity = gcfObj?.city || guestCard?.city || '';
-
-        const countrySelect = document.getElementById('res-country');
-        const citySelect = document.getElementById('res-city-select');
-        const cityManual = document.getElementById('res-city-manual');
-
-        if (countrySelect) countrySelect.value = resCountry;
-
-        await populateResCityDropdown(resCity);
-        handleResCountryChange();
-
-        if (resCountry === 'Indonesia') {
-            const cities = await fetchMasterCities();
-            if (resCity && !cities.map(c => c.toLowerCase()).includes(resCity.toLowerCase())) {
-                if (citySelect) citySelect.value = 'Lainnya...';
-                if (cityManual) {
-                    cityManual.classList.remove('hidden');
-                    cityManual.value = resCity;
-                }
-            } else if (citySelect) {
-                citySelect.value = resCity;
-            }
-        } else {
-            if (cityManual) cityManual.value = resCity;
-        }
+        const birthPlaceInput = document.getElementById('res-birth-place');
+        if (birthPlaceInput) birthPlaceInput.value = gcfObj?.birth_place || gcfObj?.birthplace || guestCard?.birth_place || guestCard?.birthplace || '';
+        const genderSelect = document.getElementById('res-gender');
+        if (genderSelect) genderSelect.value = gcfObj?.gender || gcfObj?.sex || guestCard?.gender || guestCard?.sex || 'Laki-laki';
+        const rtRwInput = document.getElementById('res-rt-rw');
+        if (rtRwInput) rtRwInput.value = gcfObj?.rt_rw || gcfObj?.rtrw || guestCard?.rt_rw || guestCard?.rtrw || '';
+        const villageInput = document.getElementById('res-village');
+        if (villageInput) villageInput.value = gcfObj?.village || gcfObj?.kelurahan || guestCard?.village || guestCard?.kelurahan || '';
+        const subDistrictInput = document.getElementById('res-sub-district');
+        if (subDistrictInput) subDistrictInput.value = gcfObj?.sub_district || gcfObj?.subdistrict || gcfObj?.kecamatan || guestCard?.sub_district || guestCard?.subdistrict || guestCard?.kecamatan || '';
+        const cityInput = document.getElementById('res-city');
+        if (cityInput) cityInput.value = gcfObj?.city || guestCard?.city || '';
+        const provinceInput = document.getElementById('res-province');
+        if (provinceInput) provinceInput.value = gcfObj?.province || gcfObj?.provinsi || guestCard?.province || guestCard?.provinsi || '';
 
         document.getElementById('res-nationality').value = gcfObj?.nationality || guestCard?.nationality || 'Indonesia';
 
@@ -2367,6 +2285,24 @@ export async function handleCheckIn(reservationId, roomId) {
     }
 }
 
+async function findGuestCardIdByIdCard(idCardNo) {
+    const value = (idCardNo || '').trim();
+    if (!value) return null;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('guest_card_files')
+            .select('id')
+            .eq('id_card_no', value)
+            .limit(1);
+        if (error) throw error;
+        return data?.[0]?.id || null;
+    } catch (err) {
+        console.warn('Error looking up guest card by identity number:', err);
+        return null;
+    }
+}
+
 export async function handleSaveReservation(event) {
     event.preventDefault();
 
@@ -2389,7 +2325,7 @@ export async function handleSaveReservation(event) {
         const bookerNameVal = document.getElementById('res-booker-name').value.trim();
         const guestNameVal = document.getElementById('res-guest-name').value.trim();
         const identityTypeVal = document.getElementById('res-identity-type')?.value || 'KTP';
-        const idCardVal = document.getElementById('res-id-card').value.trim();
+        const idCardVal = document.getElementById('res-id-card-no')?.value.trim() || null;
         const phoneVal = document.getElementById('res-phone').value.trim();
         const emailVal = document.getElementById('res-email').value.trim();
         const birthPlaceVal = document.getElementById('res-birth-place')?.value.trim() || null;
@@ -2399,20 +2335,9 @@ export async function handleSaveReservation(event) {
         const rtRwVal = document.getElementById('res-rt-rw')?.value.trim() || null;
         const villageVal = document.getElementById('res-village')?.value.trim() || null;
         const subDistrictVal = document.getElementById('res-sub-district')?.value.trim() || null;
+        const cityVal = document.getElementById('res-city')?.value.trim() || null;
         const provinceVal = document.getElementById('res-province')?.value.trim() || null;
-        const countryVal = document.getElementById('res-country')?.value || 'Indonesia';
-
-        let cityVal = null;
-        if (countryVal === 'Indonesia') {
-            const selectVal = document.getElementById('res-city-select')?.value;
-            if (selectVal === 'Lainnya...') {
-                cityVal = document.getElementById('res-city-manual')?.value.trim() || null;
-            } else {
-                cityVal = selectVal || null;
-            }
-        } else {
-            cityVal = document.getElementById('res-city-manual')?.value.trim() || null;
-        }
+        const countryVal = 'Indonesia';
 
         const nationalityVal = document.getElementById('res-nationality').value.trim() || 'Indonesia';
 
@@ -2462,7 +2387,7 @@ export async function handleSaveReservation(event) {
                         id_card_no: idCardVal || null,
                         phone: phoneVal || null,
                         email: emailVal || null,
-                        birthdate: birthDateVal,
+                        birth_date: birthDateVal,
                         birth_place: birthPlaceVal,
                         gender: genderVal,
                         address: addressVal,
@@ -2480,14 +2405,20 @@ export async function handleSaveReservation(event) {
             }
         }
 
-        // Save to GCF if checkbox is checked & handle GCF profile creation/update
+        // Simpan ke GCF bila checkbox dicentang, atau otomatis bila ada data identitas
+        // dan tamu belum terhubung ke profil (agar hasil scan KTP tidak pernah terbuang).
         const saveToGcfChecked = document.getElementById('res-save-to-gcf')?.checked;
         const discountPctVal = parseFloat(document.getElementById('res-discount-pct')?.value) || 0;
+        const hasKtpData = Boolean(idCardVal || birthPlaceVal || birthDateVal || rtRwVal || villageVal || subDistrictVal || provinceVal);
+        const shouldSaveGcf = Boolean(saveToGcfChecked || (!guestCardId && hasKtpData));
 
-        if (saveToGcfChecked) {
+        if (shouldSaveGcf) {
             try {
-                // Jika saveToGcfChecked dicentang dan nama diubah, id dikirim undefined agar membuat record GCF baru
-                const targetGcfId = isNameChanged ? undefined : (guestCardId || undefined);
+                // Nama berubah = profil baru, kecuali NIK sudah terdaftar (maka perbarui profil itu).
+                let targetGcfId = isNameChanged ? undefined : (guestCardId || undefined);
+                if (!targetGcfId && idCardVal) {
+                    targetGcfId = (await findGuestCardIdByIdCard(idCardVal)) || undefined;
+                }
                 const gcfData = await saveGuestCard({
                     id: targetGcfId,
                     card_type: cardTypeVal,
@@ -2504,7 +2435,7 @@ export async function handleSaveReservation(event) {
                     address: addressVal,
                     country: countryVal,
                     city: cityVal,
-                    birthdate: birthDateVal,
+                    birth_date: birthDateVal,
                     birth_place: birthPlaceVal,
                     gender: genderVal,
                     rt_rw: rtRwVal,
@@ -2938,452 +2869,17 @@ export async function handleSaveReservation(event) {
         }
     }
 }
-export function parseOcrText(parsedText) {
-    if (!parsedText || typeof parsedText !== 'string') return {};
-    const text = parsedText;
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    const result = {};
 
-    // Check for Passport / MRZ pattern
-    const mrzLines = lines.filter(l => l.includes('<') || l.startsWith('P<') || /[A-Z0-9<]{30,}/.test(l));
-    const isPassport = /PASSPORT|PASPOR/i.test(text) || mrzLines.length >= 1;
-
-    if (isPassport) {
-        result.type = 'PASSPORT';
-
-        // 1. Passport Number (8-9 alphanumeric chars)
-        const passNumMatch = text.match(/\b([A-Z][0-9]{7,8})\b/);
-        if (passNumMatch) {
-            result.identityNumber = passNumMatch[1];
-        } else {
-            for (const line of mrzLines) {
-                const m = line.replace(/</g, '').match(/^([A-Z0-9]{8,9})/);
-                if (m) {
-                    result.identityNumber = m[1];
-                    break;
-                }
-            }
-        }
-
-        // 2. Name & Country Code from MRZ Line 1 e.g. P<IDNDOE<<JANE
-        for (const line of mrzLines) {
-            if (line.includes('P<')) {
-                const mrzClean = line.substring(line.indexOf('P<') + 2);
-                const countryCode = mrzClean.substring(0, 3);
-                result.countryCode = countryCode;
-                let namePart = mrzClean.substring(3).replace(/</g, ' ').trim();
-                namePart = namePart.replace(/\s+/g, ' ');
-                if (namePart) {
-                    result.guestName = namePart;
-                }
-                break;
-            }
-        }
-
-        if (!result.guestName) {
-            const nameMatch = text.match(/(?:Nama|Name|Full Name)\s*[:\.-]?\s*([A-Za-z\s]+)/i);
-            if (nameMatch) {
-                result.guestName = nameMatch[1].trim();
-            }
-        }
-
-        return result;
-    }
-
-    // Indonesian KTP Parsing
-    result.type = 'KTP';
-
-    // 1. NIK: 16 digits
-    const nikMatch = text.match(/\b\d{16}\b/);
-    if (nikMatch) {
-        result.identityNumber = nikMatch[0];
-    }
-
-    // 2. Nama Lengkap
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const m = line.match(/Nama\s*[:\.-]?\s*(.*)/i);
-        if (m) {
-            let val = m[1].replace(/^[\s:\.-]+/, '').trim();
-            if (val) {
-                result.guestName = val;
-            } else if (i + 1 < lines.length) {
-                result.guestName = lines[i + 1].replace(/^[\s:\.-]+/, '').trim();
-            }
-            break;
-        }
-    }
-
-    // 3. Alamat
-    const alamatLines = [];
-    let capturingAlamat = false;
-    for (const line of lines) {
-        if (/Alamat\s*[:\.-]?/i.test(line)) {
-            capturingAlamat = true;
-            const m = line.match(/Alamat\s*[:\.-]?\s*(.*)/i);
-            const val = m ? m[1].replace(/^[\s:\.-]+/, '').trim() : '';
-            if (val) alamatLines.push(val);
-            continue;
-        }
-        if (capturingAlamat) {
-            if (/Agama|Status|Pekerjaan|Kewarganegaraan|Jenis Kelamin|Gol\.? Darah/i.test(line)) {
-                break;
-            }
-            const cleanLine = line.replace(/^(RT\/RW|Kel\/Desa|Kecamatan)\s*[:\.-]?\s*/i, '').replace(/^[\s:\.-]+/, '').trim();
-            if (cleanLine) alamatLines.push(cleanLine);
-        }
-    }
-
-    if (alamatLines.length > 0) {
-        result.address = alamatLines.join(' ');
-    }
-
-    // 4. Kota/Kabupaten
-    for (const line of lines) {
-        const kotaM = line.match(/^((?:KOTA|KABUPATEN)\s+[A-Z\s]+)/i);
-        if (kotaM) {
-            result.city = kotaM[1].trim();
-            break;
-        }
-    }
-
-    // 5. Kewarganegaraan
-    if (/\bWNI\b|INDONESIA/i.test(text)) {
-        result.nationality = 'Indonesia';
-    }
-
-    return result;
-}
-
-export function getCompressedDocBase64() {
-    return new Promise((resolve) => {
-        const preview = document.getElementById('res-doc-preview');
-        if (!preview || preview.classList.contains('hidden') || !preview.src || preview.src === '' || preview.src === window.location.href) {
-            resolve(null);
-            return;
-        }
-
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-            let width = img.naturalWidth || img.width;
-            let height = img.naturalHeight || img.height;
-
-            if (!width || !height) {
-                resolve(null);
-                return;
-            }
-
-            const maxWidth = 800;
-            if (width > maxWidth) {
-                height = Math.round((height * maxWidth) / width);
-                width = maxWidth;
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            const base64Data = canvas.toDataURL('image/jpeg', 0.7);
-            resolve(base64Data);
-        };
-        img.onerror = (err) => {
-            console.error('Error loading preview image for base64 compression:', err);
-            resolve(null);
-        };
-        img.src = preview.src;
-    });
-}
-
-export async function scanDocumentOcr() {
-    const scanBtn = document.getElementById('btn-scan-doc');
-    const originalBtnHTML = scanBtn ? scanBtn.innerHTML : '';
-
-    try {
-        let apiKey = window.cachedOcrApiKey || '';
-        if (!apiKey && typeof window.getOcrSpaceApiKey === 'function') {
-            apiKey = await window.getOcrSpaceApiKey();
-        }
-
-        if (!apiKey) {
-            alert('API Key OCR.space belum dikonfigurasi. Silakan atur di menu Pengaturan Sistem (Admin).');
-            return;
-        }
-
-        const base64Image = await getCompressedDocBase64();
-        if (!base64Image) {
-            showToast('Silakan upload atau ambil foto dokumen (KTP / Paspor) terlebih dahulu.', 'warning');
-            return;
-        }
-
-        if (scanBtn) {
-            scanBtn.disabled = true;
-            scanBtn.innerHTML = '<i class="ph ph-spinner animate-spin mr-1.5 text-sm"></i> Scanning...';
-        }
-
-        showToast('Memproses pemindaian dokumen via OCR.space...', 'info');
-
-        const formData = new FormData();
-        formData.append('apikey', apiKey);
-        formData.append('base64Image', base64Image);
-        formData.append('OCREngine', '2');
-        formData.append('scale', 'true');
-        formData.append('detectOrientation', 'true');
-
-        const response = await fetch('https://api.ocr.space/parse/image', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error('HTTP Error ' + response.status + ': ' + response.statusText);
-        }
-
-        const data = await response.json();
-
-        if (data.IsErroredOnHTTP || !data.ParsedResults || data.ParsedResults.length === 0) {
-            const errDetails = data.ErrorMessage ? data.ErrorMessage.join(', ') : 'Gagal membaca teks dari gambar';
-            throw new Error(errDetails);
-        }
-
-        const parsedText = data.ParsedResults[0].ParsedText || '';
-        if (!parsedText.trim()) {
-            showToast('Hasil OCR kosong atau foto tidak cukup jelas. Silakan coba unggah ulang foto yang lebih terang.', 'warning');
-            return;
-        }
-
-        const extracted = parseOcrText(parsedText);
-        let filledCount = 0;
-
-        if (extracted.guestName) {
-            const nameEl = document.getElementById('res-guest-name');
-            if (nameEl) {
-                nameEl.value = extracted.guestName;
-                filledCount++;
-            }
-            const bookerEl = document.getElementById('res-booker-name');
-            if (bookerEl && !bookerEl.value) {
-                bookerEl.value = extracted.guestName;
-            }
-        }
-
-        if (extracted.identityNumber) {
-            const idEl = document.getElementById('res-id-card');
-            if (idEl) {
-                idEl.value = extracted.identityNumber;
-                filledCount++;
-            }
-        }
-
-        if (extracted.identityType || extracted.type) {
-            const typeEl = document.getElementById('res-identity-type');
-            if (typeEl) {
-                if (extracted.type === 'PASSPORT') {
-                    typeEl.value = 'Passport';
-                } else if (extracted.type === 'KTP') {
-                    typeEl.value = 'KTP';
-                }
-            }
-        }
-
-        if (extracted.address) {
-            const addrEl = document.getElementById('res-address');
-            if (addrEl) {
-                addrEl.value = extracted.address;
-                filledCount++;
-            }
-        }
-
-        if (extracted.city) {
-            const citySelect = document.getElementById('res-city-select');
-            const cityManual = document.getElementById('res-city-manual');
-            if (citySelect && cityManual) {
-                citySelect.value = 'Lainnya';
-                cityManual.classList.remove('hidden');
-                cityManual.value = extracted.city;
-                filledCount++;
-            }
-        }
-
-        if (extracted.nationality || extracted.type === 'KTP') {
-            const natEl = document.getElementById('res-nationality');
-            if (natEl) {
-                natEl.value = 'Indonesia';
-            }
-            const countryEl = document.getElementById('res-country');
-            if (countryEl) {
-                countryEl.value = 'Indonesia';
-                if (typeof window.handleResCountryChange === 'function') {
-                    window.handleResCountryChange();
-                }
-            }
-        }
-
-        if (filledCount > 0) {
-            showToast('Data dokumen berhasil dipindai. Silakan periksa kembali data sebelum menyimpan.', 'success');
-        } else {
-            showToast('Teks berhasil dibaca tetapi tidak ditemukan kolom yang sesuai. Silakan isi data secara manual.', 'warning');
-        }
-
-    } catch (err) {
-        console.error('OCR Error:', err);
-        showToast('Gagal memindai dokumen: ' + (err.message || err), 'error');
-    } finally {
-        if (scanBtn) {
-            scanBtn.disabled = false;
-            scanBtn.innerHTML = originalBtnHTML;
-        }
-    }
-}
-
-
-export function parseKTPData(rawText) {
-    if (!rawText || typeof rawText !== 'string') return {};
-    const text = rawText;
-    const lines = text.split(/?
-/).map(l => l.trim()).filter(Boolean);
-    const result = {};
-
-    // 1. NIK
-    const nikMatch = text.match(/\d{16}/);
-    if (nikMatch) {
-        result.nik = nikMatch[0];
-    }
-
-    // 2. Nama
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (/Nama/i.test(line)) {
-            const m = line.match(/Nama\s*[:\.-]?\s*(.*)/i);
-            if (m) {
-                let val = m[1].replace(/^[\s:\.-]+/, '').trim();
-                if (val) {
-                    result.nama = val;
-                } else if (i + 1 < lines.length) {
-                    result.nama = lines[i + 1].replace(/^[\s:\.-]+/, '').trim();
-                }
-                break;
-            }
-        }
-    }
-
-    // 3. Tempat & Tanggal Lahir
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (/Tempat/i.test(line) && /Lahir/i.test(line)) {
-            const m = line.match(/(?:Tempat\s*[\/\.]?\s*Tgl\s*Lahir|Tempat\/Tgl\s*Lahir)\s*[:\.-]?\s*(.*)/i);
-            const contentStr = m ? m[1].trim() : line;
-            if (contentStr) {
-                const commaParts = contentStr.split(',');
-                if (commaParts.length > 0) {
-                    const place = commaParts[0].replace(/^[:\.-]+/, '').trim();
-                    if (place) result.tempatLahir = place;
-                }
-                const dateM = contentStr.match(/(\d{2})[-\/\. ](\d{2})[-\/\. ](\d{4})/);
-                if (dateM) {
-                    const [, day, month, year] = dateM;
-                    result.tanggalLahir = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                }
-            }
-            break;
-        }
-    }
-
-    if (!result.tanggalLahir) {
-        const dateM = text.match(/(\d{2})[-\/\.](\d{2})[-\/\.](\d{4})/);
-        if (dateM) {
-            const [, day, month, year] = dateM;
-            result.tanggalLahir = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        }
-    }
-
-    // 4. Jenis Kelamin
-    if (/PEREMPUAN/i.test(text)) {
-        result.jenisKelamin = 'Perempuan';
-    } else if (/LAKI-LAKI|LAKILAKI/i.test(text)) {
-        result.jenisKelamin = 'Laki-laki';
-    }
-
-    // 5. Alamat
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (/Alamat/i.test(line)) {
-            const m = line.match(/Alamat\s*[:\.-]?\s*(.*)/i);
-            let val = m ? m[1].replace(/^[\s:\.-]+/, '').trim() : '';
-            if (!val && i + 1 < lines.length) {
-                val = lines[i + 1].replace(/^[\s:\.-]+/, '').trim();
-            }
-            if (val) {
-                result.alamat = val;
-            }
-            break;
-        }
-    }
-
-    // 6. RT/RW
-    const rtrwM = text.match(/\d{2,3}\s*\/\s*\d{2,3}/);
-    if (rtrwM) {
-        result.rtRw = rtrwM[0];
-    }
-
-    // 7. Kel/Desa
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (/Kel[\/\.]?Desa/i.test(line)) {
-            const m = line.match(/Kel[\/\.]?Desa\s*[:\.-]?\s*(.*)/i);
-            let val = m ? m[1].replace(/^[\s:\.-]+/, '').trim() : '';
-            if (!val && i + 1 < lines.length) {
-                val = lines[i + 1].replace(/^[\s:\.-]+/, '').trim();
-            }
-            if (val) {
-                result.kelurahan = val;
-            }
-            break;
-        }
-    }
-
-    // 8. Kecamatan
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (/Kecamatan/i.test(line)) {
-            const m = line.match(/Kecamatan\s*[:\.-]?\s*(.*)/i);
-            let val = m ? m[1].replace(/^[\s:\.-]+/, '').trim() : '';
-            if (!val && i + 1 < lines.length) {
-                val = lines[i + 1].replace(/^[\s:\.-]+/, '').trim();
-            }
-            if (val) {
-                result.kecamatan = val;
-            }
-            break;
-        }
-    }
-
-    // 9. Kota/Kab & Provinsi
-    for (const line of lines) {
-        if (/PROVINSI/i.test(line)) {
-            const m = line.match(/PROVINSI\s+(.*)/i);
-            result.provinsi = m ? m[1].trim() : line.trim();
-        }
-        if (/KOTA|KABUPATEN/i.test(line)) {
-            const m = line.match(/((?:KOTA|KABUPATEN)\s+[A-Z\s]+)/i);
-            if (m) {
-                result.kota = m[1].trim();
-            }
-        }
-    }
-
-    // 10. Kewarganegaraan
-    if (/WNI|INDONESIA/i.test(text)) {
-        result.kewarganegaraan = 'Indonesia';
-    }
-
-    return result;
+function setReservationField(id, value) {
+    if (value === undefined || value === null || value === '') return false;
+    const el = document.getElementById(id);
+    if (!el) return false;
+    el.value = value;
+    return true;
 }
 
 export async function processOCRImage() {
-    const scanBtn = document.getElementById('btn-scan-ocr') || document.getElementById('btn-scan-doc');
+    const scanBtn = document.getElementById('btn-scan-ocr');
     const originalBtnHTML = scanBtn ? scanBtn.innerHTML : '';
 
     try {
@@ -3397,13 +2893,10 @@ export async function processOCRImage() {
             return;
         }
 
-        const base64Image = await getCompressedDocBase64();
+        const compressedBlob = await getCompressedDocBlob();
+        const base64Image = await blobToBase64(compressedBlob);
         if (!base64Image) {
-            if (typeof showToast === 'function') {
-                showToast('Silakan upload atau ambil foto dokumen terlebih dahulu.', 'warning');
-            } else {
-                alert('Silakan upload atau ambil foto dokumen terlebih dahulu.');
-            }
+            showToast('Silakan upload atau ambil foto dokumen terlebih dahulu.', 'warning');
             return;
         }
 
@@ -3412,141 +2905,49 @@ export async function processOCRImage() {
             scanBtn.innerHTML = '<i class="ph ph-spinner animate-spin mr-1 text-sm"></i> Scanning...';
         }
 
-        if (typeof showToast === 'function') {
-            showToast('Memproses pemindaian dokumen via OCR.space...', 'info');
-        }
+        showToast('Memproses pemindaian dokumen via OCR.space...', 'info');
 
-        const formData = new FormData();
-        formData.append('apikey', apiKey);
-        formData.append('base64Image', base64Image);
-        formData.append('OCREngine', '2');
-        formData.append('scale', 'true');
-        formData.append('detectOrientation', 'true');
-        formData.append('language', 'eng');
-
-        const response = await fetch('https://api.ocr.space/parse/image', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error('HTTP Error ' + response.status + ': ' + response.statusText);
-        }
-
-        const data = await response.json();
-
-        if (data.IsErroredOnHTTP || !data.ParsedResults || data.ParsedResults.length === 0) {
-            const errDetails = data.ErrorMessage ? data.ErrorMessage.join(', ') : 'Gagal membaca teks dari gambar';
-            throw new Error(errDetails);
-        }
-
-        const parsedText = data.ParsedResults[0].ParsedText || '';
+        const parsedText = await callOcrSpace(base64Image, apiKey);
         if (!parsedText.trim()) {
-            if (typeof showToast === 'function') {
-                showToast('Hasil OCR kosong atau foto tidak cukup jelas. Silakan coba unggah ulang foto yang lebih terang.', 'warning');
-            }
+            showToast('Hasil OCR kosong atau foto tidak cukup jelas. Silakan coba unggah ulang foto yang lebih terang.', 'warning');
             return;
         }
 
-        const ktpData = parseKTPData(parsedText);
+        const ktpData = parseKtpText(parsedText);
         let filledCount = 0;
 
-        if (ktpData.nik) {
-            const el = document.getElementById('res-id-card-no') || document.getElementById('res-id-card');
-            if (el) { el.value = ktpData.nik; filledCount++; }
+        if (setReservationField('res-id-card-no', ktpData.id_card_no)) filledCount++;
+        if (ktpData.document_type === 'PASSPORT') {
+            if (setReservationField('res-identity-type', 'PASSPORT')) filledCount++;
         }
-
-        if (ktpData.nama) {
-            const el = document.getElementById('res-guest-name');
-            if (el) { el.value = ktpData.nama; filledCount++; }
+        if (setReservationField('res-guest-name', ktpData.full_name)) {
+            filledCount++;
             const bookerEl = document.getElementById('res-booker-name');
-            if (bookerEl && !bookerEl.value) { bookerEl.value = ktpData.nama; }
+            if (bookerEl && !bookerEl.value) bookerEl.value = ktpData.full_name;
         }
-
-        if (ktpData.tempatLahir) {
-            const el = document.getElementById('res-birth-place');
-            if (el) { el.value = ktpData.tempatLahir; filledCount++; }
-        }
-
-        if (ktpData.tanggalLahir) {
-            const el = document.getElementById('res-birth-date');
-            if (el) { el.value = ktpData.tanggalLahir; filledCount++; }
-        }
-
-        if (ktpData.jenisKelamin) {
-            const el = document.getElementById('res-gender');
-            if (el) { el.value = ktpData.jenisKelamin; filledCount++; }
-        }
-
-        if (ktpData.alamat) {
-            const el = document.getElementById('res-address');
-            if (el) { el.value = ktpData.alamat; filledCount++; }
-        }
-
-        if (ktpData.rtRw) {
-            const el = document.getElementById('res-rt-rw');
-            if (el) { el.value = ktpData.rtRw; filledCount++; }
-        }
-
-        if (ktpData.kelurahan) {
-            const el = document.getElementById('res-village');
-            if (el) { el.value = ktpData.kelurahan; filledCount++; }
-        }
-
-        if (ktpData.kecamatan) {
-            const el = document.getElementById('res-sub-district');
-            if (el) { el.value = ktpData.kecamatan; filledCount++; }
-        }
-
-        if (ktpData.kota) {
-            const el = document.getElementById('res-city');
-            if (el) { el.value = ktpData.kota; filledCount++; }
-        }
-
-        if (ktpData.provinsi) {
-            const el = document.getElementById('res-province');
-            if (el) { el.value = ktpData.provinsi; filledCount++; }
-        }
-
-        if (ktpData.kewarganegaraan) {
-            const el = document.getElementById('res-nationality');
-            if (el) { el.value = ktpData.kewarganegaraan; filledCount++; }
-        }
+        if (setReservationField('res-birth-place', ktpData.birth_place)) filledCount++;
+        if (setReservationField('res-birth-date', ktpData.birth_date)) filledCount++;
+        if (setReservationField('res-gender', ktpData.gender)) filledCount++;
+        if (setReservationField('res-address', ktpData.address)) filledCount++;
+        if (setReservationField('res-rt-rw', ktpData.rt_rw)) filledCount++;
+        if (setReservationField('res-village', ktpData.village)) filledCount++;
+        if (setReservationField('res-sub-district', ktpData.sub_district)) filledCount++;
+        if (setReservationField('res-city', ktpData.city)) filledCount++;
+        if (setReservationField('res-province', ktpData.province)) filledCount++;
+        if (setReservationField('res-nationality', ktpData.nationality)) filledCount++;
 
         if (filledCount > 0) {
-            if (typeof showToast === 'function') {
-                showToast('Data KTP berhasil dipindai dan diisi otomatis. Silakan periksa kembali data sebelum menyimpan.', 'success');
-            }
+            showToast('Data KTP berhasil dipindai dan diisi otomatis. Silakan periksa kembali data sebelum menyimpan.', 'success');
         } else {
-            if (typeof showToast === 'function') {
-                showToast('Teks berhasil dibaca tetapi tidak ditemukan kolom yang sesuai. Silakan isi data secara manual.', 'warning');
-            }
+            showToast('Teks berhasil dibaca tetapi tidak ditemukan kolom yang sesuai. Silakan isi data secara manual.', 'warning');
         }
-
     } catch (err) {
         console.error('OCR Error:', err);
-        if (typeof showToast === 'function') {
-            showToast('Gagal memindai dokumen: ' + (err.message || err), 'error');
-        } else {
-            alert('Gagal memindai dokumen: ' + (err.message || err));
-        }
+        showToast('Gagal memindai dokumen: ' + (err.message || err), 'error');
     } finally {
         if (scanBtn) {
             scanBtn.disabled = false;
             scanBtn.innerHTML = originalBtnHTML;
         }
     }
-}
-
-// Setup event listener for #btn-scan-ocr
-if (typeof window !== 'undefined') {
-    window.addEventListener('DOMContentLoaded', () => {
-        const btnScanOcr = document.getElementById('btn-scan-ocr');
-        if (btnScanOcr) {
-            btnScanOcr.addEventListener('click', (e) => {
-                e.preventDefault();
-                processOCRImage();
-            });
-        }
-    });
 }

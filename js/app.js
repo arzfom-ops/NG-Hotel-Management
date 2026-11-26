@@ -45,9 +45,6 @@ import {
 
 import {
     populateReservationFormDropdowns,
-    populateResCityDropdown,
-    handleResCountryChange,
-    handleResCitySelectChange,
     openModal,
     openViewReservationModal,
     openReactivateReservationModal,
@@ -76,10 +73,7 @@ import {
     captureWebcamPhoto,
     handleDocUpload,
     clearDocPreview,
-    scanDocumentOcr,
-    parseKTPData,
     processOCRImage,
-    parseOcrText,
     getCompressedDocBlob,
     openEditReservation,
     toggleAddDepositForm,
@@ -716,9 +710,6 @@ if (typeof window !== 'undefined') {
 
     // Reservation Module
     window.populateReservationFormDropdowns = populateReservationFormDropdowns;
-    window.populateResCityDropdown = populateResCityDropdown;
-    window.handleResCountryChange = handleResCountryChange;
-    window.handleResCitySelectChange = handleResCitySelectChange;
     window.openModal = openModal;
     window.openViewReservationModal = openViewReservationModal;
     window.openReactivateReservationModal = openReactivateReservationModal;
@@ -744,10 +735,7 @@ if (typeof window !== 'undefined') {
     window.captureWebcamPhoto = captureWebcamPhoto;
     window.handleDocUpload = handleDocUpload;
     window.clearDocPreview = clearDocPreview;
-    window.scanDocumentOcr = scanDocumentOcr;
-    window.parseKTPData = parseKTPData;
     window.processOCRImage = processOCRImage;
-    window.parseOcrText = parseOcrText;
     window.getCompressedDocBlob = getCompressedDocBlob;
     window.toggleAddDepositForm = toggleAddDepositForm;
     window.fetchAndRenderReservationDepositHistory = fetchAndRenderReservationDepositHistory;

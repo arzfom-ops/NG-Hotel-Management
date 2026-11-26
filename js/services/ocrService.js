@@ -42,12 +42,35 @@ export async function callOcrSpace(base64Image, apiKey) {
 }
 
 /**
+ * Converts a Blob into a base64 data URL suitable for OCR.space upload.
+ * @param {Blob} blob - Compressed image blob
+ * @returns {Promise<string|null>} Base64 data URL or null
+ */
+export function blobToBase64(blob) {
+    return new Promise((resolve) => {
+        if (!blob) {
+            resolve(null);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => {
+            console.error('Error converting blob to base64:', error);
+            resolve(null);
+        };
+        reader.readAsDataURL(blob);
+    });
+}
+
+/**
  * Parses raw KTP text extracted via OCR into structured guest information.
  * @param {string} rawText - Raw OCR text
  * @returns {Object} Structured KTP object
  */
 export function parseKtpText(rawText) {
     const data = {
+        document_type: 'KTP',
         id_card_no: '',
         full_name: '',
         birth_place: '',
@@ -68,6 +91,11 @@ export function parseKtpText(rawText) {
         }
 
         const lines = rawText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+
+        // 0. document_type: deteksi penanda paspor (teks atau MRZ)
+        if (/PASSPORT|PASPOR/i.test(rawText) || lines.some(line => /^P<[A-Z]{3}/.test(line))) {
+            data.document_type = 'PASSPORT';
+        }
 
         // 1. id_card_no: Regex 16 digit angka (\b\d{16}\b)
         const nikMatch = rawText.match(/\b\d{16}\b/);
@@ -109,11 +137,11 @@ export function parseKtpText(rawText) {
             }
         }
 
-        // 5. gender: Deteksi "LAKI-LAKI" atau "PEREMPUAN"
+        // 5. gender: disamakan dengan <option> pada #res-gender
         if (/LAKI-LAKI|LAKI\s*-\s*LAKI/i.test(rawText)) {
-            data.gender = 'LAKI-LAKI';
+            data.gender = 'Laki-laki';
         } else if (/PEREMPUAN/i.test(rawText)) {
-            data.gender = 'PEREMPUAN';
+            data.gender = 'Perempuan';
         }
 
         // 6. address: Cari baris setelah "Alamat" hingga sebelum baris RT/RW
