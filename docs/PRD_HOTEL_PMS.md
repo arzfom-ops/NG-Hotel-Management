@@ -1,3 +1,11 @@
+> **STATUS: LEGACY / SUPERSEDED (2026-11-26).**
+> Dokumen ini dipertahankan sebagai arsip. Dokumen kanonik yang sudah disinkronkan dengan kode aktual:
+> - `docs/PRD.md` — product requirements (termasuk GCF, housekeeping, NSG, corporate, laporan, KTP & OCR.space)
+> - `docs/TECH_SPEC.md` — arsitektur & skema Supabase
+> - `docs/AUDIT_REPORT.md` — kondisi implementasi & daftar bug
+>
+> Bagian di bawah ini **tidak** mencerminkan kondisi kode saat ini (belum memuat fitur OCR.space, kolom KTP, modul GCF, dan temuan audit).
+
 # Product Requirement Document (PRD) - Hotel Property Management System (PMS)
 
 ## Executive Summary
