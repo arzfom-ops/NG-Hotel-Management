@@ -75,7 +75,7 @@
 <body class="bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50/40 min-h-screen font-sans text-slate-800 antialiased selection:bg-primary/20 selection:text-primary flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="hidden md:flex w-64 bg-white/70 backdrop-blur-xl border-r border-white/80 shadow-lg shadow-slate-200/40 flex-col justify-between p-4 sticky top-0 h-screen z-30 transition-all duration-300">
+    <aside id="sidebar" class="hidden md:flex w-64 bg-white/70 backdrop-blur-xl border-r border-white/80 shadow-lg shadow-slate-200/40 flex-col justify-between p-4 sticky top-0 h-screen z-30 transition-all duration-300 overflow-y-auto">
         <div class="p-4 hidden md:block">
             <h1 class="text-xl font-bold text-primary tracking-tight">NG Hotel Mgt.</h1>
         </div>
@@ -1498,7 +1498,7 @@
             </div>
 
             <!-- Form Content -->
-            <form id="reservationForm" onsubmit="handleSaveReservation(event)" class="flex-1 overflow-y-auto p-6 space-y-6">
+            <form id="reservationForm" onsubmit="handleSaveReservation(event)" novalidate class="flex-1 overflow-y-auto p-6 space-y-6">
                 <input type="hidden" id="edit-reservation-id">
                 <input type="hidden" id="edit-reservation-number">
                 <input type="hidden" id="res-guest-profile-id">

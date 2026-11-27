@@ -194,6 +194,18 @@ Setiap filter melakukan `||` berlapis. Risiko: reservasi "hilang" dari dashboard
 | Panggilan langsung ke OCR.space dari browser | Key terekspos di DevTools/network. Untuk produksi sebaiknya diproxy lewat edge function. |
 | RLS tidak dapat diverifikasi | Karena tidak ada akses DB, kepatuhan RLS tidak bisa diaudit dari repo. |
 
+### 6.5 Tabel "hantu" — dirujuk kode tetapi keberadaannya belum terverifikasi
+
+Temuan tambahan (Batch 1, 2026-11-27): lima nama tabel/bucket berikut dipakai atau diasumsikan di kode, tetapi keberadaannya di database **belum dapat dipastikan**. Bila tabel tidak ada, query akan gagal (sebagian error ditelan `try/catch` sehingga bug tidak terlihat). Perbaikan kode ditunda ke **Batch 2**.
+
+| Nama | Jenis | Referensi kode | Catatan |
+| --- | --- | --- | --- |
+| `folio_routing_rules` | tabel | `js/modules/folio.js:2143, 2240, 2255`; `js/modules/reservation.js:2871, 2883` | Dipakai untuk routing charge folio. Jika tidak ada, fitur routing/transfer gagal. Belum diverifikasi. |
+| `guest_card_contacts` | tabel | `js/services/guestService.js:108` | Dibaca di dalam `try/catch` yang menelan error; kemungkinan tabel legacy/opsional. |
+| `guest_card_contract_rates` | tabel | `js/services/guestService.js:118` | Sama seperti di atas; hanya dibaca, error diabaikan. |
+| `guest_documents` | **storage bucket** (bukan tabel) | `js/modules/reservation.js:2572, 2583` via `storage.from('guest_documents')` | Hanya dipakai sebagai bucket Storage untuk dokumen identitas. Jangan diakses lewat `supabase.from('guest_documents')`. |
+| `cashier_shifts` | tabel | Tidak ada referensi di kode | Tidak dipakai sama sekali; tabel shift yang aktual adalah `cashier_sessions` (`cashier.js`, `shift.js`, `night_audit.js`). Kemungkinan nama lama/rencana. |
+
 ---
 
 ## 7. Peta Skema yang Diinferensi (ringkas)
