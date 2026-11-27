@@ -3,6 +3,7 @@ import { formatDateISO, addDays, formatStayDatesCompact, showToast } from '../ut
 import { getActiveCashierSessionId } from './shift.js';
 import { searchGuestCards, getGuestCardById, saveGuestCard, applyGuestCardToReservation } from '../services/guestService.js';
 import { callOcrSpace, parseKtpText, blobToBase64 } from '../services/ocrService.js';
+import { isMissingTableError, dbCapabilities } from '../utils/dbErrors.js';
 
 // Global/Module Caches & State
 export let guestSearchDebounceTimer = null;
@@ -2865,25 +2866,38 @@ export async function handleSaveReservation(event) {
         }
 
         const folioRoutingRulesState = window.folioRoutingRulesState || [];
-        if (savedReservationId && folioRoutingRulesState && folioRoutingRulesState.length > 0) {
-            try {
-                await supabaseClient
-                    .from('folio_routing_rules')
-                    .delete()
-                    .eq('source_reservation_id', savedReservationId);
+        if (savedReservationId && folioRoutingRulesState.length > 0) {
+            if (!dbCapabilities.folioRoutingRules) {
+                showToast('Routing rules tidak tersimpan karena tabel folio_routing_rules belum tersedia.', 'error');
+            } else {
+                try {
+                    const { error: delErr } = await supabaseClient
+                        .from('folio_routing_rules')
+                        .delete()
+                        .eq('source_reservation_id', savedReservationId);
 
-                const insertPayload = folioRoutingRulesState.map(rule => ({
-                    source_reservation_id: savedReservationId,
-                    route_type: rule.route_type,
-                    category_name: rule.category_name,
-                    article_id: rule.article_id
-                }));
+                    if (delErr) throw delErr;
 
-                await supabaseClient
-                    .from('folio_routing_rules')
-                    .insert(insertPayload);
-            } catch (rErr) {
-                console.error('Error auto-saving routing rules:', rErr);
+                    const insertPayload = folioRoutingRulesState.map(rule => ({
+                        source_reservation_id: savedReservationId,
+                        route_type: rule.route_type,
+                        category_name: rule.category_name,
+                        article_id: rule.article_id
+                    }));
+
+                    const { error: insErr } = await supabaseClient
+                        .from('folio_routing_rules')
+                        .insert(insertPayload);
+
+                    if (insErr) throw insErr;
+                } catch (rErr) {
+                    if (isMissingTableError(rErr)) {
+                        dbCapabilities.folioRoutingRules = false;
+                        showToast('Routing rules tidak tersimpan karena tabel folio_routing_rules belum tersedia.', 'error');
+                    } else {
+                        console.error('Error auto-saving routing rules:', rErr);
+                    }
+                }
             }
         }
 

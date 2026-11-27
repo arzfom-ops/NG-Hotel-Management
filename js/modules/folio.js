@@ -2,6 +2,7 @@ export const sanitizeUuid = (val) => (val && typeof val === "string" && val.trim
 import { supabaseClient } from '../config/supabase.js';
 import { formatDateISO, formatStayDatesCompact, formatCurrency, parseSafeDateOnly } from '../utils/formatters.js';
 import { getActiveCashierSessionId } from './shift.js';
+import { isMissingTableError, dbCapabilities } from '../utils/dbErrors.js';
 
 // State Variables
 export let currentFolioReservation = null;
@@ -2138,18 +2139,29 @@ export async function populateFolioRoutingDualList() {
         const editResId = document.getElementById('edit-reservation-id')?.value;
         folioRoutingRulesState = [];
 
-        if (editResId) {
+        if (editResId && dbCapabilities.folioRoutingRules) {
             const { data: existingRules, error: rErr } = await supabaseClient
                 .from('folio_routing_rules')
                 .select('*');
 
-            if (!rErr && existingRules) {
+            if (rErr) {
+                if (isMissingTableError(rErr)) {
+                    dbCapabilities.folioRoutingRules = false;
+                    console.warn('Tabel folio_routing_rules tidak ditemukan; fitur routing dinonaktifkan.');
+                } else {
+                    console.warn('Gagal memuat folio routing rules:', rErr);
+                }
+            } else if (existingRules) {
                 const resRules = existingRules.filter(r => r.source_reservation_id === editResId);
                 folioRoutingRulesState = resRules;
             }
         }
 
         renderRoutingDualList();
+
+        if (!dbCapabilities.folioRoutingRules) {
+            routedSelect.innerHTML = `<option disabled class="text-amber-600 p-2">Fitur routing belum tersedia: tabel folio_routing_rules belum ada di database.</option>`;
+        }
 
     } catch (err) {
         console.error('Error populating folio routing dual list:', err);
@@ -2235,6 +2247,11 @@ export async function handleSaveFolioRouting() {
         return;
     }
 
+    if (!dbCapabilities.folioRoutingRules) {
+        alert('Fitur routing belum tersedia: tabel folio_routing_rules belum ada di database.');
+        return;
+    }
+
     try {
         const { error: delErr } = await supabaseClient
             .from('folio_routing_rules')
@@ -2261,6 +2278,11 @@ export async function handleSaveFolioRouting() {
         alert('Attribut Folio Routing Rules berhasil disimpan!');
 
     } catch (err) {
+        if (isMissingTableError(err)) {
+            dbCapabilities.folioRoutingRules = false;
+            alert('Fitur routing belum tersedia: tabel folio_routing_rules belum ada di database.');
+            return;
+        }
         console.error('Error saving folio routing:', err);
         alert('Gagal menyimpan Folio Routing: ' + err.message);
     }

@@ -382,7 +382,7 @@ export async function fetchShiftLogbooks() {
         const { data, error } = await supabaseClient
             .from('shift_logbooks')
             .select('*')
-            .order('opened_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
 

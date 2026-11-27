@@ -87,11 +87,11 @@ NG-Hotel-Management/
 | `js/modules/operations.js` | 863 | Housekeeping, blok kamar, status kamar, NSG, corporate, cancel list + settlement | `rooms`, `room_blocks`, `reservations`, `folio_transactions`, `corporate_profiles` | — |
 | `js/modules/guestProfiles.js` | 1014 | GCF master list & tab, editor 3 tab, kontak, contract rate, merge, histori | `guest_card_files`, `guest_contacts`, `contract_rates`, `reservations`, `master_cities` | — (via `guestService`) |
 | `js/modules/settings.js` | 1776 | 10 tab konfigurasi + OCR API key | `bed_types`, `room_types`, `rooms`, `meal_plans`, `meal_plan_breakdowns`, `outlets`, `departments`, `rate_plans`, `rate_plan_prices`, `segment_codes`, `main_group_segments`, `tax_and_service`, `extra_charges`, `payment_methods`, `invoice_settings`, `system_settings` | — |
-| `js/services/guestService.js` | 289 | Kontrak data GCF: search, get detail, save (insert/update), apply ke form | `guest_card_files`, `guest_card_contacts`*, `guest_card_contract_rates`* | `rpc_search_guest_cards` |
+| `js/services/guestService.js` | 289 | Kontrak data GCF: search, get detail, save (insert/update), apply ke form | `guest_card_files`, `guest_contacts`, `contract_rates` | `rpc_search_guest_cards` |
 | `js/services/ocrService.js` | 194 | `callOcrSpace()`, `parseKtpText()`, `blobToBase64()` — satu-satunya sumber logika OCR | — | — |
 | `test_guest_lifecycle.py` | 21 KB | E2E: reservasi → check-in → folio → payment → checkout | `reservations`, `folio_transactions` | beberapa |
 
-\* `guest_card_contacts` dan `guest_card_contract_rates` hanya dibaca di `guestService.js` dalam blok `try/catch` yang menelan error — kemungkinan tabel legacy/opsional.
+\* `guestService.js` membaca kontak dari `guest_contacts` dan rate kontrak dari `contract_rates` (tabel lama `guest_card_contacts` / `guest_card_contract_rates` terverifikasi tidak ada di DB).
 
 ---
 
@@ -313,9 +313,11 @@ Kolom dengan tanda `*` = dipakai sebagai fallback alias, keberadaannya belum pas
 
 **`guest_contacts`** — contact person perusahaan: `id`, `guest_card_id` (FK), `name`, `department`, `function_title`, `phone`, `email`.
 
-**`contract_rates`** — rate kontrak: `id`, `guest_card_id` (FK), `room_type_id`, `rate` *(asumsi)*.
+**`contract_rates`** — rate kontrak: `id`, `guest_card_id` (FK), `room_type_id`, `price_code`, `valid_from`, `valid_to` (kolom terverifikasi via PostgREST).
 
-**`guest_card_contacts`**, **`guest_card_contract_rates`** — hanya dibaca di `guestService.js`; skema tidak diketahui *(asumsi: legacy/opsional)*.
+**`guest_card_contacts`**, **`guest_card_contract_rates`** — **tidak ada di database** (terverifikasi 404 `PGRST205`); gunakan `guest_contacts` dan `contract_rates`.
+
+**`folio_routing_rules`** — dirujuk oleh fitur routing folio, tetapi **tidak ada di database** (terverifikasi 404 `PGRST205`). Kode melakukan *graceful degradation* (routing dinonaktifkan dengan notice) sampai tabel dibuat.
 
 **`corporate_profiles`** — `id`, `company_name`, `npwp`, `pic_name`, `billing_address`, `term_of_payment` (int, hari), `credit_limit` (numeric).
 

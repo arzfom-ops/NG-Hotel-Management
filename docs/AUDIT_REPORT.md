@@ -144,9 +144,9 @@ JS memakai fallback `?.value || 'KTP'`, jadi tidak crash, tetapi pilihan identit
 | P1-4 | KTP hanya tersimpan ke `guest_card_files` jika sedang edit GCF atau checkbox "Save to GCF" dicentang | `reservation.js:2484–2525` | Reservasi tamu baru tanpa GCF → seluruh data KTP dibuang. **Status: selesai** — `handleSaveReservation` otomatis membuat/memperbarui profil bila ada data identitas dan tamu belum tertaut, lalu menautkan `guest_card_id` |
 | P1-5 | `#res-nationality` punya `value="WNI / Indonesia"` dan nilainya disimpan apa adanya | `index.html:1665`, `reservation.js:2417` | Kolom nationality berisi string tidak baku. **Status: selesai** — default UI kini `Indonesia` |
 | P1-6 | Dua fungsi gender: `gender` (reservasi/guestService) vs `sex` (GCF editor) | `guestService.js:155`, `guestProfiles.js:651` | Data gender terpecah dua kolom, saling menimpa |
-| P1-7 | `shift_logbooks` diurutkan dengan `opened_at` | `shift.js:385` | Jika kolom tidak ada → query error → logbook kosong |
+| P1-7 | `shift_logbooks` diurutkan dengan `opened_at` | `shift.js:385` | Jika kolom tidak ada → query error → logbook kosong. **Status: selesai (Batch 2)** — `opened_at` terverifikasi tidak ada di `shift_logbooks`; diurutkan dengan `created_at`. |
 | P1-8 | `closeRoomingListModal` didefinisikan di dua modul (`reservation.js` & `group.js`); `app.js` hanya memakai versi `group.js` | `reservation.js`, `group.js`, `app.js` | Penutupan modal rooming list dari jalur reservasi berpotensi salah target |
-| P1-9 | `guest_card_contacts` / `guest_card_contract_rates` dibaca, tetapi kode menulis ke `guest_contacts` / `contract_rates` | `guestService.js:118–140` | Relasi kontak/rate tidak pernah terbaca lewat service; error ditelan `try/catch` kosong |
+| P1-9 | `guest_card_contacts` / `guest_card_contract_rates` dibaca, tetapi kode menulis ke `guest_contacts` / `contract_rates` | `guestService.js:118–140` | Relasi kontak/rate tidak pernah terbaca lewat service; error ditelan `try/catch` kosong. **Status: selesai (Batch 2)** — kedua tabel lama terverifikasi tidak ada di DB; `guestService` kini membaca `guest_contacts` & `contract_rates`. |
 | P1-10 | `group_bookings.contact_person` dipakai menyimpan JSON `{check_in_date, check_out_date, status}` | `reservation.js:2712–2724`, `group.js:934–942` | Kolom teks dipakai sebagai metadata; rawan gagal parse |
 
 ---
@@ -194,17 +194,17 @@ Setiap filter melakukan `||` berlapis. Risiko: reservasi "hilang" dari dashboard
 | Panggilan langsung ke OCR.space dari browser | Key terekspos di DevTools/network. Untuk produksi sebaiknya diproxy lewat edge function. |
 | RLS tidak dapat diverifikasi | Karena tidak ada akses DB, kepatuhan RLS tidak bisa diaudit dari repo. |
 
-### 6.5 Tabel "hantu" — dirujuk kode tetapi keberadaannya belum terverifikasi
+### 6.5 Tabel "hantu" — verifikasi DB & tindak lanjut (Batch 2)
 
-Temuan tambahan (Batch 1, 2026-11-27): lima nama tabel/bucket berikut dipakai atau diasumsikan di kode, tetapi keberadaannya di database **belum dapat dipastikan**. Bila tabel tidak ada, query akan gagal (sebagian error ditelan `try/catch` sehingga bug tidak terlihat). Perbaikan kode ditunda ke **Batch 2**.
+Temuan Batch 1 (2026-11-27) diverifikasi langsung ke database via PostgREST pada Batch 2. Hasil: tiga tabel benar-benar tidak ada, satu hanyalah bucket Storage, dan satu ternyata ada tetapi tidak dipakai kode.
 
-| Nama | Jenis | Referensi kode | Catatan |
+| Nama | Status DB | Referensi kode | Tindakan |
 | --- | --- | --- | --- |
-| `folio_routing_rules` | tabel | `js/modules/folio.js:2143, 2240, 2255`; `js/modules/reservation.js:2871, 2883` | Dipakai untuk routing charge folio. Jika tidak ada, fitur routing/transfer gagal. Belum diverifikasi. |
-| `guest_card_contacts` | tabel | `js/services/guestService.js:108` | Dibaca di dalam `try/catch` yang menelan error; kemungkinan tabel legacy/opsional. |
-| `guest_card_contract_rates` | tabel | `js/services/guestService.js:118` | Sama seperti di atas; hanya dibaca, error diabaikan. |
-| `guest_documents` | **storage bucket** (bukan tabel) | `js/modules/reservation.js:2572, 2583` via `storage.from('guest_documents')` | Hanya dipakai sebagai bucket Storage untuk dokumen identitas. Jangan diakses lewat `supabase.from('guest_documents')`. |
-| `cashier_shifts` | tabel | Tidak ada referensi di kode | Tidak dipakai sama sekali; tabel shift yang aktual adalah `cashier_sessions` (`cashier.js`, `shift.js`, `night_audit.js`). Kemungkinan nama lama/rencana. |
+| `folio_routing_rules` | **Tidak ada** (HTTP 404 `PGRST205`) | `js/modules/folio.js` (populate/save routing); `js/modules/reservation.js` (auto-save routing) | Kode kini *degrade gracefully*: notice "Fitur routing belum tersedia", query dilewati, dan reservasi tetap tersimpan. Fitur routing penuh baru aktif setelah tabel dibuat (perlu migrasi DB). |
+| `guest_card_contacts` | **Tidak ada** (404) | `js/services/guestService.js` | Diganti ke tabel yang benar **`guest_contacts`** (kolom: `id`, `guest_card_id`, `name`, `phone`, `email`). P1-9 selesai. |
+| `guest_card_contract_rates` | **Tidak ada** (404) | `js/services/guestService.js` | Diganti ke tabel yang benar **`contract_rates`** (kolom: `id`, `guest_card_id`, `room_type_id`, `price_code`, `valid_from`, `valid_to`). P1-9 selesai. |
+| `guest_documents` | **Bukan tabel** (404 sebagai tabel); **bucket Storage** | `js/modules/reservation.js` via `storage.from('guest_documents')` | Tidak ada perubahan kode — sudah benar sebagai bucket. Jangan diakses lewat `supabase.from('guest_documents')`. |
+| `cashier_shifts` | **Ada** (HTTP 200, berisi data) | Tidak ada referensi di kode | Tidak ada perubahan kode. Alur shift aktual memakai `cashier_sessions` + `shift_logbooks`; `cashier_shifts` kemungkinan tabel legacy. |
 
 ---
 
