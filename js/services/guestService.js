@@ -102,20 +102,20 @@ export async function getGuestCardById(id) {
             guestCard.discount_pct = guestCard.discount_pct || guestCard.special_discount || guestCard.discount || 0;
         }
 
-        // Fetch contacts if separate table exists
+        // Contacts live in guest_contacts (written by the GCF editor).
         try {
             const { data: contacts } = await supabaseClient
-                .from('guest_card_contacts')
+                .from('guest_contacts')
                 .select('*')
                 .eq('guest_card_id', id);
 
             if (contacts) guestCard.contacts = contacts;
         } catch (_) {}
 
-        // Fetch contract rates if separate table exists
+        // Contract rates live in contract_rates (written by the GCF editor).
         try {
             const { data: contractRates } = await supabaseClient
-                .from('guest_card_contract_rates')
+                .from('contract_rates')
                 .select('*')
                 .eq('guest_card_id', id);
 

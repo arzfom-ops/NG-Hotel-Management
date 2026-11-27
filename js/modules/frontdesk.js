@@ -1,6 +1,10 @@
 import { supabaseClient } from '../config/supabase.js';
 import { formatDateISO, formatStayDatesCompact, getStatusBadgeHTML, parseSafeDateOnly } from '../utils/formatters.js';
 
+const ARRIVAL_LIST_STATUSES = ['RESERVED', 'GUARANTEED', 'CONFIRMED', '6PM_HOLD', 'ORAL_CONFIRM', 'TENTATIVE'];
+const IN_HOUSE_STATUSES = ['CHECKIN', 'CHECKED_IN', 'CHECKED IN'];
+const normalizeStatus = (status) => String(status || '').toUpperCase().trim();
+
 // Global State for Frontdesk Dashboard
 export var currentDashboardTab = 'arrival';
 export var dashboardSelectedDate = (typeof window !== 'undefined' && window.currentHotelDate) ? window.currentHotelDate : (typeof formatDateISO === 'function' && typeof window.todayDate !== 'undefined' ? formatDateISO(window.todayDate) : new Date().toISOString().split('T')[0]);
@@ -152,9 +156,9 @@ export async function fetchFrontdeskDashboard() {
             return !isNsg && !isPmRoom && !isVirtual;
         });
 
-        dashboardData.arrival = validResList.filter(r => r.check_in_date === selectedDateISO && (r.status === 'Reserved' || r.status === 'GUARANTEED' || r.status === '6PM_HOLD' || r.status === 'ORAL_CONFIRM' || r.status === 'TENTATIVE'));
-        dashboardData.inHouse = validResList.filter(r => r.status === 'Checkin' || r.status === 'CHECKED_IN' || r.status === 'Checked In');
-        dashboardData.departure = validResList.filter(r => r.check_out_date === selectedDateISO && (r.status === 'Checkin' || r.status === 'CHECKED_IN' || r.status === 'Checked In'));
+        dashboardData.arrival = validResList.filter(r => r.check_in_date === selectedDateISO && ARRIVAL_LIST_STATUSES.includes(normalizeStatus(r.status)));
+        dashboardData.inHouse = validResList.filter(r => IN_HOUSE_STATUSES.includes(normalizeStatus(r.status)));
+        dashboardData.departure = validResList.filter(r => r.check_out_date === selectedDateISO && IN_HOUSE_STATUSES.includes(normalizeStatus(r.status)));
 
         // 2. Fetch Group Bookings with Fallback Query
         let gbData = null;

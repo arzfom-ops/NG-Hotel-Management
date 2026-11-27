@@ -3,6 +3,7 @@ import { formatDateISO, addDays, formatStayDatesCompact, showToast } from '../ut
 import { getActiveCashierSessionId } from './shift.js';
 import { searchGuestCards, getGuestCardById, saveGuestCard, applyGuestCardToReservation } from '../services/guestService.js';
 import { callOcrSpace, parseKtpText, blobToBase64 } from '../services/ocrService.js';
+import { isMissingTableError, dbCapabilities } from '../utils/dbErrors.js';
 
 // Global/Module Caches & State
 export let guestSearchDebounceTimer = null;
@@ -11,6 +12,8 @@ export let mealPlansCache = [];
 export let roomTypesCache = [];
 export let ratePlansCache = [];
 export let isReactivateMode = false;
+
+const BOOKING_ACTION_STATUSES = ['RESERVED', 'GUARANTEED', 'CONFIRMED', '6PM_HOLD', 'ORAL_CONFIRM', 'TENTATIVE'];
 
 // 1. Dropdown & Form State
 export async function populateReservationFormDropdowns() {
@@ -596,13 +599,15 @@ export function handleStayDatesChange(triggerSource) {
             const diffTime = checkOutDateObj - checkInDateObj;
             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-            if (diffDays >= 1) {
-                nightsInput.value = diffDays;
-            } else {
-                // Reset check-out to check-in + 1 night if check-out <= check-in
+            // Saat check-in diubah, check-out lama bisa berada di bulan lain dan
+            // menghasilkan durasi tak wajar (>30 malam); reset ke 1 malam.
+            const shouldResetCheckOut = diffDays < 1 || (triggerSource === 'check-in' && diffDays > 30);
+            if (shouldResetCheckOut) {
                 const autoCheckOut = addDays(checkInDateObj, 1);
                 checkOutInput.value = formatDateISO(autoCheckOut);
                 nightsInput.value = 1;
+            } else {
+                nightsInput.value = diffDays;
             }
         } else if (checkInVal && !checkOutVal) {
             const defaultNights = isNaN(nightsVal) || nightsVal < 1 ? 1 : nightsVal;
@@ -1166,7 +1171,10 @@ export async function openEditReservation(id) {
         }
         const idCardInput = document.getElementById('res-id-card-no');
         if (idCardInput) idCardInput.value = gcfObj?.id_card_no || guestCard?.id_card_no || '';
-        document.getElementById('res-phone').value = gcfObj?.phone || gcfObj?.mobile_no || guestCard?.phone || guestCard?.mobile_no || guestCard?.phone_number || '';
+        const phoneInputEl = document.getElementById('res-phone');
+        if (phoneInputEl) {
+            phoneInputEl.value = gcfObj?.phone || gcfObj?.mobile_no || gcfObj?.phone_number || guestCard?.phone || guestCard?.mobile_no || guestCard?.phone_number || res.phone || '';
+        }
         document.getElementById('res-email').value = gcfObj?.email || guestCard?.email || '';
         document.getElementById('res-birth-date').value = gcfObj?.birth_date || gcfObj?.birthdate || guestCard?.birth_date || guestCard?.birthdate || '';
         document.getElementById('res-address').value = gcfObj?.address || guestCard?.address || '';
@@ -1320,7 +1328,7 @@ export async function openEditReservation(id) {
         const cancelBookingBtn = document.getElementById('resCancelBookingBtn');
         const openFolioBtn = document.getElementById('resOpenFolioBtn');
 
-        if (currentStatus === 'Reserved') {
+        if (BOOKING_ACTION_STATUSES.includes(upperStatus)) {
             if (checkInBtn) checkInBtn.classList.remove('hidden');
             if (cancelBookingBtn) cancelBookingBtn.classList.remove('hidden');
             if (openFolioBtn) openFolioBtn.classList.add('hidden');
@@ -2303,6 +2311,26 @@ async function findGuestCardIdByIdCard(idCardNo) {
     }
 }
 
+const RESERVATION_REQUIRED_FIELDS = [
+    { id: 'res-guest-name', label: 'Nama Tamu' },
+    { id: 'res-phone', label: 'Nomor Telepon' },
+    { id: 'res-check-in', label: 'Tanggal Check-in' },
+    { id: 'res-check-out', label: 'Tanggal Check-out' },
+    { id: 'res-room-type', label: 'Tipe Kamar' },
+    { id: 'res-rate-code', label: 'Rate Code' }
+];
+
+function getFirstInvalidReservationField() {
+    for (const field of RESERVATION_REQUIRED_FIELDS) {
+        const el = document.getElementById(field.id);
+        if (!el) continue;
+        if (!String(el.value || '').trim()) {
+            return { el, label: field.label };
+        }
+    }
+    return null;
+}
+
 export async function handleSaveReservation(event) {
     event.preventDefault();
 
@@ -2313,7 +2341,17 @@ export async function handleSaveReservation(event) {
         submitBtn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> ${editId ? 'Updating...' : 'Saving...'}`;
     }
 
+    const restoreSubmitButton = () => {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> ${editId ? 'Update Data' : 'Save Reservation'}`;
+        }
+    };
+
     try {
+        let groupBookingId = null;
+        let parentReservationId = null;
+
         const rawProfileId = document.getElementById('res-guest-profile-id')?.value;
         const rawCardId = document.getElementById('res-guest-card-id')?.value;
 
@@ -2341,12 +2379,12 @@ export async function handleSaveReservation(event) {
 
         const nationalityVal = document.getElementById('res-nationality').value.trim() || 'Indonesia';
 
-        if (!guestNameVal) {
-            alert('Harap isi nama tamu.');
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> ${editId ? 'Update Data' : 'Save Reservation'}`;
-            }
+        const invalidField = getFirstInvalidReservationField();
+        if (invalidField) {
+            showToast(`Harap isi ${invalidField.label}.`, 'error');
+            invalidField.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            invalidField.el.focus({ preventScroll: true });
+            restoreSubmitButton();
             return;
         }
 
@@ -2358,10 +2396,7 @@ export async function handleSaveReservation(event) {
             const conflictRoomNo = await checkRoomConflict(roomId, checkInDate, checkOutDate, editId || null);
             if (conflictRoomNo) {
                 showToast(`Kamar ${conflictRoomNo} sudah terisi oleh reservasi lain pada periode ini.`, 'error');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = `<i class="ph ph-floppy-disk text-lg"></i> ${editId ? 'Update Data' : 'Save Reservation'}`;
-                }
+                restoreSubmitButton();
                 return;
             }
         }
@@ -2638,7 +2673,7 @@ export async function handleSaveReservation(event) {
                 }
 
                 // Insert header record into group_bookings
-                let groupBookingId = null;
+                groupBookingId = null;
                 try {
                     const contactPersonPayload = JSON.stringify({
                         check_in_date: checkInDate,
@@ -2831,25 +2866,38 @@ export async function handleSaveReservation(event) {
         }
 
         const folioRoutingRulesState = window.folioRoutingRulesState || [];
-        if (savedReservationId && folioRoutingRulesState && folioRoutingRulesState.length > 0) {
-            try {
-                await supabaseClient
-                    .from('folio_routing_rules')
-                    .delete()
-                    .eq('source_reservation_id', savedReservationId);
+        if (savedReservationId && folioRoutingRulesState.length > 0) {
+            if (!dbCapabilities.folioRoutingRules) {
+                showToast('Routing rules tidak tersimpan karena tabel folio_routing_rules belum tersedia.', 'error');
+            } else {
+                try {
+                    const { error: delErr } = await supabaseClient
+                        .from('folio_routing_rules')
+                        .delete()
+                        .eq('source_reservation_id', savedReservationId);
 
-                const insertPayload = folioRoutingRulesState.map(rule => ({
-                    source_reservation_id: savedReservationId,
-                    route_type: rule.route_type,
-                    category_name: rule.category_name,
-                    article_id: rule.article_id
-                }));
+                    if (delErr) throw delErr;
 
-                await supabaseClient
-                    .from('folio_routing_rules')
-                    .insert(insertPayload);
-            } catch (rErr) {
-                console.error('Error auto-saving routing rules:', rErr);
+                    const insertPayload = folioRoutingRulesState.map(rule => ({
+                        source_reservation_id: savedReservationId,
+                        route_type: rule.route_type,
+                        category_name: rule.category_name,
+                        article_id: rule.article_id
+                    }));
+
+                    const { error: insErr } = await supabaseClient
+                        .from('folio_routing_rules')
+                        .insert(insertPayload);
+
+                    if (insErr) throw insErr;
+                } catch (rErr) {
+                    if (isMissingTableError(rErr)) {
+                        dbCapabilities.folioRoutingRules = false;
+                        showToast('Routing rules tidak tersimpan karena tabel folio_routing_rules belum tersedia.', 'error');
+                    } else {
+                        console.error('Error auto-saving routing rules:', rErr);
+                    }
+                }
             }
         }
 
